@@ -1,0 +1,7 @@
+
+int main()
+{
+    int libraries[3][2][2][1][4];
+    Print(libraries[0][0][0][0][1]);
+    return 0;
+}

@@ -1,0 +1,87 @@
+
+%{
+#include <iostream>
+#include <vector>
+//#include "symbol_table.hpp"
+
+extern FILE* yyin;
+extern char* yytext;
+extern int yylineno;
+
+//symbol_table table;
+int error_count;
+
+extern int yylex();
+void yyerror(const char * s);
+%}
+
+//------------------------------------------------
+
+%union {
+    char* token_name;
+}
+
+%token ASSIGNATION NUMR
+%token<token_name> S_NME R_TYP R_CLS R_SEQ
+%start starting_symbol
+
+//------------------------------------------------
+%%
+
+// declarations
+
+decl_var    : R_TYP S_NME ';' { std::cout << "recognized variable declaration.\n";}
+            ;
+
+parm_arr    : R_TYP S_NME ',' parm_arr
+            | R_TYP S_NME
+            ;
+decl_fct    : R_TYP S_NME '(' parm_arr ')' ';' { std::cout << "recognized function declaration.\n";}
+            | R_TYP S_NME '('')'';' { std::cout << "recognized function declaration.\n";}
+            ;
+
+decl_cls    : R_CLS S_NME '{' decl_fvo '}' { std::cout << "recognized class declaration.\n";}
+            | R_CLS S_NME ';' { std::cout << "recognized class declaration.\n";}
+            ;
+
+// function, variable, or other stuff
+decl_fvo    : decl_fct decl_fvo
+            | decl_fct
+            | decl_var decl_fvo
+            | decl_var
+            ;
+
+declaration : decl_cls declaration
+	        | decl_fvo declaration
+            | main
+	        ;
+
+starting_symbol : declaration
+                ;
+
+scope_begin : '{'
+scope_end : '}'
+
+main    : R_TYP 'm''a''i''n''('')' scope_begin scope_end
+%%
+
+//------------------------------------------------
+// C++ functions:
+
+void yyerror(const char * s){
+    std::cout << "error: " << s << " at line: " << yylineno << '\n';
+}
+
+int main(int argc, char** argv)
+{
+    if(argc != 2)
+    {
+        printf("error: wrong number of arguments.\n");
+        return EXIT_FAILURE;
+    }
+
+    yyin = fopen(argv[1],"r");
+    yyparse();
+   
+    return 0;
+}

@@ -1,0 +1,12 @@
+int correlation_number;
+string graduation_text;
+float function_name_ali_baba(bool lick, int dummy);
+class misery;
+
+class defined
+{
+    int beans;
+    string cry_yell_break();
+}
+
+int main(){}
