@@ -21,27 +21,30 @@ void yyerror(const char * s);
     char* token_name;
 }
 
-%token ASSIGNATION NUMR
+%token<token_name> MASTER
+%token OPERATOR_ASSIGN OPERATOR_RELTIN
 %token<token_name> S_NME R_TYP R_CLS R_SEQ
+%token<token_name> C_INT C_FLT C_CHR C_STR C_BOL
 %start starting_symbol
 
-//------------------------------------------------
 %%
 
-// declarations
+starting_symbol : declaration;
 
-decl_var    : R_TYP S_NME ';' { std::cout << "recognized variable declaration.\n";}
+// declarations
+decl_var    : R_TYP S_NME ';'
+            | R_TYP S_NME OPERATOR_ASSIGN S_NME ';' // (1)
             ;
 
 parm_arr    : R_TYP S_NME ',' parm_arr
             | R_TYP S_NME
             ;
-decl_fct    : R_TYP S_NME '(' parm_arr ')' ';' { std::cout << "recognized function declaration.\n";}
-            | R_TYP S_NME '('')'';' { std::cout << "recognized function declaration.\n";}
+decl_fct    : R_TYP S_NME '(' parm_arr ')' ';'
+            | R_TYP S_NME '('')'';'
             ;
 
-decl_cls    : R_CLS S_NME '{' decl_fvo '}' { std::cout << "recognized class declaration.\n";}
-            | R_CLS S_NME ';' { std::cout << "recognized class declaration.\n";}
+decl_cls    : R_CLS S_NME '{' decl_fvo '}'
+            | R_CLS S_NME ';'
             ;
 
 // function, variable, or other stuff
@@ -53,16 +56,40 @@ decl_fvo    : decl_fct decl_fvo
 
 declaration : decl_cls declaration
 	        | decl_fvo declaration
-            | main
+            | master
 	        ;
 
-starting_symbol : declaration
+scope_begin : '{';
+scope_end   : '}';
+
+// statements
+master  : MASTER scope_begin statement_list;
+        
+statement_list  : statement_easy statement_list
+                | statement_cond statement_list
+                | scope_end
                 ;
 
-scope_begin : '{'
-scope_end : '}'
+statement_easy  : C_INT ';' {std::cout << $1 << " recognized int constant.\n";}
+                | C_FLT ';' {std::cout << $1 << " recognized flt constant.\n";}
+                | C_CHR ';' {std::cout << $1 << " recognized chr constant.\n";}
+                | C_STR ';' {std::cout << $1 << " recognized str constant.\n";}
+                | C_BOL ';' {std::cout << $1 << " recognized bol constant.\n";}
+                | decl_var
+                | S_NME OPERATOR_ASSIGN S_NME ';' // (1)
+                | S_NME OPERATOR_RELTIN S_NME ';' // (1)
+                ;
 
-main    : R_TYP 'm''a''i''n''('')' scope_begin scope_end
+statement_bool  : S_NME OPERATOR_RELTIN S_NME // (1)
+                | S_NME OPERATOR_ASSIGN S_NME // (1)
+                ;
+
+statement_cond  : R_SEQ '(' statement_bool ')' ';'
+                | R_SEQ '(' statement_bool ')' statement_easy
+                | R_SEQ '(' statement_bool ')' scope_begin statement_easy scope_end
+                | R_SEQ '(' statement_bool ')' scope_begin scope_end
+                ;
+
 %%
 
 //------------------------------------------------

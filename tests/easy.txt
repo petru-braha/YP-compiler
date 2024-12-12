@@ -9,4 +9,8 @@ class defined
     string cry_yell_break();
 }
 
-int main(){}
+master(){ 
+    if(doua_zeci == cinci)
+    {
+    }
+}
