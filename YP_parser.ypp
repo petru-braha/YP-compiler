@@ -2,7 +2,8 @@
 %{
 #include <iostream>
 #include <vector>
-//#include "symbol_table.hpp"
+
+//#include "src/symbol_table.hpp"
 
 extern FILE* yyin;
 extern char* yytext;
@@ -41,28 +42,30 @@ parm_arr    : R_TYP S_NME ',' parm_arr
             ;
 decl_fct    : R_TYP S_NME '(' parm_arr ')' ';'
             | R_TYP S_NME '('')'';'
-            ;
+            | defn_fct
+            ;             
 
-decl_cls    : R_CLS S_NME '{' decl_fvo '}'
+fild_arr    : decl_fct fild_arr
+            | decl_var fild_arr
+            | '}'
+            ;
+decl_cls    : R_CLS S_NME '{' fild_arr
             | R_CLS S_NME ';'
             ;
 
-// function, variable, or other stuff
-decl_fvo    : decl_fct decl_fvo
-            | decl_fct
-            | decl_var decl_fvo
-            | decl_var
-            ;
-
 declaration : decl_cls declaration
-	        | decl_fvo declaration
+	        | decl_fct declaration
+	        | decl_var declaration
             | master
 	        ;
 
+// statements
 scope_begin : '{';
 scope_end   : '}';
 
-// statements
+defn_fct    : R_TYP S_NME '(' parm_arr ')' scope_begin statement_list
+            | R_TYP S_NME '('')' scope_begin statement_list
+
 master  : MASTER scope_begin statement_list;
         
 statement_list  : statement_easy statement_list
@@ -70,11 +73,11 @@ statement_list  : statement_easy statement_list
                 | scope_end
                 ;
 
-statement_easy  : C_INT ';' {std::cout << $1 << " recognized int constant.\n";}
-                | C_FLT ';' {std::cout << $1 << " recognized flt constant.\n";}
-                | C_CHR ';' {std::cout << $1 << " recognized chr constant.\n";}
-                | C_STR ';' {std::cout << $1 << " recognized str constant.\n";}
-                | C_BOL ';' {std::cout << $1 << " recognized bol constant.\n";}
+statement_easy  : C_INT ';'
+                | C_FLT ';'
+                | C_CHR ';'
+                | C_STR ';'
+                | C_BOL ';'
                 | decl_var
                 | S_NME OPERATOR_ASSIGN S_NME ';' // (1)
                 | S_NME OPERATOR_RELTIN S_NME ';' // (1)

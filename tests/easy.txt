@@ -1,16 +1,42 @@
-int correlation_number;
-string graduation_text;
-float function_name_ali_baba(bool lick, int dummy);
-class misery;
+int basic_type_1;
+float basic_type_2;
+char basic_type_3;
+string basic_type_4;
+bool basic_type_5;
 
-class defined
+int[1] array_type_1;
+float[5][5] array_type_2;
+char[2][2][2][2][2][2][2][2] array_type_3;
+
+int basic_function_1();
+int basic_function_2(int par_1, float par_2, string[1000000] par_3);
+
+bool defined_function(int[1][169][999999999999999999999999999999999999999999] dummy_values)
 {
-    int beans;
-    string cry_yell_break();
+    int a;
+    int a;
+    int a;
+    int a;
 }
 
-master(){ 
-    if(doua_zeci == cinci)
-    {
-    }
+class declared_class;
+
+class defined_class
+{
+    int beans;
+    char cry_yell_break();
+}
+
+int text_constants()
+{
+    12345;
+    0.001;
+    'w';
+    "word";
+    true;
+}
+
+master()
+{
+    int[5][1][5151][2] blue_array;
 }

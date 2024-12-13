@@ -3,11 +3,15 @@
     #include "YP_parser.tab.hpp"
 %}
 
+/* lexical description - regex */
+reserved_type "int"|"float"|"char"|"string"|"bool"
+type_array (\[([1-9][0-9]*)\])*
+
 something_name [a-zA-Z_][a-zA-Z0-9_]*
 constant_int 0|-[1-9][0-9]*|[1-9][0-9]*
 constant_flt {constant_int}.[0-9]+
-constant_chr \'[a-zA-Z0-9]\'
-constant_str \"[a-zA-Z0-9]+\"
+constant_chr \'[^']\'
+constant_str \"[^"]+\"
 constant_bol "true"|"false"
 
 %option noyywrap
@@ -19,14 +23,11 @@ constant_bol "true"|"false"
 "class" { yylval.token_name = strdup(yytext); 
     return R_CLS; }
 
-"int"|"float"|"char"|"string"|"bool" { yylval.token_name = strdup(yytext); 
+{reserved_type}{type_array} { yylval.token_name = strdup(yytext); 
     return R_TYP; }
 
 "if"|"for"|"while" { yylval.token_name = strdup(yytext); 
     return R_SEQ; }
-
-{something_name} { yylval.token_name = strdup(yytext); 
-    return S_NME; }
 
 {constant_int} { yylval.token_name = strdup(yytext);
     return C_INT; }
@@ -39,11 +40,14 @@ constant_bol "true"|"false"
 {constant_bol} { yylval.token_name = strdup(yytext);
     return C_BOL; }
 
+{something_name} { yylval.token_name = strdup(yytext); 
+    return S_NME; }
+
 "<-"|"=" { yylval.token_name = strdup(yytext);
     return OPERATOR_ASSIGN; }
 "<"|">"|"<="|">="|"!="|"=="|"===" { yylval.token_name = strdup(yytext);
     return OPERATOR_RELTIN; }
 
-[ \t] ;
+[ \t\r] ;
 \n {yylineno++;}
 . {return yytext[0];}
