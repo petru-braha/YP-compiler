@@ -6,13 +6,13 @@
 #include <string>
 #include <utility>
 
-#include "list.hpp"
+#include "synopsis.hpp"
 #include "id_info.hpp"
 
 class symbol_table
 {
     std::map<std::string, id_data> ids;
-    std::string name;
+    std::string scope;
 
 public:
     ~symbol_table();

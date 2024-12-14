@@ -38,5 +38,6 @@ int text_constants()
 
 master()
 {
+    int[4242][25252] bb;
     int[5][1][5151][2] blue_array;
 }
