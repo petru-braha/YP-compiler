@@ -7,18 +7,18 @@
 #include <utility>
 
 #include "synopsis.hpp"
-#include "id_info.hpp"
+#include "instance_data.hpp"
 
 class symbol_table
 {
-    std::map<std::string, id_data> ids;
+    std::map<std::string, instance_data> ids;
     std::string scope;
 
 public:
     ~symbol_table();
     symbol_table(const char *);
 
-    void add(const char *, const char *);
+    void add(const char *, const char *, const char *);
 
     bool exists(const char *) const;
     void print() const;
@@ -32,29 +32,29 @@ symbol_table::~symbol_table()
     ids.clear();
 }
 
-symbol_table::symbol_table(const char *name) : name(name) {}
+symbol_table::symbol_table(const char *name) : scope(name) {}
 
 //------------------------------------------------
 // constant methods:
 
-void symbol_table::add(const char *name, const char *type)
+void symbol_table::add(const char *name, const char *type, const char *line)
 {
-    id_data var(name, type, "var");
+    instance_data var(type, nullptr);
     ids[name] = var;
 }
 
 //------------------------------------------------
 // constant methods:
 
-bool symbol_table::exists(const char *id) const
+bool symbol_table::exists(const char *name) const
 {
-    return ids.find(id) != ids.end();
+    return ids.find(name) != ids.end();
 }
 
 void symbol_table::print() const
 {
-    for (const std::pair<std::string, id_data> &v : ids)
-        std::cout << "name: " << v.first << " type:" << v.second.get_type() << '\n';
+    for (const std::pair<std::string, instance_data> &v : ids)
+        std::cout << "name: " << v.first << " type:" << v.second.get_data_type() << '\n';
 }
 
 #endif

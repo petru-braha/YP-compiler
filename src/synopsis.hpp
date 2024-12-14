@@ -17,11 +17,14 @@ class synopsis_variable final : public synopsis
 
 public:
     synopsis_variable(const char *);
+    std::to_string(T);
 };
 
 class synopsis_function final : public synopsis
 {
     // get function definition
+    synopsis_variable<int> *values;
+    synopsis_variable<float> *values;
 
 public:
     synopsis_function(const char *, const char *);

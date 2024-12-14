@@ -24,30 +24,26 @@ constexpr unsigned char COUNT_RESERVED_TYPES = 5;
 class instance_data
 {
     unsigned char item_type;
-    std::string data_type, name;
+    std::string data_type;
     synopsis *instance_synopsis;
 
 public:
     instance_data(const char *,
-                  const char *,
                   const char *);
 
     unsigned char get_item_type() const;
     const char *get_data_type() const;
-    const char *get_name() const;
 };
 
 //------------------------------------------------
 // constructors:
 
 instance_data::instance_data(const char *d_t,
-                             const char *n,
                              const char *line)
-    : item_type(ITEM_TYPE_VAR), data_type(d_t),
-      name(n), instance_synopsis(nullptr)
+    : item_type(ITEM_TYPE_VAR), data_type(d_t), instance_synopsis(nullptr)
 {
     // verification
-    if (nullptr == d_t || nullptr == n)
+    if (nullptr == d_t)
     {
         std::cout
             << "error - instance_data: wrong parameters.\n:";
@@ -57,7 +53,7 @@ instance_data::instance_data(const char *d_t,
     // define item_type
     bool reserved = false;
     for (size_t i = 0; i < COUNT_RESERVED_TYPES; i++)
-        if (data_type.find(RESERVED_TYPES[i]))
+        if (data_type.find(RESERVED_TYPES[i])!=std::string::npos)
         {
             reserved = true;
             break;
@@ -78,9 +74,9 @@ instance_data::instance_data(const char *d_t,
     }
 
     // define synopsis
-    switch (item_type)
+  /*  switch (item_type)
     {
-    case ITEM_TYPE_VAR:
+    case ITEM_TYPE_VAR: //
         this->instance_synopsis =
             new synopsis_variable(line);
         break;
@@ -96,7 +92,8 @@ instance_data::instance_data(const char *d_t,
     default:
         std::cout << "error - instance data: wrong item type.\n";
         break;
-    }
+    }*/
+
 }
 
 //------------------------------------------------
