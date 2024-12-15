@@ -49,20 +49,26 @@
 - class = type
 - definition of a variable/object = assignation (also created by default at declaration)
 
-- class declaration
-- field declaration
-- class definition (all fields definition)
-- object declaration
-- object definition
-- object call
+<br>
 
-- function declaration
-- function definition
-- function call
+0. class declaration
+1. field declaration
+2. class definition (all fields definition)
+3. object declaration
+4. object definition
+5. object call
 
-- variable declaration
-- variable definition
-- variable call
+<br>
+
+0. function declaration
+1. function definition
+2. function call
+
+<br>
+
+0. variable declaration
+1. variable definition
+2. variable call
 
 ### type container
 
@@ -129,3 +135,4 @@
 0. no class/function declaration/definition after scope_begin (more precisely if it is not closed)
 1. don't use names not declared
 2. check type correlation - see (1)
+3. complete the syntax documentation from the guidline
