@@ -23,6 +23,7 @@
 - No pointers or refferences
 - No union, struct definitions
 - No casting feature
+- No inheritence of classes(no protected access specifier)
 
 ## Brainstorming
 
@@ -136,3 +137,4 @@
 1. don't use names not declared
 2. check type correlation - see (1)
 3. complete the syntax documentation from the guidline
+4. complete final presentation
