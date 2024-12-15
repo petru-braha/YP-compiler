@@ -1,6 +1,10 @@
 %{
-    #include <stdio.h>
-    #include "YP_parser.tab.hpp"
+#include <stdlib.h>
+#include <stdio.h>
+#include "YP_parser.tab.hpp"
+
+void yyerror(const char * s);
+bool master_started = false;
 %}
 
 /* lexical description - regex */
@@ -14,20 +18,26 @@ constant_chr \'[^']\'
 constant_str \"[^"]+\"
 constant_bol "true"|"false"
 
+%x comment
+%x multiline_comment
 %option noyywrap
 
 %%
-"master()" { yylval.token_name = strdup(yytext); 
-    return MASTER; }
+"master()" { if(master_started)
+    yyerror("the master method can only be declared and defined once");
+    master_started = true; }
 
-"class" { yylval.token_name = strdup(yytext); 
-    return R_CLS; }
+"->"|"." { return A_FLD; } /* for both type.field and object.field */
+"private:" { return A_PRV; }
+"public:" { return A_PUB; }
+"class" { return R_CLS; }
 
 {reserved_type}{type_array} { yylval.token_name = strdup(yytext); 
     return R_TYP; }
 
-"if"|"for"|"while" { yylval.token_name = strdup(yytext); 
-    return R_SEQ; }
+"if" { return R_SEQ_IF; }
+"for" { return R_SEQ_FOR; }
+"while" { return R_SEQ_WHL; }
 
 {constant_int} { yylval.token_name = strdup(yytext);
     return C_INT; }
@@ -43,8 +53,15 @@ constant_bol "true"|"false"
 {something_name} { yylval.token_name = strdup(yytext); 
     return S_NME; }
 
-"<-"|"=" { yylval.token_name = strdup(yytext);
-    return OPERATOR_ASSIGN; }
+"#" { BEGIN comment; }
+<comment>[ \t\r] ;
+<comment>\n { yylineno++; BEGIN 0; }
+"/*" { BEGIN multiline_comment; }
+<multiline_comment>"*/" { BEGIN 0; }
+<multiline_comment>[ \t\r] ;
+<multiline_comment>\n { yylineno++; }
+
+"<-"|"=" { return OPERATOR_ASSIGN; }
 "<"|">"|"<="|">="|"!="|"=="|"===" { yylval.token_name = strdup(yytext);
     return OPERATOR_RELTIN; }
 

@@ -24,7 +24,10 @@ class declared_class;
 class defined_class
 {
     int beans;
-    char cry_yell_break();
+    char cry_yell_break()
+    {
+        
+    }
 }
 
 int text_constants()

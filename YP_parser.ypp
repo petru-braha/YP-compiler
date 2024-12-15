@@ -1,115 +1,179 @@
 
 %{
+#include <stdio.h>
 #include <iostream>
+#include <string>
 #include <vector>
-#include "src/type_table.hpp"
 
+#include "src/type_table.hpp"
 #include "src/symbol_table.hpp"
 
 extern FILE* yyin;
 extern char* yytext;
 extern int yylineno;
 
-symbol_table table;
 type_table t_table;
+int index_field = 0;
+std::string name_class;
+std::vector<std::string> fields();
+
+symbol_table s_table("global");
 int error_count;
 int static static_count_fields;
-int i = 0;
-std::string nume_clasa;
-std::string fields[99999999];
 
 extern int yylex();
 void yyerror(const char * s);
 %}
 
 //------------------------------------------------
+//------------------------------------------------
 
 %union {
     char* token_name;
 }
 
-%token<token_name> MASTER
+%type master
+%token R_CLS A_PRV A_PUB A_FLD
 %token OPERATOR_ASSIGN OPERATOR_RELTIN
-%token<token_name> S_NME R_TYP R_CLS R_SEQ
+
+%token<token_name> S_NME R_TYP 
 %token<token_name> C_INT C_FLT C_CHR C_STR C_BOL
+
+%token R_SEQ_IF R_SEQ_FOR R_SEQ_WHL
+
 %start starting_symbol
 
 %%
-
-starting_symbol : declaration;
-
-// declarations
-decl_var    : R_TYP S_NME ';'{table.add ($2, $1, nullptr);}
-            | R_TYP S_NME OPERATOR_ASSIGN S_NME ';' // (1)
-            ;
-
-parm_arr    : R_TYP S_NME ',' parm_arr
-            | R_TYP S_NME
-            ;
-decl_fct    : R_TYP S_NME '(' parm_arr ')' ';' {table.add ($2, $1, nullptr);}
-            | R_TYP S_NME '('')'';'
-            | defn_fct
-            ;             
-
-fild_arr    : decl_fct fild_arr {fields[i] = $1;i++;}
-            | decl_var fild_arr {fields[i] = $1;i++;}
-            | '}'{t_table.add (nume_clasa, fields, i); i = 0;}
-            ;
-decl_cls    : R_CLS S_NME '{' {nume_clasa = $2;} fild_arr
-            | R_CLS S_NME ';' {nume_clasa = $2;}
-            ;
-
-declaration : decl_cls declaration
-	        | decl_fct declaration
-	        | decl_var declaration
-            | master
-	        ;
-decl_obj    : S_NME S_NME {table.add ($2, $1, nullptr);}
-            | S_NME S_NME OPERATOR_ASSIGN S_NME {table.add ($2, $1, nullptr);}
-            | S_NME S_NME OPERATOR_ASSIGN '{''}' {table.add ($2, $1, nullptr);}
-            ;
-
-// statements
+starting_symbol : global_declaration;
 scope_begin : '{';
 scope_end   : '}';
+master  : scope_begin statement_list;
 
-defn_fct    : R_TYP S_NME '(' parm_arr ')' scope_begin statement_list
-            | R_TYP S_NME '('')' scope_begin statement_list
+//------------------------------------------------
 
-master  : MASTER scope_begin statement_list;
-        
-statement_list  : statement_easy statement_list
-                | statement_cond statement_list
-                | scope_end
+/* class = type */
+/* declaration, definition and call states for class
+* class
+* function
+* variable
+* object */
+
+/*! class states */
+cls_decl: R_CLS S_NME ';'
+        | cls_defn
+        ;
+arr_fild: fct_defn arr_fild
+        | var_decl arr_fild
+        | obj_decl arr_fild
+        | A_PRV arr_fild
+        | A_PUB arr_fild
+        | scope_end // {t_table.add(name_class.c_str(), fields, i); i = 0;}
+        ;
+cls_defn: R_CLS S_NME scope_begin {name_class = $2;} arr_fild /* store the type */ ;
+/* cls_call is not needed for now */
+
+/*! function states */
+fct_decl: R_TYP S_NME fct_synp ';' // {table.add ($2, $1, nullptr);}
+        | fct_defn
+        ;
+fct_synp: '(' arr_parm ')'
+        | '('')'
+arr_parm: R_TYP S_NME ',' arr_parm
+        | R_TYP S_NME
+        ;
+fct_defn: R_TYP S_NME fct_synp scope_begin statement_list;
+argument: S_NME | cst_call;
+arr_argm: argument ',' arr_argm
+        | argument
+        ;
+fct_call: S_NME '(' arr_argm ')' { /* provide return capacity */ } ;
+        | S_NME '(' ')' { /* provide return capacity */ } ;
+
+/*! variable states */
+var_decl: R_TYP S_NME ';'{ /* initialize with defauld value */ /*table.add ($2, $1, nullptr);*/ }
+        | var_defn
+        ;
+var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' /* (1) */ ;
+var_call: S_NME ;
+
+/*! object states */
+obj_decl: S_NME S_NME ';'
+        | obj_defn
+        ;
+obj_defn: S_NME S_NME OPERATOR_ASSIGN scope_begin { /* search in the type table */ } scope_end ';' ;
+fld_call: S_NME A_FLD S_NME { /* search type, search field */ } ;
+obj_call: S_NME ;
+
+/*! text constant states */
+cst_call: C_INT
+        | C_FLT
+        | C_CHR
+        | C_STR
+        | C_BOL
+        ;
+
+/*! declaration parser */
+global_declaration      : cls_decl global_declaration
+	                | fct_decl global_declaration
+	                | var_decl global_declaration
+                        | obj_decl global_declaration
+                        | master | ';' global_declaration
+	                ;
+local_declaration       : fct_decl local_declaration | fct_decl
+                        | var_decl local_declaration | var_decl
+                        | obj_decl local_declaration | obj_decl
+                        ;
+
+//------------------------------------------------
+
+/*! statements */
+statement_list  : statement_parse statement_list
+                | scope_begin statement_list scope_end /* adds scopes for the fun of it */
+                | scope_end /* halting condition */
                 ;
 
-statement_easy  : C_INT ';'
-                | C_FLT ';'
-                | C_CHR ';'
-                | C_STR ';'
-                | C_BOL ';'
-                | decl_var
-                | S_NME OPERATOR_ASSIGN S_NME ';' // (1)
-                | S_NME OPERATOR_RELTIN S_NME ';' // (1)
+/* statements types and parsing technique */
+statement_parse : statement_easy
+                | statement_bool
+                | statement_assg
+                // | statement_cond
+                // | local_declaration
+                ;
+call_parse      : fct_call
+                | var_call
+                | fld_call
+                // | obj_call
+                | cst_call
                 ;
 
-statement_bool  : S_NME OPERATOR_RELTIN S_NME // (1)
-                | S_NME OPERATOR_ASSIGN S_NME // (1)
-                ;
+/* redundant statementes */
+ statement_easy  : call_parse ';' | ';' ;
 
-statement_cond  : R_SEQ '(' statement_bool ')' ';'
-                | R_SEQ '(' statement_bool ')' statement_easy
-                | R_SEQ '(' statement_bool ')' scope_begin statement_easy scope_end
-                | R_SEQ '(' statement_bool ')' scope_begin scope_end
+/* assignation statement */// here is needed a recursive approach
+statement_assg  : S_NME OPERATOR_ASSIGN call_parse;
+
+/* bool returning statements */
+statement_bool  : S_NME OPERATOR_RELTIN S_NME ;
+
+/* conditional statements */
+condition_append: ';'
+                | statement_parse
+                | scope_begin statement_list scope_end
+                | scope_begin scope_end
                 ;
+// statement_if    : R_SEQ_IF '(' statement_bool ')' condition_append;
+// statement_for   : R_SEQ_FOR '(' /* declare */ ';' statement_bool ';' /* statement */ ')' condition_append;
+// statement_whl   : R_SEQ_WHL '(' statement_bool ')' condition_append;
+// statement_cond  : statement_if ;//| statement_for | statement_whl;
 
 %%
 
 //------------------------------------------------
+//------------------------------------------------
 // C++ functions:
 
 void yyerror(const char * s){
-    std::cout << "error: " << s << " at line: " << yylineno << '\n';
+    printf("error - line %d: %s.\n", yylineno, s);
 }
 
 int main(int argc, char** argv)

@@ -2,6 +2,8 @@
 
 ## Usage (in project's root)
 
+- when looking through the code, we recommand installing VS Code and the "Better Comments" extension.
+
 0. "./compile.sh" 
 1. "./run.out <file_path>" - compiles and runs the source code
 2. "./src/discard.sh" - delete the additional files
@@ -43,6 +45,8 @@
 - There is a difference between variable and object. An object is created with the user's defined classes(types), meanwhile the variable's type can only be a reserved one.
 
 - Functions can be declared at local scopes.
+
+- Definition != assignation.
 
 ### schema
 
@@ -135,6 +139,6 @@
 
 0. no class/function declaration/definition after scope_begin (more precisely if it is not closed)
 1. don't use names not declared
-2. check type correlation - see (1)
+2. 
 3. complete the syntax documentation from the guidline
 4. complete final presentation
