@@ -1,94 +1,131 @@
 # YP compiler
 
+## Usage (in project's root)
+
+0. "./compile.sh" 
+1. "./run.out <file_path>" - compiles and runs the source code
+2. "./src/discard.sh" - delete the additional files
+
+## Features
+
+- C's main functions in our program is named master:
+    - the program begins by calling master
+    - master() doesn't return any value
+
+- x-dimensional arrays, where x could be any natural value not NULL. the same is assured for the size of each dimension.
+
+- NULL initialization of the data at declaration if the user doesn't provide an assignation
+
+- Recognize both int[1][3] variable_name and int variable_name[14][5151][62];
+
+## Limitations
+
+- No pointers or refferences
+- No union, struct definitions
+- No casting feature
 
 ## Brainstorming
 
-- any user defined type (classes) will be labeled as ITEM_TYPE_CLS
-- data type increments for every class defined
-    - for a variable data_type could be
-        - int
-        - float
-        - char
-        - string
-        - bool
-        - any class's name already defined (or maybe just declared ?)
-    - for a function == return_type (any type as previously discussed)
-    - for a class == 1 to 1 mapping - only the type(name) of the class
+- Four possible data storage types:
+    - class(type)
+    - function
+    - variable
+    - object
+
+- Three possible states of a data storage:
+    - declaration
+    - definition
+    - call
+
+- There is a major difference between declared and defined. We'll have to store both declarations and definitions and use them according to the appropriate scenario.
+
+- There is a difference between variable and object. An object is created with the user's defined classes(types), meanwhile the variable's type can only be a reserved one.
+
+- Functions can be declared at local scopes.
+
+### schema
+
+- variable's type is one of the reserved
+- class = type
+- definition of a variable/object = assignation (also created by default at declaration)
+
+- class declaration
+- field declaration
+- class definition (all fields definition)
+- object declaration
+- object definition
+- object call
+
+- function declaration
+- function definition
+- function call
+
+- variable declaration
+- variable definition
+- variable call
+
+### type container
+
+- class(type) declaration only at global scope
+- stored when declared and defined
+- data structure: map - O(1) search time for a S_NME
+
+- reserved types:
+    - int
+    - float
+    - char
+    - string
+    - bool
+
+### symbol container
+
+- scope depended
+- stored when declared or defined
+- data structure: map - O(1) search time for a S_NME
+
+- symbol = function/variable/object
+- struct symbol: name, item_type, data_type, synopsis(values)
+- synopsis:
+    - function - parameter list
+    - variable - value
+    - object - synopsis of its symbols
+
+### guideline
 
 - mapping of the type to:
-    - string - 3 - 5 bytes for the already defined types but for a class declaration 
-    - unsigned int - 4 bytes always - allows 4,294,967,295
-    - unsigned short - 65.535 - 5 classes
-    - unsigned char - 1 byte always - allows the definition of 256 - 5 classes
+    - string - 3 - 5 bytes for the already defined types but for class the number of bytes is user dependent
+    - unsigned char - 1 byte always - allows the definition of 256-5 classes (not reliable)
+    - unsigned short - 2 bytes always - 65.535-5 classes (is not too reliable)
+    - unsigned int - 4 bytes always - allows 4,294,967,295 (could be reliable)
 
-0. declaration syntax
-    - variable
-    - function
-    - class
-1. definition syntax
-2. initialization / calling
-    - variable - "=" if it has a reserved type
-    - class - "={parameter_list}" if it's an object
-    - if not done, by default every field will the a NULL value
+- declaration syntax:
+    - class: class name_class;
+    - function: 
+        - list_parameter:
+        - return_type name_function(list_parameter);
+    - variable:
+    - object:
 
-- synopsis
-    - variable
-        - name
-        - value(s) - what if class with multiple values
-    - function
-        - return type
-        - name
-        - parameter list
-    - class
-        - synopsis of its variables
-        - synopsis of its functions
+- definition syntax:
+    - class:
+        - access specifiers
+        - fields
+        - name_class{ filed0, field1 }
+    - function:
+        - list_parameter:
+        - return_type name_function(list_parameter);
+    - variable:
+    - object:
 
-- recognize both int[1][3] a; and int a[14][5151][62];
+- call syntax:
+    - class: - "={parameter_list}" if it's an object
+    - function:
+    - variable: - "=" if it has a reserved type
+        - if not done, by default every field will the a NULL value
+    - object:
 
 ## To do
 
 0. no class/function declaration/definition after scope_begin (more precisely if it is not closed)
 1. don't use names not declared
-2. parse types when operator see (1)
-3. 
-
-## Features
-
-- C's main functions in our program is named master
-    - the program begins by calling master
-    - master() doesn't return any value
-
-- x-dimensional arrays, where x could be any natural, not null value
-
-- class, function, and variable definitions
-    - no union, struct definitions
-
-- no pointers or refferences
-
-## Usage (in project's root)
-
-0. "./compile.sh" 
-1. "./run.out <file_path>" - test if a source code has errors
-2. "./src/discard.sh" - delete extra file
-
-
-
-
-1. se citeste din codul sursa - bottom up parser
-2. alege regulile din gramatica definita - bottom up parser
-3. .ypp .y contine bottom up parser si gramatica
-
-4. token
-5. lexer
-6. lexer => parser file
-
-- parser file 
-    - parsare
-
-    
-1. definire token, grammar
-2. lexer citeste easy.txt si recunoaste
-3. parser
-
-
-- int variabla
+2. check type correlation - see (1)
