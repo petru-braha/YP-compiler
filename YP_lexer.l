@@ -23,8 +23,14 @@ comment #.*
 %option noyywrap
 
 %%
-"Type(" { return method_type; }
-"Print(" { return method_print; }
+"Type("{something_name}")" { return method_type; }
+"Print("{something_name}")" { yylval.token_name = strdup(yytext); return method_print; }
+"Print("{constant_int}")" { return method_print; }
+"Print("{constant_flt}")" { return method_print; }
+"Print("{constant_chr}")" { return method_print; }
+"Print("{constant_str}")" { return method_print; }
+"Print("{constant_bol}")" { return method_print; }
+
 "master()" { if(master_started)
     yyerror("the master method can only be declared and defined once");
     master_started = true; }

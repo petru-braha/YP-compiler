@@ -18,7 +18,7 @@ size_t count_fields;
 std::string* fields;
 
 symbol_table s_table("global");
-int error_count;
+int count_error;
 
 extern bool method_master_started;
 long long scopes_started;
@@ -35,7 +35,7 @@ void yyerror(const char * s);
 }
 
 %type method_master
-%token method_type method_print
+%token<token_name> method_type method_print
 %token R_CLS A_PRV A_PUB A_FLD
 %token OPERATOR_ASSIGN OPERATOR_RELTIN
 
@@ -47,7 +47,7 @@ void yyerror(const char * s);
 %start starting_symbol
 
 %%
-starting_symbol : global_declaration;
+starting_symbol : global_declaration { if(0 == count_error) printf("the program was compiled correctly.\n"); } ;
 scope_begin : '{' { scopes_started++; };
 scope_end   : '}' { /* this case will never occur:
                         if(scopes_started <= 0) yyerror("ending an unstarted scope");*/ scopes_started--; };
@@ -141,6 +141,8 @@ statement_list  : statement_parse statement_list
 statement_parse : statement_easy
                 | statement_bool
                 | statement_assg
+                | method_type ';'
+                | method_print ';' { std::string s = $1 + 6; s[s.size() - 1] = '\0'; printf("%s", s.c_str()); }
                 // | statement_cond
                 // | local_declaration
                 ;
@@ -155,7 +157,10 @@ call_parse      : fct_call
  statement_easy  : call_parse ';' | ';' ;
 
 /* assignation statement */// here is needed a recursive approach
-statement_assg  : S_NME OPERATOR_ASSIGN call_parse;
+statement_assg  : S_NME OPERATOR_ASSIGN call_parse ';'
+                | S_NME OPERATOR_ASSIGN method_type ';'
+                | S_NME OPERATOR_ASSIGN method_print ';'
+                ;
 
 /* bool returning statements */
 statement_bool  : S_NME OPERATOR_RELTIN S_NME ;

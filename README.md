@@ -141,6 +141,20 @@
 - adding to union those types
 - store values of textual constants
 
+### standard methods
+
+int a = 5;
+string name = Type(a); 
+
+- master
+- Type
+    - argument: name_of_something
+    - return type: string
+- Print
+    - purpose: prints on terminal
+    - argument: name_of_something | constant
+    - return: number of bytes written
+    - return type: int
 
 ## To do
 

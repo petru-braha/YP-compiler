@@ -13,6 +13,7 @@ class type_table
     std::map<const char *, type_data> ids;
 
 public:
+    void add(const char *);
     void add(const char *, std::string *, int);
     bool exists(const char *) const;
 };

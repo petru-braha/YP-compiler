@@ -11,6 +11,10 @@ public:
     ~type_data();
     type_data();
     type_data(std::string *type, int n);
+
+    void add_fct_field();
+    void add_var_field();
+    void add_obj_field();
 };
 
 type_data::~type_data()

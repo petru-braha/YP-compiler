@@ -57,9 +57,13 @@ int text_constants()
     true;
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 # entry point of the program:
 master()
 {
+    Print(argc);
+
     # int[4242][25252] bb;
     # int[5][1][5151][2] blue_array;
     object_type_1.arguments;
