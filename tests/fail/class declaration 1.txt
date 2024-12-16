@@ -1,0 +1,12 @@
+int function_name()
+{
+    class numeric
+    {
+
+    }
+}
+
+master()
+{
+    
+}

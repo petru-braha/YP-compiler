@@ -1,4 +1,4 @@
-/* class section */
+# class section:
 class basic_class_0;
 
 class basic_class_1
@@ -12,14 +12,14 @@ class basic_class_0
     int value;
 }
 
-/* global variable section */
+# global variable section:
 string global_variable_0;
 string[2][2][2] global_variable_1;
 
 basic_class_0 global_object_0;
-basic_class_1 global_object_1 = {5};
+# basic_class_1 global_object_1 = {5};
 
-/* global function section */
+# global function section:
 bool global_function_0();
 
 bool global_function_1()
@@ -30,12 +30,13 @@ bool global_function_1()
     "constant string";
     true;
 
-    return true;
+    # return true;
 }
 
-/* entry point of the program */
+# entry point of the program:
 master()
 {
-    global_function_1();
-    Print("Success");
+    global_object_0.value;
+    # global_function_1();
+    # Print("Success");
 }

@@ -14,15 +14,17 @@ type_array (\[([1-9][0-9]*)\])*
 something_name [a-zA-Z_][a-zA-Z0-9_]*
 constant_int 0|-[1-9][0-9]*|[1-9][0-9]*
 constant_flt {constant_int}.[0-9]+
-constant_chr \'[^']\'
-constant_str \"[^"]+\"
+constant_chr \'[^\']\'
+constant_str \"[^\"]+\"
 constant_bol "true"|"false"
 
-%x comment
-%x multiline_comment
+comment #.*
+
 %option noyywrap
 
 %%
+"Type(" { return method_type; }
+"Print(" { return method_print; }
 "master()" { if(master_started)
     yyerror("the master method can only be declared and defined once");
     master_started = true; }
@@ -53,13 +55,7 @@ constant_bol "true"|"false"
 {something_name} { yylval.token_name = strdup(yytext); 
     return S_NME; }
 
-"#" { BEGIN comment; }
-<comment>[ \t\r] ;
-<comment>\n { yylineno++; BEGIN 0; }
-"/*" { BEGIN multiline_comment; }
-<multiline_comment>"*/" { BEGIN 0; }
-<multiline_comment>[ \t\r] ;
-<multiline_comment>\n { yylineno++; }
+{comment}
 
 "<-"|"=" { return OPERATOR_ASSIGN; }
 "<"|">"|"<="|">="|"!="|"=="|"===" { yylval.token_name = strdup(yytext);

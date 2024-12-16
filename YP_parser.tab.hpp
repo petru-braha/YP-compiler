@@ -54,22 +54,24 @@ extern int yydebug;
     YYEOF = 0,                     /* "end of file"  */
     YYerror = 256,                 /* error  */
     YYUNDEF = 257,                 /* "invalid token"  */
-    R_CLS = 258,                   /* R_CLS  */
-    A_PRV = 259,                   /* A_PRV  */
-    A_PUB = 260,                   /* A_PUB  */
-    A_FLD = 261,                   /* A_FLD  */
-    OPERATOR_ASSIGN = 262,         /* OPERATOR_ASSIGN  */
-    OPERATOR_RELTIN = 263,         /* OPERATOR_RELTIN  */
-    S_NME = 264,                   /* S_NME  */
-    R_TYP = 265,                   /* R_TYP  */
-    C_INT = 266,                   /* C_INT  */
-    C_FLT = 267,                   /* C_FLT  */
-    C_CHR = 268,                   /* C_CHR  */
-    C_STR = 269,                   /* C_STR  */
-    C_BOL = 270,                   /* C_BOL  */
-    R_SEQ_IF = 271,                /* R_SEQ_IF  */
-    R_SEQ_FOR = 272,               /* R_SEQ_FOR  */
-    R_SEQ_WHL = 273                /* R_SEQ_WHL  */
+    method_type = 258,             /* method_type  */
+    method_print = 259,            /* method_print  */
+    R_CLS = 260,                   /* R_CLS  */
+    A_PRV = 261,                   /* A_PRV  */
+    A_PUB = 262,                   /* A_PUB  */
+    A_FLD = 263,                   /* A_FLD  */
+    OPERATOR_ASSIGN = 264,         /* OPERATOR_ASSIGN  */
+    OPERATOR_RELTIN = 265,         /* OPERATOR_RELTIN  */
+    S_NME = 266,                   /* S_NME  */
+    R_TYP = 267,                   /* R_TYP  */
+    C_INT = 268,                   /* C_INT  */
+    C_FLT = 269,                   /* C_FLT  */
+    C_CHR = 270,                   /* C_CHR  */
+    C_STR = 271,                   /* C_STR  */
+    C_BOL = 272,                   /* C_BOL  */
+    R_SEQ_IF = 273,                /* R_SEQ_IF  */
+    R_SEQ_FOR = 274,               /* R_SEQ_FOR  */
+    R_SEQ_WHL = 275                /* R_SEQ_WHL  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -78,11 +80,11 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 32 "YP_parser.ypp"
+#line 33 "YP_parser.ypp"
 
     char* token_name;
 
-#line 86 "YP_parser.tab.hpp"
+#line 88 "YP_parser.tab.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

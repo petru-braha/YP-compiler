@@ -1,3 +1,31 @@
+# class section:
+class declared_class;
+
+class defined_class
+{
+private:
+    string name;
+    int count_fields;
+    char[10][10] arguments;
+
+public:
+    char defined_class(string name, char[10][10] arguments)
+    {
+        
+    }
+
+    string get_fields(int index_field)
+    {
+
+    }
+
+    char[10][10] get_arguments()
+    {
+
+    }
+}
+
+# global variable section:
 int basic_type_1;
 float basic_type_2;
 char basic_type_3;
@@ -11,23 +39,13 @@ char[2][2][2][2][2][2][2][2] array_type_3;
 int basic_function_1();
 int basic_function_2(int par_1, float par_2, string[1000000] par_3);
 
+defined_class object_type_1;
+defined_class object_type_2;
+
+# global function section:
 bool defined_function(int[1][169][999999999999999999999999999999999999999999] dummy_values)
 {
-    int a;
-    int a;
-    int a;
-    int a;
-}
-
-class declared_class;
-
-class defined_class
-{
-    int beans;
-    char cry_yell_break()
-    {
-        
-    }
+    
 }
 
 int text_constants()
@@ -39,8 +57,10 @@ int text_constants()
     true;
 }
 
+# entry point of the program:
 master()
 {
-    int[4242][25252] bb;
-    int[5][1][5151][2] blue_array;
+    # int[4242][25252] bb;
+    # int[5][1][5151][2] blue_array;
+    object_type_1.arguments;
 }

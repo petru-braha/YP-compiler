@@ -26,6 +26,7 @@
 - No union, struct definitions
 - No casting feature
 - No inheritence of classes(no protected access specifier)
+- No method overloading
 
 ## Brainstorming
 
@@ -135,10 +136,20 @@
         - if not done, by default every field will the a NULL value
     - object:
 
+### enconding of the values
+
+- adding to union those types
+- store values of textual constants
+
+
 ## To do
 
-0. no class/function declaration/definition after scope_begin (more precisely if it is not closed)
-1. don't use names not declared
-2. 
+0. don't use names not declared
+1. field access through object
+2. make comments not print
 3. complete the syntax documentation from the guidline
 4. complete final presentation
+
+### Done
+
+0. no class after scope_begin - managed by grammar alone

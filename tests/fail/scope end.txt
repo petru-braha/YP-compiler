@@ -1,0 +1,5 @@
+master()
+{
+    # int function_name(){
+    }
+}

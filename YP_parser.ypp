@@ -13,13 +13,15 @@ extern char* yytext;
 extern int yylineno;
 
 type_table t_table;
-int index_field = 0;
-std::string name_class;
-std::vector<std::string> fields();
+char* name_class;
+size_t count_fields;
+std::string* fields;
 
 symbol_table s_table("global");
 int error_count;
-int static static_count_fields;
+
+extern bool method_master_started;
+long long scopes_started;
 
 extern int yylex();
 void yyerror(const char * s);
@@ -32,7 +34,8 @@ void yyerror(const char * s);
     char* token_name;
 }
 
-%type master
+%type method_master
+%token method_type method_print
 %token R_CLS A_PRV A_PUB A_FLD
 %token OPERATOR_ASSIGN OPERATOR_RELTIN
 
@@ -45,9 +48,10 @@ void yyerror(const char * s);
 
 %%
 starting_symbol : global_declaration;
-scope_begin : '{';
-scope_end   : '}';
-master  : scope_begin statement_list;
+scope_begin : '{' { scopes_started++; };
+scope_end   : '}' { /* this case will never occur:
+                        if(scopes_started <= 0) yyerror("ending an unstarted scope");*/ scopes_started--; };
+method_master   : scope_begin statement_list;
 
 //------------------------------------------------
 
@@ -59,17 +63,18 @@ master  : scope_begin statement_list;
 * object */
 
 /*! class states */
-cls_decl: R_CLS S_NME ';'
+cls_decl: R_CLS S_NME ';' { /* this case will never occur: 
+                if(scopes_started) yyerror("classes can only be declared globally");*/ }
         | cls_defn
         ;
-arr_fild: fct_defn arr_fild
-        | var_decl arr_fild
-        | obj_decl arr_fild
+arr_fild: fct_defn { /*t_table[name_class].add_fct_field();*/ } arr_fild
+        | var_decl { /*t_table[name_class].add_var_field();*/ } arr_fild
+        | obj_decl { /*t_table[name_class].add_obj_field();*/ } arr_fild
         | A_PRV arr_fild
         | A_PUB arr_fild
-        | scope_end // {t_table.add(name_class.c_str(), fields, i); i = 0;}
+        | scope_end // { t_table.add(name_class.c_str(), fields, count_fields); count_fields = 0; }
         ;
-cls_defn: R_CLS S_NME scope_begin {name_class = $2;} arr_fild /* store the type */ ;
+cls_defn: R_CLS S_NME scope_begin { name_class = $2; /*t_table.add(name_class);*/ } arr_fild /* store the type */ ;
 /* cls_call is not needed for now */
 
 /*! function states */
@@ -117,7 +122,7 @@ global_declaration      : cls_decl global_declaration
 	                | fct_decl global_declaration
 	                | var_decl global_declaration
                         | obj_decl global_declaration
-                        | master | ';' global_declaration
+                        | method_master | ';' global_declaration
 	                ;
 local_declaration       : fct_decl local_declaration | fct_decl
                         | var_decl local_declaration | var_decl
