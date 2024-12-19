@@ -8,25 +8,29 @@
 #include "src/type_table.hpp"
 #include "src/symbol_table.hpp"
 
+extern int yylex();
+void yyerror(const char * s);
+
 extern FILE* yyin;
 extern char* yytext;
 extern int yylineno;
+extern bool method_master_started;
 
-type_table t_table;
-char* name_class;
-size_t count_fields;
-std::string* fields;
+#define SYNOPSIS nullptr
 
-symbol_table s_table("global");
+// declaration stuff
+#define LAST_SCOPE symbols.size() - 1
+std::string last_function;
+std::string last_variable;
+std::string last_object;
+std::string last_name_type;
+
+std::vector<symbol_table> symbols;
 int count_error;
 
-extern bool method_master_started;
-long long scopes_started;
-
-extern int yylex();
-void yyerror(const char * s);
 %}
 
+// the number of started scopes == symbols.size();
 //------------------------------------------------
 //------------------------------------------------
 
@@ -39,7 +43,7 @@ void yyerror(const char * s);
 %token R_CLS A_PRV A_PUB A_FLD
 %token OPERATOR_ASSIGN OPERATOR_RELTIN
 
-%token<token_name> S_NME R_TYP 
+%token<token_name> S_NME R_TYP
 %token<token_name> C_INT C_FLT C_CHR C_STR C_BOL
 
 %token R_SEQ_IF R_SEQ_FOR R_SEQ_WHL
@@ -47,10 +51,10 @@ void yyerror(const char * s);
 %start starting_symbol
 
 %%
-starting_symbol : global_declaration { if(0 == count_error) printf("the program was compiled correctly.\n"); } ;
-scope_begin : '{' { scopes_started++; };
-scope_end   : '}' { /* this case will never occur:
-                        if(scopes_started <= 0) yyerror("ending an unstarted scope");*/ scopes_started--; };
+starting_symbol : { symbols.emplace_back(); } 
+        global_declaration { if(0 == count_error) printf("the program was compiled correctly.\n"); } ;
+scope_begin : '{' { symbols.emplace_back(); };
+scope_end   : '}' { symbols.pop_back(); };
 method_master   : scope_begin statement_list;
 
 //------------------------------------------------
@@ -67,14 +71,17 @@ cls_decl: R_CLS S_NME ';' { /* this case will never occur:
                 if(scopes_started) yyerror("classes can only be declared globally");*/ }
         | cls_defn
         ;
-arr_fild: fct_defn { /*t_table[name_class].add_fct_field();*/ } arr_fild
-        | var_decl { /*t_table[name_class].add_var_field();*/ } arr_fild
-        | obj_decl { /*t_table[name_class].add_obj_field();*/ } arr_fild
+arr_fild: fct_defn { type_table[last_name_type].add_fct_field(last_function); } arr_fild
+        | var_decl { type_table[last_name_type].add_var_field(last_variable); } arr_fild
+        | obj_decl { type_table[last_name_type].add_obj_field(last_variable); } arr_fild
         | A_PRV arr_fild
         | A_PUB arr_fild
-        | scope_end // { t_table.add(name_class.c_str(), fields, count_fields); count_fields = 0; }
+        | scope_end
         ;
-cls_defn: R_CLS S_NME scope_begin { name_class = $2; /*t_table.add(name_class);*/ } arr_fild /* store the type */ ;
+cls_defn: R_CLS S_NME scope_begin { 
+                last_name_type = $2; 
+                type_add(last_name_type); } arr_fild
+        ;
 /* cls_call is not needed for now */
 
 /*! function states */
@@ -95,17 +102,32 @@ fct_call: S_NME '(' arr_argm ')' { /* provide return capacity */ } ;
         | S_NME '(' ')' { /* provide return capacity */ } ;
 
 /*! variable states */
-var_decl: R_TYP S_NME ';'{ /* initialize with defauld value */ /*table.add ($2, $1, nullptr);*/ }
+var_decl: R_TYP S_NME ';' { symbols[LAST_SCOPE].add($2, $1, SYNOPSIS); }
         | var_defn
         ;
-var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' /* (1) */ ;
+var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
+                instance_data *previous_declared = nullptr;
+                for(size_t i = LAST_SCOPE; i > 0; i--)
+                {
+                        previous_declared = symbols[LAST_SCOPE].exists($4);
+                        if(previous_declared &&
+                        ITEM_TYPE_VAR == previous_declared->get_item_type() &&
+                        0 == strcmp($1, previous_declared->get_data_type())
+                        ){ symbols[LAST_SCOPE].add($2, $1, SYNOPSIS); break; }
+
+                        if(previous_declared) yyerror("incorrect parameter");
+                }
+
+                if(nullptr = previous_declared)
+                        yyerror("identifier not found"); }
+                ;
 var_call: S_NME ;
 
 /*! object states */
-obj_decl: S_NME S_NME ';'
+obj_decl: S_NME S_NME ';' { if(!type_exists($1)) yyerror("undefined type"); }
         | obj_defn
         ;
-obj_defn: S_NME S_NME OPERATOR_ASSIGN scope_begin { /* search in the type table */ } scope_end ';' ;
+obj_defn: S_NME S_NME OPERATOR_ASSIGN scope_begin scope_end ';' { if(!type_exists($1)) yyerror("undefined type"); };
 fld_call: S_NME A_FLD S_NME { /* search type, search field */ } ;
 obj_call: S_NME ;
 
@@ -190,12 +212,18 @@ int main(int argc, char** argv)
 {
     if(argc != 2)
     {
-        printf("error: wrong number of arguments.\n");
+        yyerror("wrong number of arguments");
         return EXIT_FAILURE;
     }
 
-    yyin = fopen(argv[1],"r");
+    FILE* ptr = fopen(argv[1],"r");
+    if(nullptr == ptr)
+    {
+        yyerror("invalid file");
+        return EXIT_FAILURE;
+    }
+
+    yyin = ptr;
     yyparse();
-   
-    return 0;
+    return EXIT_SUCCESS;
 }

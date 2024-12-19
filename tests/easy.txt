@@ -62,7 +62,8 @@ int text_constants()
 # entry point of the program:
 master()
 {
-    Print(argc);
+    Print(basic_type_1);
+    basic_type_4 = Type(basic_type_1);
 
     # int[4242][25252] bb;
     # int[5][1][5151][2] blue_array;

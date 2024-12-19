@@ -9,22 +9,17 @@
 
 class symbol_table
 {
-    std::map<const char*, instance_data> ids;
-    std::string scope;
+    std::map<const char *, instance_data> ids;
 
 public:
     ~symbol_table() = default;
-    symbol_table() = delete;
-    symbol_table(const char *);
+    symbol_table() = default;
 
     void add(const char *,
              const char *,
              const char *);
-    bool exists(const char *) const;
+    const instance_data *exists(const char *) const;
 };
-
-symbol_table::symbol_table(const char *name)
-    : ids(), scope(name) {}
 
 void symbol_table::add(const char *name,
                        const char *type,
@@ -34,9 +29,11 @@ void symbol_table::add(const char *name,
     ids.insert({name, data});
 }
 
-bool symbol_table::exists(const char *name) const
+const instance_data *symbol_table::exists(const char *name) const
 {
-    return ids.find(name) != ids.end();
+    if (ids.find(name) != ids.end())
+        return &ids.at(name);
+    return nullptr;
 }
 
 #endif

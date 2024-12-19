@@ -1,37 +1,19 @@
 #ifndef __0TYPETABLE0__
 #define __0TYPETABLE0__
 
-#include <iostream>
 #include <map>
-#include <string>
-#include <utility>
-
 #include "type_data.hpp"
 
-class type_table
-{
-    std::map<const char *, type_data> ids;
+std::map<const char *, type_data> type_table;
 
-public:
-    void add(const char *);
-    void add(const char *, std::string *, int);
-    bool exists(const char *) const;
-};
-
-void type_table::add(const char *name,
-                     std::string *type,
-                     int line)
+void type_add(const char* name)
 {
-    type_data data(type, line);
-    ids.insert({name, data});
+    type_table.insert({name, type_data()});
 }
 
-//------------------------------------------------
-// constant methods:
-
-bool type_table::exists(const char *name) const
+bool type_exists(const char *name)
 {
-    return ids.find(name) != ids.end();
+    return type_table.find(name) != type_table.end();
 }
 
 #endif
