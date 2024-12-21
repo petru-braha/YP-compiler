@@ -9,7 +9,7 @@
 
 class symbol_table
 {
-    std::map<const char *, instance_data> ids;
+    std::map<std::string, instance_data> ids;
 
 public:
     ~symbol_table() = default;
@@ -26,12 +26,12 @@ void symbol_table::add(const char *name,
                        const char *line)
 {
     instance_data data(type, line);
-    ids.insert({name, data});
+    ids.insert({std::string(name), data});
 }
 
 const instance_data *symbol_table::exists(const char *name) const
 {
-    if (ids.find(name) != ids.end())
+    if (ids.find(std::string(name)) != ids.end())
         return &ids.at(name);
     return nullptr;
 }

@@ -1,7 +1,7 @@
-
 %{
 #include <stdio.h>
 #include <iostream>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -71,16 +71,16 @@ cls_decl: R_CLS S_NME ';' { /* this case will never occur:
                 if(scopes_started) yyerror("classes can only be declared globally");*/ }
         | cls_defn
         ;
-arr_fild: fct_defn { type_table[last_name_type].add_fct_field(last_function); } arr_fild
-        | var_decl { type_table[last_name_type].add_var_field(last_variable); } arr_fild
-        | obj_decl { type_table[last_name_type].add_obj_field(last_variable); } arr_fild
+arr_fild: fct_defn { type_table[last_name_type.c_str()].add_fct_field(last_function.c_str()); } arr_fild
+        | var_decl { type_table[last_name_type.c_str()].add_var_field(last_variable.c_str()); } arr_fild
+        | obj_decl { type_table[last_name_type.c_str()].add_obj_field(last_object.c_str()); } arr_fild
         | A_PRV arr_fild
         | A_PUB arr_fild
         | scope_end
         ;
 cls_defn: R_CLS S_NME scope_begin { 
                 last_name_type = $2; 
-                type_add(last_name_type); } arr_fild
+                type_add(last_name_type.c_str()); } arr_fild
         ;
 /* cls_call is not needed for now */
 
@@ -106,22 +106,38 @@ var_decl: R_TYP S_NME ';' { symbols[LAST_SCOPE].add($2, $1, SYNOPSIS); }
         | var_defn
         ;
 var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
-                instance_data *previous_declared = nullptr;
-                for(size_t i = LAST_SCOPE; i > 0; i--)
+                const instance_data *previous_declared = nullptr;
+                for(size_t i = LAST_SCOPE; ; i--)
                 {
                         previous_declared = symbols[LAST_SCOPE].exists($4);
+                        
                         if(previous_declared &&
                         ITEM_TYPE_VAR == previous_declared->get_item_type() &&
                         0 == strcmp($1, previous_declared->get_data_type())
                         ){ symbols[LAST_SCOPE].add($2, $1, SYNOPSIS); break; }
 
                         if(previous_declared) yyerror("incorrect parameter");
+
+                        if(0 == i) break;
                 }
 
-                if(nullptr = previous_declared)
-                        yyerror("identifier not found"); }
-                ;
-var_call: S_NME ;
+                if(nullptr == previous_declared)
+                        yyerror("identifier not found"); 
+                }
+        ;
+var_call: S_NME {
+                const instance_data *previous_declared = nullptr;
+                for(size_t i = LAST_SCOPE; i > 0; i--)
+                {
+                        previous_declared = symbols[LAST_SCOPE].exists($1);
+                        if(previous_declared)
+                                break;
+                }
+                
+                if(nullptr == previous_declared)
+                        yyerror("identifier not found");
+                }
+        ;
 
 /*! object states */
 obj_decl: S_NME S_NME ';' { if(!type_exists($1)) yyerror("undefined type"); }
@@ -205,6 +221,7 @@ condition_append: ';'
 // C++ functions:
 
 void yyerror(const char * s){
+    count_error++;
     printf("error - line %d: %s.\n", yylineno, s);
 }
 

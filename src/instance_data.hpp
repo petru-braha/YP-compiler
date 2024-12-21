@@ -100,4 +100,14 @@ instance_data::instance_data(const char *d_t,
 //------------------------------------------------
 // constant methods:
 
+unsigned char instance_data::get_item_type() const
+{
+    return item_type;
+}
+
+const char *instance_data::get_data_type() const
+{
+    return data_type.c_str();
+}
+
 #endif
