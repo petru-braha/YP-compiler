@@ -1,12 +1,15 @@
 # YP compiler
 
+You can find the romanian version of this document [here](/docs/README%20RO.md).
+
 ## Usage (in project's root)
 
-- when looking through the code, we recommand installing VS Code and the "Better Comments" extension.
+- for improved redability, we recommand VS Code and the "Better Comments" extension
 
-0. "./compile.sh" 
-1. "./run.out <file_path>" - compiles and runs the source code
-2. "./src/discard.sh" - delete the additional files
+0. "./setup.sh" - checks for bison and flex installation and builds our compiler
+0. "./compile.sh" - builds the custom compiler
+0. "./src/discard.sh" - delete the additional files
+0. "./run.out <file_path>" - compiles and runs the source code
 
 ## Features
 
@@ -162,8 +165,4 @@ string name = Type(a);
 1. field access through object
 2. make comments not print
 3. complete the syntax documentation from the guidline
-4. complete final presentation
-
-### Done
-
-0. no class after scope_begin - managed by grammar alone
+0. complete romanian version of this document
