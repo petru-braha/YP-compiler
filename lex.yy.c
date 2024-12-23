@@ -908,7 +908,7 @@ YY_RULE_SETUP
 case 13:
 YY_RULE_SETUP
 #line 44 "YP_lexer.l"
-{ yylval.token_name = strdup(yytext); 
+{ yylval.token_name = strdup(yytext);
     return R_TYP; }
 	YY_BREAK
 case 14:
@@ -977,7 +977,7 @@ YY_RULE_SETUP
 case 25:
 YY_RULE_SETUP
 #line 68 "YP_lexer.l"
-{ yylval.token_name = strdup(yytext);
+{ /*yylval.token_name = strdup(yytext);*/
     return OPERATOR_RELTIN; }
 	YY_BREAK
 case 26:

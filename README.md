@@ -161,7 +161,17 @@ string name = Type(a);
 
 ## To do
 
-0. don't use names not declared
+- the development is split in two segments:
+    - declaration
+        - recognition
+        - jumps
+        - synopsis
+        - assignation
+    - stataments
+        - recursion
+        - abstract syntax tree
+
+0. actual variable assignation
 1. field access through object
 2. ast - statament recognition and logic
 2. complete the syntax documentation from the guidline
@@ -170,3 +180,8 @@ string name = Type(a);
 
 2. complete romanian version of this document
 2. multi line comment
+
+## MORE BRAINSTORM
+
+- strdup => memory leaks!!!!!
+- every time i call a function it is an assignation of its variable + code jumps; we can view it as a struct in C

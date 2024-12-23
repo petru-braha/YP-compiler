@@ -36,6 +36,12 @@ int count_error;
 
 %union {
     char* token_name;
+    /*
+    int basic_int;
+    float basic_float;
+    char basic_chr;
+    std::string basic_str;
+    bool basic_bol; */
 }
 
 %type method_master
@@ -74,7 +80,7 @@ method_master   : scope_begin statement_list;
 
 /*! class states */
 cls_decl: R_CLS S_NME ';' { /* this case will never occur: 
-                if(scopes_started) yyerror("classes can only be declared globally");*/ }
+                if(scopes_started) yyerror("classes can only be declared globally");*/ free($2); }
         | cls_defn
         ;
 arr_fild: fct_defn { type_table[last_name_type.c_str()].add_fct_field(last_function.c_str()); } arr_fild
@@ -85,30 +91,33 @@ arr_fild: fct_defn { type_table[last_name_type.c_str()].add_fct_field(last_funct
         | scope_end
         ;
 cls_defn: R_CLS S_NME scope_begin {
-                last_name_type = $2; 
-                type_add(last_name_type.c_str()); } arr_fild
+                last_name_type = $2;
+                type_add(last_name_type.c_str()); } arr_fild { free($2); }
         ;
 /* cls_call is not needed for now */
 
 /*! function states */
-fct_decl: R_TYP S_NME fct_synp ';' // {table.add ($2, $1, nullptr);}
+fct_decl: R_TYP S_NME fct_synp ';' { /*table.add ($2, $1, nullptr);*/ 
+                free($1); free($2);
+                }
         | fct_defn
         ;
 fct_synp: '(' arr_parm ')'
         | '('')'
-arr_parm: R_TYP S_NME ',' arr_parm
+arr_parm: R_TYP S_NME ',' arr_parm { /* how to free? */ } // free($1); free($2); }
         | R_TYP S_NME
         ;
-fct_defn: R_TYP S_NME fct_synp scope_begin statement_list;
+fct_defn: R_TYP S_NME fct_synp scope_begin statement_list { free($1); free($2); } ;
 argument: S_NME | cst_call;
 arr_argm: argument ',' arr_argm
         | argument
         ;
-fct_call: S_NME '(' arr_argm ')' { /* provide return capacity */ } ;
-        | S_NME '(' ')' { /* provide return capacity */ } ;
+fct_call: S_NME '(' arr_argm ')' { /* provide return capacity */ free($1); } ;
+        | S_NME '(' ')' { /* provide return capacity */ free($1); } ;
 
 /*! variable states */
-var_decl: R_TYP S_NME ';' { symbols[LAST_SCOPE].add($2, $1, SYNOPSIS); }
+var_decl: R_TYP S_NME ';' { symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
+                free($1); free($2); }
         | var_defn
         ;
 var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
@@ -131,7 +140,8 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
                 }
 
                 if(nullptr == previous_declared)
-                  yyerror("identifier not found"); 
+                  yyerror("identifier not found");
+                free($1); free($2); free($4);
                 }
 
         | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
@@ -181,24 +191,26 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
                 // $2.synopsis = value;
                 delete (char*)value;
                 symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
+                free($1); free($2);
                 };
 
 var_call: S_NME {
                 const instance_data *previous_declared = nullptr;
-                for(size_t i = LAST_SCOPE; i > 0; i--)
+                for(size_t i = LAST_SCOPE; ; i--)
                 {
-                        previous_declared = symbols[LAST_SCOPE].exists($1);
-                        if(previous_declared)
-                                break;
+                  previous_declared = symbols[LAST_SCOPE].exists($1);
+                  if(previous_declared) break;
+                  if(0 == i) break;
                 }
                 
                 if(nullptr == previous_declared)
-                        yyerror("identifier not found");
-                }
-        ;
+                  yyerror("identifier not found");
+                free($1);
+                };
 
 /*! object states */
-obj_decl: S_NME S_NME ';' { if(!type_exists($1)) yyerror("undefined type"); }
+obj_decl: S_NME S_NME ';' { if(!type_exists($1)) yyerror("undefined type"); 
+                free($1); free($2); }
         | obj_defn
         ;
 obj_defn: S_NME S_NME OPERATOR_ASSIGN scope_begin scope_end ';' { if(!type_exists($1)) yyerror("undefined type"); };
@@ -206,11 +218,11 @@ fld_call: S_NME A_FLD S_NME { /* search type, search field */ } ;
 obj_call: S_NME ;
 
 /*! text constant states */
-cst_call: C_INT
-        | C_FLT
-        | C_CHR
-        | C_STR
-        | C_BOL
+cst_call: C_INT { free($1); }
+        | C_FLT { free($1); }
+        | C_CHR { free($1); }
+        | C_STR { free($1); }
+        | C_BOL { free($1); }
         ;
 
 /*! declaration parser */
@@ -218,7 +230,7 @@ global_declaration      : cls_decl global_declaration
 	                | fct_decl global_declaration
 	                | var_decl global_declaration
                         | obj_decl global_declaration
-                        | ';' global_declaration
+                        | ';' global_declaration | cst_call ';' global_declaration
                         | method_master
 	                ;
 local_declaration       : fct_decl local_declaration | fct_decl

@@ -41,7 +41,7 @@ comment #.*
 "public:" { return A_PUB; }
 "class" { return R_CLS; }
 
-{reserved_type}{type_array} { yylval.token_name = strdup(yytext); 
+{reserved_type}{type_array} { yylval.token_name = strdup(yytext);
     return R_TYP; }
 
 "if" { return R_SEQ_IF; }
@@ -65,7 +65,7 @@ comment #.*
 {comment}
 
 "<-"|"=" { return OPERATOR_ASSIGN; }
-"<"|">"|"<="|">="|"!="|"=="|"===" { yylval.token_name = strdup(yytext);
+"<"|">"|"<="|">="|"!="|"=="|"===" { /*yylval.token_name = strdup(yytext);*/
     return OPERATOR_RELTIN; }
 
 [ \t\r] ;

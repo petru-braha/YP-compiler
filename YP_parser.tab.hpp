@@ -83,8 +83,14 @@ union YYSTYPE
 #line 37 "YP_parser.ypp"
 
     char* token_name;
+    /*
+    int basic_int;
+    float basic_float;
+    char basic_chr;
+    std::string basic_str;
+    bool basic_bol; */
 
-#line 88 "YP_parser.tab.hpp"
+#line 94 "YP_parser.tab.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
