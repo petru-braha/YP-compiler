@@ -1,6 +1,12 @@
 int var;
 int nr = var;
 
+string text_0 = "te mananc";
+string text_1 = text_0;
+
+char gateway = 'a';
+char firewall = gateway;
+
 master(){
 
 }

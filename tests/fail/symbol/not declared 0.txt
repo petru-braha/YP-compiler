@@ -1,4 +1,4 @@
-bool number = true;
+bool number = value;
 
 master(){
 }

@@ -52,8 +52,13 @@ int count_error;
 %start starting_symbol
 
 %%
-starting_symbol : { symbols.emplace_back(); } 
-        global_declaration { if(0 == count_error) printf("the program was compiled correctly.\n"); } ;
+starting_symbol : { symbols.emplace_back(); } global_declaration { 
+                        if(0 == count_error) 
+                          printf("the program was compiled correctly.\n");
+                        else
+                          printf("the program has %d errors.\n", count_error);
+                        };
+
 scope_begin : '{' { symbols.emplace_back(); };
 scope_end   : '}' { symbols.pop_back(); };
 method_master   : scope_begin statement_list;
@@ -79,7 +84,7 @@ arr_fild: fct_defn { type_table[last_name_type.c_str()].add_fct_field(last_funct
         | A_PUB arr_fild
         | scope_end
         ;
-cls_defn: R_CLS S_NME scope_begin { 
+cls_defn: R_CLS S_NME scope_begin {
                 last_name_type = $2; 
                 type_add(last_name_type.c_str()); } arr_fild
         ;
@@ -110,62 +115,74 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
                 const instance_data *previous_declared = nullptr;
                 for(size_t i = LAST_SCOPE; ; i--)
                 {
-                        previous_declared = symbols[LAST_SCOPE].exists($4);
+                  previous_declared = symbols[LAST_SCOPE].exists($4);
                         
-                        if(previous_declared &&
-                        ITEM_TYPE_VAR == previous_declared->get_item_type() &&
-                        0 == strcmp($1, previous_declared->get_data_type())
-                        ){ symbols[LAST_SCOPE].add($2, $1, SYNOPSIS); break; }
+                  if(previous_declared &&
+                  ITEM_TYPE_VAR == previous_declared->get_item_type() &&
+                  0 == strcmp($1, previous_declared->get_data_type())
+                  ){ 
+                    symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
+                    // $2.synopsis = value;
+                    break;
+                  }
 
-                        if(previous_declared) yyerror("incorrect parameter");
-
-                        if(0 == i) break;
+                  if(previous_declared) yyerror("incorrect parameter type");
+                  if(0 == i) break;
                 }
 
                 if(nullptr == previous_declared)
-                        yyerror("identifier not found"); 
+                  yyerror("identifier not found"); 
                 }
+
         | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
-                
-                // check type portability
-                // if(0 != strcmp($1, $4)) yyerror("incorrect parameter");
-                
-                // convert
                 void* value = nullptr;
                 switch($4[0])
-                {
-                case 'i':
-                 value = new int(atoi($4));
-                 break;
-                case 'f':
-                 value = new float(std::stof($4));
-                 break;
-                case 'c':
-                 char temp[4];
-                 strcpy(temp, $4 + 1);
-                 temp[2] = '\0';
-                 value = new char(temp[0]);
-                 break;
-                case 's':
-                 std::string str($4 + 1);
-                 str[str.size() - 1] = '\0';
-                 value = new std::string(str);
-                 break;
-                //case 'b':
-                 //if('t' == $4[0])
-                  //value = new bool(true);
-                 //else
-                  //value = new bool(false);
-                 //break;
+                {     
+                default: // number
+                  if(nullptr == strchr($4, '.')) // int
+                  {
+                    if(strcmp($1, DATA_TYPE_INT))
+                      yyerror("incorrect parameter type");
+                    value = new int(atoi($4));
+                    break;
+                  }
+                  
+                  // float
+                  if(strcmp($1, DATA_TYPE_FLT))
+                    yyerror("incorrect parameter type");
+                  value = new float(std::stof($4));
+                  break;
 
-                default:
-                 break;
+                case '\'': // char
+                  if(strcmp($1, DATA_TYPE_CHR))
+                    yyerror("incorrect parameter type");
+                  value = new char($4[1]);
+                  break;
+                
+                case 't': // bool
+                  if(strcmp($1, DATA_TYPE_BOL))
+                    yyerror("incorrect parameter type");
+                  value = new bool(true);
+                  break;
+                case 'f': // bool
+                  if(strcmp($1, DATA_TYPE_BOL))
+                    yyerror("incorrect parameter type");
+                  value = new bool(false);
+                  break;
+                
+                case '\"': // string
+                  if(strcmp($1, DATA_TYPE_STR))
+                    yyerror("incorrect parameter type");
+                  std::string cst_str($4);
+                  value = new std::string(cst_str);
+                  break;
                 }
-                
-                
-                // add to symbol table
-        }
-        ;
+
+                // $2.synopsis = value;
+                delete (char*)value;
+                symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
+                };
+
 var_call: S_NME {
                 const instance_data *previous_declared = nullptr;
                 for(size_t i = LAST_SCOPE; i > 0; i--)
@@ -201,7 +218,8 @@ global_declaration      : cls_decl global_declaration
 	                | fct_decl global_declaration
 	                | var_decl global_declaration
                         | obj_decl global_declaration
-                        | method_master | ';' global_declaration
+                        | ';' global_declaration
+                        | method_master
 	                ;
 local_declaration       : fct_decl local_declaration | fct_decl
                         | var_decl local_declaration | var_decl

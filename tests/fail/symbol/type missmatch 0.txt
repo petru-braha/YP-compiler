@@ -1,0 +1,12 @@
+int a = 5.12;
+
+float b = 5;
+
+char c = 1;
+
+string lmao = 'c';
+
+master()
+{
+
+}
