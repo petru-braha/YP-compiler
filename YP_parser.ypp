@@ -39,6 +39,7 @@ int count_error;
 }
 
 %type method_master
+%type<token_name> cst_call
 %token<token_name> method_type method_print
 %token R_CLS A_PRV A_PUB A_FLD
 %token OPERATOR_ASSIGN OPERATOR_RELTIN
@@ -124,6 +125,46 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
                 if(nullptr == previous_declared)
                         yyerror("identifier not found"); 
                 }
+        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
+                
+                // check type portability
+                // if(0 != strcmp($1, $4)) yyerror("incorrect parameter");
+                
+                // convert
+                void* value = nullptr;
+                switch($4[0])
+                {
+                case 'i':
+                 value = new int(atoi($4));
+                 break;
+                case 'f':
+                 value = new float(std::stof($4));
+                 break;
+                case 'c':
+                 char temp[4];
+                 strcpy(temp, $4 + 1);
+                 temp[2] = '\0';
+                 value = new char(temp[0]);
+                 break;
+                case 's':
+                 std::string str($4 + 1);
+                 str[str.size() - 1] = '\0';
+                 value = new std::string(str);
+                 break;
+                //case 'b':
+                 //if('t' == $4[0])
+                  //value = new bool(true);
+                 //else
+                  //value = new bool(false);
+                 //break;
+
+                default:
+                 break;
+                }
+                
+                
+                // add to symbol table
+        }
         ;
 var_call: S_NME {
                 const instance_data *previous_declared = nullptr;

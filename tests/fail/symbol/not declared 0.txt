@@ -1,5 +1,4 @@
-int nr = var;
+bool number = true;
 
 master(){
-
 }

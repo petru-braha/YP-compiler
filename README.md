@@ -163,6 +163,10 @@ string name = Type(a);
 
 0. don't use names not declared
 1. field access through object
-2. make comments not print
-3. complete the syntax documentation from the guidline
-0. complete romanian version of this document
+2. ast - statament recognition and logic
+2. complete the syntax documentation from the guidline
+
+<br>
+
+2. complete romanian version of this document
+2. multi line comment

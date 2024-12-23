@@ -5,6 +5,7 @@
 
 void yyerror(const char * s);
 bool master_started = false;
+
 %}
 
 /* lexical description - regex */
