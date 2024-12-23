@@ -80,7 +80,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 37 "YP_parser.ypp"
+#line 53 "YP_parser.ypp"
 
     char* token_name;
     /*

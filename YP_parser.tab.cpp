@@ -98,8 +98,24 @@ std::string last_name_type;
 std::vector<symbol_table> symbols;
 int count_error;
 
+bool already_defined(const char* name)
+{
+  for(size_t i = LAST_SCOPE; ; i--)
+  {
+    if(symbols[LAST_SCOPE].exists(name))
+    {
+      yyerror("variable already defined");
+      return true;
+    }
 
-#line 103 "YP_parser.tab.cpp"
+    if(0 == i) break;
+  }
+
+  return false;
+}
+
+
+#line 119 "YP_parser.tab.cpp"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -575,14 +591,14 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    61,    61,    61,    68,    69,    70,    82,    84,    86,
-      86,    87,    87,    88,    88,    89,    90,    91,    93,    93,
-     100,   103,   105,   106,   107,   108,   110,   111,   111,   112,
-     113,   115,   116,   119,   121,   123,   147,   197,   212,   213,
-     215,   216,   220,   221,   222,   223,   224,   228,   229,   230,
-     231,   232,   232,   233,   243,   244,   245,   249,   250,   251,
-     252,   253,   257,   258,   259,   261,   265,   265,   268,   269,
-     270,   274
+       0,    77,    77,    77,    84,    85,    86,    98,   100,   102,
+     102,   103,   103,   104,   104,   105,   106,   107,   109,   109,
+     116,   119,   121,   122,   123,   124,   126,   127,   127,   128,
+     129,   131,   132,   135,   137,   139,   165,   218,   233,   235,
+     237,   238,   242,   243,   244,   245,   246,   250,   251,   252,
+     253,   254,   254,   255,   265,   266,   267,   271,   272,   273,
+     274,   275,   279,   280,   281,   283,   287,   287,   290,   291,
+     292,   296
 };
 #endif
 
@@ -1234,143 +1250,147 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* $@1: %empty  */
-#line 61 "YP_parser.ypp"
+#line 77 "YP_parser.ypp"
                   { symbols.emplace_back(); }
-#line 1240 "YP_parser.tab.cpp"
+#line 1256 "YP_parser.tab.cpp"
     break;
 
   case 3: /* starting_symbol: $@1 global_declaration  */
-#line 61 "YP_parser.ypp"
+#line 77 "YP_parser.ypp"
                                                                  { 
                         if(0 == count_error) 
                           printf("the program was compiled correctly.\n");
                         else
                           printf("the program has %d errors.\n", count_error);
                         }
-#line 1251 "YP_parser.tab.cpp"
+#line 1267 "YP_parser.tab.cpp"
     break;
 
   case 4: /* scope_begin: '{'  */
-#line 68 "YP_parser.ypp"
+#line 84 "YP_parser.ypp"
                   { symbols.emplace_back(); }
-#line 1257 "YP_parser.tab.cpp"
+#line 1273 "YP_parser.tab.cpp"
     break;
 
   case 5: /* scope_end: '}'  */
-#line 69 "YP_parser.ypp"
+#line 85 "YP_parser.ypp"
                   { symbols.pop_back(); }
-#line 1263 "YP_parser.tab.cpp"
+#line 1279 "YP_parser.tab.cpp"
     break;
 
   case 7: /* cls_decl: R_CLS S_NME ';'  */
-#line 82 "YP_parser.ypp"
+#line 98 "YP_parser.ypp"
                           { /* this case will never occur: 
                 if(scopes_started) yyerror("classes can only be declared globally");*/ free((yyvsp[-1].token_name)); }
-#line 1270 "YP_parser.tab.cpp"
+#line 1286 "YP_parser.tab.cpp"
     break;
 
   case 9: /* $@2: %empty  */
-#line 86 "YP_parser.ypp"
+#line 102 "YP_parser.ypp"
                    { type_table[last_name_type.c_str()].add_fct_field(last_function.c_str()); }
-#line 1276 "YP_parser.tab.cpp"
+#line 1292 "YP_parser.tab.cpp"
     break;
 
   case 11: /* $@3: %empty  */
-#line 87 "YP_parser.ypp"
+#line 103 "YP_parser.ypp"
                    { type_table[last_name_type.c_str()].add_var_field(last_variable.c_str()); }
-#line 1282 "YP_parser.tab.cpp"
+#line 1298 "YP_parser.tab.cpp"
     break;
 
   case 13: /* $@4: %empty  */
-#line 88 "YP_parser.ypp"
+#line 104 "YP_parser.ypp"
                    { type_table[last_name_type.c_str()].add_obj_field(last_object.c_str()); }
-#line 1288 "YP_parser.tab.cpp"
+#line 1304 "YP_parser.tab.cpp"
     break;
 
   case 18: /* $@5: %empty  */
-#line 93 "YP_parser.ypp"
+#line 109 "YP_parser.ypp"
                                   {
                 last_name_type = (yyvsp[-1].token_name);
                 type_add(last_name_type.c_str()); }
-#line 1296 "YP_parser.tab.cpp"
+#line 1312 "YP_parser.tab.cpp"
     break;
 
   case 19: /* cls_defn: R_CLS S_NME scope_begin $@5 arr_fild  */
-#line 95 "YP_parser.ypp"
+#line 111 "YP_parser.ypp"
                                                              { free((yyvsp[-3].token_name)); }
-#line 1302 "YP_parser.tab.cpp"
+#line 1318 "YP_parser.tab.cpp"
     break;
 
   case 20: /* fct_decl: R_TYP S_NME fct_synp ';'  */
-#line 100 "YP_parser.ypp"
+#line 116 "YP_parser.ypp"
                                    { /*table.add ($2, $1, nullptr);*/ 
                 free((yyvsp[-3].token_name)); free((yyvsp[-2].token_name));
                 }
-#line 1310 "YP_parser.tab.cpp"
+#line 1326 "YP_parser.tab.cpp"
     break;
 
   case 24: /* arr_parm: R_TYP S_NME ',' arr_parm  */
-#line 107 "YP_parser.ypp"
+#line 123 "YP_parser.ypp"
                                    { /* how to free? */ }
-#line 1316 "YP_parser.tab.cpp"
+#line 1332 "YP_parser.tab.cpp"
     break;
 
   case 26: /* fct_defn: R_TYP S_NME fct_synp scope_begin statement_list  */
-#line 110 "YP_parser.ypp"
+#line 126 "YP_parser.ypp"
                                                           { free((yyvsp[-4].token_name)); free((yyvsp[-3].token_name)); }
-#line 1322 "YP_parser.tab.cpp"
+#line 1338 "YP_parser.tab.cpp"
     break;
 
   case 31: /* fct_call: S_NME '(' arr_argm ')'  */
-#line 115 "YP_parser.ypp"
+#line 131 "YP_parser.ypp"
                                  { /* provide return capacity */ free((yyvsp[-3].token_name)); }
-#line 1328 "YP_parser.tab.cpp"
+#line 1344 "YP_parser.tab.cpp"
     break;
 
   case 32: /* fct_call: S_NME '(' ')'  */
-#line 116 "YP_parser.ypp"
+#line 132 "YP_parser.ypp"
                         { /* provide return capacity */ free((yyvsp[-2].token_name)); }
-#line 1334 "YP_parser.tab.cpp"
+#line 1350 "YP_parser.tab.cpp"
     break;
 
   case 33: /* var_decl: R_TYP S_NME ';'  */
-#line 119 "YP_parser.ypp"
-                          { symbols[LAST_SCOPE].add((yyvsp[-1].token_name), (yyvsp[-2].token_name), SYNOPSIS);
+#line 135 "YP_parser.ypp"
+                          { if(false == already_defined((yyvsp[-1].token_name))) symbols[LAST_SCOPE].add((yyvsp[-1].token_name), (yyvsp[-2].token_name), SYNOPSIS);
                 free((yyvsp[-2].token_name)); free((yyvsp[-1].token_name)); }
-#line 1341 "YP_parser.tab.cpp"
+#line 1357 "YP_parser.tab.cpp"
     break;
 
   case 35: /* var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';'  */
-#line 123 "YP_parser.ypp"
+#line 139 "YP_parser.ypp"
                                                 {
-                const instance_data *previous_declared = nullptr;
+                bool variable_defined = already_defined((yyvsp[-3].token_name));
+                
+                const instance_data *argument_defined = nullptr;
                 for(size_t i = LAST_SCOPE; ; i--)
                 {
-                  previous_declared = symbols[LAST_SCOPE].exists((yyvsp[-1].token_name));
+                  argument_defined = symbols[LAST_SCOPE].exists((yyvsp[-1].token_name));
                         
-                  if(previous_declared &&
-                  ITEM_TYPE_VAR == previous_declared->get_item_type() &&
-                  0 == strcmp((yyvsp[-4].token_name), previous_declared->get_data_type())
-                  ){ 
+                  if(argument_defined &&
+                  ITEM_TYPE_VAR == argument_defined->get_item_type() &&
+                  0 == strcmp((yyvsp[-4].token_name), argument_defined->get_data_type()) &&
+                  false == variable_defined){ 
                     symbols[LAST_SCOPE].add((yyvsp[-3].token_name), (yyvsp[-4].token_name), SYNOPSIS);
                     // $2.synopsis = value;
                     break;
                   }
 
-                  if(previous_declared) yyerror("incorrect parameter type");
+                  if(argument_defined) yyerror("incorrect parameter type");
                   if(0 == i) break;
                 }
 
-                if(nullptr == previous_declared)
+                if(nullptr == argument_defined)
                   yyerror("identifier not found");
                 free((yyvsp[-4].token_name)); free((yyvsp[-3].token_name)); free((yyvsp[-1].token_name));
                 }
-#line 1369 "YP_parser.tab.cpp"
+#line 1387 "YP_parser.tab.cpp"
     break;
 
   case 36: /* var_defn: R_TYP S_NME OPERATOR_ASSIGN cst_call ';'  */
-#line 147 "YP_parser.ypp"
+#line 165 "YP_parser.ypp"
                                                    {
+                bool variable_defined = already_defined((yyvsp[-3].token_name));
+                
                 void* value = nullptr;
                 switch((yyvsp[-1].token_name)[0])
                 {     
@@ -1416,86 +1436,88 @@ yyreduce:
 
                 // $2.synopsis = value;
                 delete (char*)value;
-                symbols[LAST_SCOPE].add((yyvsp[-3].token_name), (yyvsp[-4].token_name), SYNOPSIS);
+                if(false == variable_defined)
+                  symbols[LAST_SCOPE].add((yyvsp[-3].token_name), (yyvsp[-4].token_name), SYNOPSIS);
                 free((yyvsp[-4].token_name)); free((yyvsp[-3].token_name));
                 }
-#line 1423 "YP_parser.tab.cpp"
+#line 1444 "YP_parser.tab.cpp"
     break;
 
   case 37: /* var_call: S_NME  */
-#line 197 "YP_parser.ypp"
+#line 218 "YP_parser.ypp"
                 {
-                const instance_data *previous_declared = nullptr;
+                const instance_data *argument_defined = nullptr;
                 for(size_t i = LAST_SCOPE; ; i--)
                 {
-                  previous_declared = symbols[LAST_SCOPE].exists((yyvsp[0].token_name));
-                  if(previous_declared) break;
+                  argument_defined = symbols[LAST_SCOPE].exists((yyvsp[0].token_name));
+                  if(argument_defined) break;
                   if(0 == i) break;
                 }
                 
-                if(nullptr == previous_declared)
+                if(nullptr == argument_defined)
                   yyerror("identifier not found");
                 free((yyvsp[0].token_name));
                 }
-#line 1441 "YP_parser.tab.cpp"
+#line 1462 "YP_parser.tab.cpp"
     break;
 
   case 38: /* obj_decl: S_NME S_NME ';'  */
-#line 212 "YP_parser.ypp"
-                          { if(!type_exists((yyvsp[-2].token_name))) yyerror("undefined type"); }
-#line 1447 "YP_parser.tab.cpp"
+#line 233 "YP_parser.ypp"
+                          { if(!type_exists((yyvsp[-2].token_name))) yyerror("undefined type"); 
+                free((yyvsp[-2].token_name)); free((yyvsp[-1].token_name)); }
+#line 1469 "YP_parser.tab.cpp"
     break;
 
   case 40: /* obj_defn: S_NME S_NME OPERATOR_ASSIGN scope_begin scope_end ';'  */
-#line 215 "YP_parser.ypp"
+#line 237 "YP_parser.ypp"
                                                                 { if(!type_exists((yyvsp[-5].token_name))) yyerror("undefined type"); }
-#line 1453 "YP_parser.tab.cpp"
+#line 1475 "YP_parser.tab.cpp"
     break;
 
   case 41: /* fld_call: S_NME A_FLD S_NME  */
-#line 216 "YP_parser.ypp"
+#line 238 "YP_parser.ypp"
                             { /* search type, search field */ }
-#line 1459 "YP_parser.tab.cpp"
+#line 1481 "YP_parser.tab.cpp"
     break;
 
   case 42: /* cst_call: C_INT  */
-#line 220 "YP_parser.ypp"
+#line 242 "YP_parser.ypp"
                 { free((yyvsp[0].token_name)); }
-#line 1465 "YP_parser.tab.cpp"
+#line 1487 "YP_parser.tab.cpp"
     break;
 
   case 43: /* cst_call: C_FLT  */
-#line 221 "YP_parser.ypp"
+#line 243 "YP_parser.ypp"
                 { free((yyvsp[0].token_name)); }
-#line 1471 "YP_parser.tab.cpp"
+#line 1493 "YP_parser.tab.cpp"
     break;
 
   case 44: /* cst_call: C_CHR  */
-#line 222 "YP_parser.ypp"
+#line 244 "YP_parser.ypp"
                 { free((yyvsp[0].token_name)); }
-#line 1477 "YP_parser.tab.cpp"
+#line 1499 "YP_parser.tab.cpp"
     break;
 
   case 45: /* cst_call: C_STR  */
-#line 223 "YP_parser.ypp"
+#line 245 "YP_parser.ypp"
                 { free((yyvsp[0].token_name)); }
-#line 1483 "YP_parser.tab.cpp"
+#line 1505 "YP_parser.tab.cpp"
     break;
 
   case 46: /* cst_call: C_BOL  */
-#line 224 "YP_parser.ypp"
+#line 246 "YP_parser.ypp"
                 { free((yyvsp[0].token_name)); }
-#line 1489 "YP_parser.tab.cpp"
+#line 1511 "YP_parser.tab.cpp"
     break;
 
   case 61: /* statement_parse: method_print ';'  */
-#line 253 "YP_parser.ypp"
+#line 275 "YP_parser.ypp"
                                    { std::string s = (yyvsp[-1].token_name) + 6; s[s.size() - 1] = '\0'; printf("%s", s.c_str()); }
-#line 1495 "YP_parser.tab.cpp"
+#line 1517 "YP_parser.tab.cpp"
     break;
 
 
-#line 1499 "YP_parser.tab.cpp"
+#line 1521 "YP_parser.tab.cpp"
 
       default: break;
     }
@@ -1688,7 +1710,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 287 "YP_parser.ypp"
+#line 309 "YP_parser.ypp"
 
 
 //------------------------------------------------

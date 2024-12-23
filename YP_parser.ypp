@@ -28,6 +28,22 @@ std::string last_name_type;
 std::vector<symbol_table> symbols;
 int count_error;
 
+bool already_defined(const char* name)
+{
+  for(size_t i = LAST_SCOPE; ; i--)
+  {
+    if(symbols[LAST_SCOPE].exists(name))
+    {
+      yyerror("variable already defined");
+      return true;
+    }
+
+    if(0 == i) break;
+  }
+
+  return false;
+}
+
 %}
 
 // the number of started scopes == symbols.size();
@@ -116,35 +132,39 @@ fct_call: S_NME '(' arr_argm ')' { /* provide return capacity */ free($1); } ;
         | S_NME '(' ')' { /* provide return capacity */ free($1); } ;
 
 /*! variable states */
-var_decl: R_TYP S_NME ';' { symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
+var_decl: R_TYP S_NME ';' { if(false == already_defined($2)) symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
                 free($1); free($2); }
         | var_defn
         ;
 var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
-                const instance_data *previous_declared = nullptr;
+                bool variable_defined = already_defined($2);
+                
+                const instance_data *argument_defined = nullptr;
                 for(size_t i = LAST_SCOPE; ; i--)
                 {
-                  previous_declared = symbols[LAST_SCOPE].exists($4);
+                  argument_defined = symbols[LAST_SCOPE].exists($4);
                         
-                  if(previous_declared &&
-                  ITEM_TYPE_VAR == previous_declared->get_item_type() &&
-                  0 == strcmp($1, previous_declared->get_data_type())
-                  ){ 
+                  if(argument_defined &&
+                  ITEM_TYPE_VAR == argument_defined->get_item_type() &&
+                  0 == strcmp($1, argument_defined->get_data_type()) &&
+                  false == variable_defined){ 
                     symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
                     // $2.synopsis = value;
                     break;
                   }
 
-                  if(previous_declared) yyerror("incorrect parameter type");
+                  if(argument_defined) yyerror("incorrect parameter type");
                   if(0 == i) break;
                 }
 
-                if(nullptr == previous_declared)
+                if(nullptr == argument_defined)
                   yyerror("identifier not found");
                 free($1); free($2); free($4);
                 }
 
         | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
+                bool variable_defined = already_defined($2);
+                
                 void* value = nullptr;
                 switch($4[0])
                 {     
@@ -190,20 +210,21 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
 
                 // $2.synopsis = value;
                 delete (char*)value;
-                symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
+                if(false == variable_defined)
+                  symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
                 free($1); free($2);
                 };
 
 var_call: S_NME {
-                const instance_data *previous_declared = nullptr;
+                const instance_data *argument_defined = nullptr;
                 for(size_t i = LAST_SCOPE; ; i--)
                 {
-                  previous_declared = symbols[LAST_SCOPE].exists($1);
-                  if(previous_declared) break;
+                  argument_defined = symbols[LAST_SCOPE].exists($1);
+                  if(argument_defined) break;
                   if(0 == i) break;
                 }
                 
-                if(nullptr == previous_declared)
+                if(nullptr == argument_defined)
                   yyerror("identifier not found");
                 free($1);
                 };
