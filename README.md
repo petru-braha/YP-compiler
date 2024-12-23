@@ -13,6 +13,8 @@ You can find the romanian version of this document [here](/docs/README%20RO.md).
 
 ## Features
 
+- TDD - this project is a test-driven development
+
 - C's main functions in our program is named master:
     - the program begins by calling master
     - master() doesn't return any value
