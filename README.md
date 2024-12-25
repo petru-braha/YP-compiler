@@ -144,7 +144,8 @@ You can find the romanian version of this document [here](/docs/README%20RO.md).
 ### enconding of the values
 
 - adding to union those types
-- store values of textual constants
+- store type, values as std::string for each variable name
+- synopsis for a function is an array of objects/variables
 
 ### standard methods
 

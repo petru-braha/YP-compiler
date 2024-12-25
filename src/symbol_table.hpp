@@ -3,8 +3,6 @@
 
 #include <map>
 #include <string>
-
-#include "synopsis.hpp"
 #include "instance_data.hpp"
 
 class symbol_table

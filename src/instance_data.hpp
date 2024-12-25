@@ -1,9 +1,10 @@
 #ifndef __0INFO0__
 #define __0INFO0__
 
-#include <iostream>
+#include <stdio.h>
 #include <string>
-#include "synopsis.hpp"
+
+void yyerror(const char * s);
 
 constexpr unsigned char ITEM_TYPE_VAR = 0;
 constexpr unsigned char ITEM_TYPE_FCT = 1;
@@ -25,7 +26,7 @@ class instance_data
 {
     unsigned char item_type;
     std::string data_type;
-    synopsis *instance_synopsis;
+    void *instance_synopsis;
 
 public:
     instance_data();
@@ -46,11 +47,7 @@ instance_data::instance_data(const char *d_t,
 {
     // verification
     if (nullptr == d_t)
-    {
-        std::cout
-            << "error - instance_data: wrong parameters.\n:";
-        throw -1;
-    }
+        yyerror("instance_data: wrong parameters");
 
     // define item_type
     bool reserved = false;
