@@ -13,6 +13,8 @@ You can find the romanian version of this document [here](/docs/README%20RO.md).
 
 ## Features
 
+- in a function's synopsis YP complier allows default values for each parameter
+
 - TDD - this project is a test-driven development
 
 - C's main functions in our program is named master:

@@ -3,35 +3,28 @@
 
 #include <map>
 #include <string>
-#include "instance_data.hpp"
+#include "variable_data.hpp"
+#include "function_data.hpp"
+#include "object_data.hpp"
 
 class symbol_table
 {
-    std::map<std::string, instance_data> ids;
+    // identifier => data
+    std::map<std::string, variable_data> var;
+    std::map<std::string, function_data> fct;
+    std::map<std::string, object_data> obj;
 
 public:
     ~symbol_table() = default;
     symbol_table() = default;
 
-    void add(const char *,
-             const char *,
-             const char *);
-    const instance_data *exists(const char *) const;
+    symbol_table &variable_add(const std::string &, const variable_data &);
+    symbol_table &function_add(const std::string &, const function_data &);
+    symbol_table &object_add(const std::string &, const object_data &);
+
+    variable_data *variable_exists(const std::string &);
+    function_data *function_exists(const std::string &);
+    object_data *object_exists(const std::string &);
 };
-
-void symbol_table::add(const char *name,
-                       const char *type,
-                       const char *line)
-{
-    instance_data data(type, line);
-    ids.insert({std::string(name), data});
-}
-
-const instance_data *symbol_table::exists(const char *name) const
-{
-    if (ids.find(std::string(name)) != ids.end())
-        return &ids.at(name);
-    return nullptr;
-}
 
 #endif

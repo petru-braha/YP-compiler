@@ -1,12 +1,10 @@
 %{
 #include <stdio.h>
-#include <iostream>
 #include <cstring>
 #include <string>
 #include <vector>
 
-#include "src/type_table.hpp"
-#include "src/symbol_table.hpp"
+#include "YP_utility.hpp"
 
 extern int yylex();
 void yyerror(const char * s);
@@ -15,8 +13,6 @@ extern FILE* yyin;
 extern char* yytext;
 extern int yylineno;
 extern bool method_master_started;
-
-#define SYNOPSIS nullptr
 
 // declaration stuff
 #define LAST_SCOPE symbols.size() - 1
