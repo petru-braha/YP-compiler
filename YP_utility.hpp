@@ -15,7 +15,7 @@ void yyerror(const char *s);
 #include <src/symbol_table.hpp>
 #include <src/type_table.hpp>
 
-/* why it is allowed?
+/* why is it allowed?
  * this parent class only connects derived classes
  * the actual checkings are individual for both variable_data and object_data
  */
