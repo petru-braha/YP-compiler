@@ -17,7 +17,7 @@ public:
                   const std::vector<item_data *> &);
 
     function_data &set_parameter(const size_t,
-                                 item_data *const);
+                                 item_data * const);
 
     const std::string &get_return_type() const;
     item_data *get_parameter(const size_t) const;

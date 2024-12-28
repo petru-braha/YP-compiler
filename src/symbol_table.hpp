@@ -25,6 +25,17 @@ public:
     variable_data *variable_exists(const std::string &);
     function_data *function_exists(const std::string &);
     object_data *object_exists(const std::string &);
+
+    size_t get_count_variable() const;
+    size_t get_count_object() const;
+    size_t get_count_declared() const;
+
+    typedef std::map<std::string, variable_data>::iterator var_it;
+    typedef std::map<std::string, object_data>::iterator obj_it;
+    var_it variable_begin();
+    var_it variable_end();
+    obj_it object_begin();
+    obj_it object_end();
 };
 
 #endif

@@ -12,15 +12,16 @@ class object_data final : public item_data
     std::vector<item_data *> attributes;
 
 public:
-    ~object_data() = default;
+    ~object_data();
     object_data(std::string &);
     object_data(std::string &,
                 const std::vector<item_data *> &);
     object_data(const object_data &);
 
     object_data &set_attribute(const size_t,
-                               item_data *const);
+                               item_data *);
 
+    size_t get_count_attributes() const;
     item_data *get_attribute(const size_t) const;
 };
 

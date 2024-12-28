@@ -176,10 +176,12 @@ string name = Type(a);
         - recursion
         - abstract syntax tree
 
-0. actual variable assignation
-1. field access through object
-2. ast - statament recognition and logic
-2. complete the syntax documentation from the guidline
+0. object data constructors
+1. tbh i don't want to add a name field for each symbol table (it's just useless...)
+2. actual variable assignation
+3. field access through object
+4. ast - statament recognition and logic
+5. complete the syntax documentation from the guidline
 
 <br>
 
