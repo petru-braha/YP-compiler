@@ -303,8 +303,8 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
               
             free($1); free($2); free($4);
           }
-        | S_NME S_NME {
-            if(!type_exists($1))
+        | S_NME S_NME { /*TODO: HARDEST THINGGGGGG */
+            if(false == type_exists($1))
               yyerror("undefined type");
             else
             {
