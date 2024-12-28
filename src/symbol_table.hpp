@@ -7,6 +7,12 @@
 #include "function_data.hpp"
 #include "object_data.hpp"
 
+/* commments:
+* exists method are useful just
+* already defnied identifiers have to be searched in all scopes
+* not in just one symbol table
+*/
+
 class symbol_table
 {
     // identifier => data
@@ -18,13 +24,14 @@ public:
     ~symbol_table() = default;
     symbol_table() = default;
 
-    symbol_table &variable_add(const std::string &, const variable_data &);
-    symbol_table &function_add(const std::string &, const function_data &);
-    symbol_table &object_add(const std::string &, const object_data &);
+    symbol_table &variable_insert(const std::string &, const variable_data &);
+    symbol_table &function_insert(const std::string &, const function_data &);
+    symbol_table &object_insert(const std::string &, const object_data &);
 
     variable_data *variable_exists(const std::string &);
     function_data *function_exists(const std::string &);
     object_data *object_exists(const std::string &);
+    bool exists(const std::string &) const;
 
     size_t get_count_variable() const;
     size_t get_count_object() const;

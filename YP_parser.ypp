@@ -3,7 +3,6 @@
 #include <cstring>
 #include <string>
 #include <vector>
-
 #include "YP_utility.hpp"
 
 extern int yylex();
@@ -14,35 +13,30 @@ extern char* yytext;
 extern int yylineno;
 extern bool method_master_started;
 
-// declaration stuff
-#define LAST_SCOPE symbols.size() - 1
-std::string last_function;
-std::string last_variable;
-std::string last_object;
 std::string last_name_type;
 
 std::vector<symbol_table> symbols;
-int count_error;
+#define LAST_SCOPE symbols.size() - 1
 
-bool already_defined(const char* name)
-{
-  for(size_t i = LAST_SCOPE; ; i--)
-  {
-    if(symbols[LAST_SCOPE].exists(name))
-    {
-      yyerror("variable already defined");
-      return true;
-    }
-
-    if(0 == i) break;
-  }
-
-  return false;
-}
-
+#include "src/dev/error.hpp"
 %}
 
-// the number of started scopes == symbols.size();
+/* comments:
+ * class == type
+ * the number of started scopes == symbols.size();
+ 
+ * states:
+ ** declaration
+ ** definition
+ ** call
+ * order of state presentation: 
+ ** class
+ ** variable
+ ** function
+ ** object
+ 
+ */
+
 //------------------------------------------------
 //------------------------------------------------
 
@@ -71,11 +65,11 @@ bool already_defined(const char* name)
 
 %%
 starting_symbol : { symbols.emplace_back(); } global_declaration { 
-                        if(0 == count_error) 
-                          printf("the program was compiled correctly.\n");
-                        else
-                          printf("the program has %d errors.\n", count_error);
-                        };
+                      if(0 == count_error) 
+                        printf("the program was compiled correctly.\n");
+                      else
+                        printf("the program has %d errors.\n", count_error);
+                      };
 
 scope_begin : '{' { symbols.emplace_back(); };
 scope_end   : '}' { symbols.pop_back(); };
@@ -83,30 +77,159 @@ method_master   : scope_begin statement_list;
 
 //------------------------------------------------
 
-/* class = type */
-/* declaration, definition and call states for class
-* class
-* function
-* variable
-* object */
-
 /*! class states */
-cls_decl: R_CLS S_NME ';' { /* this case will never occur: 
-                if(scopes_started) yyerror("classes can only be declared globally");*/ free($2); }
-        | cls_defn
+
+cls_decl: R_CLS S_NME ';' { 
+            if(LAST_SCOPE) 
+              yyerror("classes can only be declared globally"); 
+              free($2); 
+          }
+        | cls_defn { 
+            if(LAST_SCOPE) 
+              yyerror("classes can only be declared globally"); 
+          }
         ;
-arr_fild: fct_defn { type_table[last_name_type.c_str()].add_fct_field(last_function.c_str()); } arr_fild
-        | var_decl { type_table[last_name_type.c_str()].add_var_field(last_variable.c_str()); } arr_fild
-        | obj_decl { type_table[last_name_type.c_str()].add_obj_field(last_object.c_str()); } arr_fild
-        | A_PRV arr_fild
-        | A_PUB arr_fild
+
+cls_defn: R_CLS S_NME '{' { // scope_begin => emplaces back
+            last_name_type = $2;
+            type_insert(last_name_type); }
+            arr_fild { last_name_type.clear(); 
+            free($2); 
+          }
+        ;
+
+arr_fild: R_TYP S_NME ';' { /* variable */
+            if(type_table[last_name_type].exists($2))
+              yyerror("identifier already defined");
+            else
+            {
+              variable_data v_data($1);
+              type_table[last_name_type].variable_insert($2, v_data);
+            }
+            
+            free($1); free($2);
+          } arr_fild
+        | R_TYP S_NME OPERATOR_ASSIGN S_NME ';' { /* variable */
+            if(type_table[last_name_type].exists($2))
+            {
+              yyerror("identifier already defined");
+              if(false == type_table[last_name_type].exists($4))
+                yyerror("identifier not found");
+            }
+            else
+            {
+              const variable_data *arg_data = 
+                type_table[last_name_type].variable_exists($4);
+              if(nullptr == arg_data)
+                yyerror("identifier not found");
+              else if(std::string($1) != arg_data->get_data_type())
+                yyerror("incorrect parameter type");
+              else
+              {
+                variable_data v_data($1, arg_data->get_value());
+                type_table[last_name_type].variable_insert($2, v_data);
+              }
+            }
+            
+            free($1); free($2); free($4);
+          }
+        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' { /* variable */
+            if(type_table[last_name_type].exists($2))
+              yyerror("identifier already defined");
+            else if(is_type_compatible($1, $4))
+            {
+                variable_data v_data($1, $4);
+                type_table[last_name_type].variable_insert($2, v_data);
+            }
+
+            free($1); free($2); free($4);
+          }
+
+        | R_TYP S_NME fct_synp scope_begin statement_list { /*? function */
+            type_table[last_name_type].function_insert(last_function.c_str());
+            free($1); free($2); } arr_fild
+        
+        | obj_decl { type_table[last_name_type].object_insert(last_object.c_str()); } arr_fild
+        
+        | A_PRV arr_fild /*TODO: semantics*/
+        | A_PUB arr_fild /*TODO: semantics*/
         | scope_end
         ;
-cls_defn: R_CLS S_NME scope_begin {
-                last_name_type = $2;
-                type_add(last_name_type.c_str()); } arr_fild { free($2); }
+        
+/*! variable states */
+
+var_decl: R_TYP S_NME ';' {
+            if(false == is_already_defined($2))
+            {
+              variable_data v_data($1);
+              symbols[LAST_SCOPE].variable_insert($2, v_data);
+            }
+
+            free($1); free($2); 
+          }
+        | var_defn
         ;
-/* cls_call is not needed for now */
+var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
+            bool error_flag = is_already_defined($2);
+            
+            // search for argument
+            const variable_data *argument_defined = nullptr;
+            for(size_t i = LAST_SCOPE; ; i--)
+            {
+              argument_defined = symbols[LAST_SCOPE].variable_exists($4);
+
+              if(argument_defined)
+              {
+                // type compatibility
+                if(std::string($1) == argument_defined->get_data_type())
+                  break;
+                
+                error_flag = true;
+                yyerror("incorrect argument type");
+              }
+              
+              if(0 == i) break;
+            }
+
+            if(nullptr == argument_defined)
+            {
+              error_flag = true;
+              yyerror("argument not found");
+            }
+
+            // success
+            if(false == error_flag)
+              symbols[LAST_SCOPE].variable_insert($2, *argument_defined);
+              
+            free($1); free($2); free($4);
+          }
+
+        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
+            // both functions provide error messages
+            // no need of yyerror statements
+            if(false == is_already_defined($2) &&
+            true == is_type_compatible($1, $4))
+            {
+              variable_data v_data($1, $4);
+              symbols[LAST_SCOPE].variable_insert($2, v_data);
+            }
+            
+            free($1); free($2); free($4);
+          };
+
+var_call: S_NME {
+            const variable_data *argument_defined = nullptr;
+            for(size_t i = LAST_SCOPE; ; i--)
+            {
+              argument_defined = symbols[LAST_SCOPE].exists($1);
+              if(argument_defined) break;
+              if(0 == i) break;
+            }
+                
+            if(nullptr == argument_defined)
+              yyerror("identifier not found");
+            free($1); // maybe we need to delete this line
+          };
 
 /*! function states */
 fct_decl: R_TYP S_NME fct_synp ';' { /*table.add ($2, $1, nullptr);*/ 
@@ -127,114 +250,83 @@ arr_argm: argument ',' arr_argm
 fct_call: S_NME '(' arr_argm ')' { /* provide return capacity */ free($1); } ;
         | S_NME '(' ')' { /* provide return capacity */ free($1); } ;
 
-/*! variable states */
-var_decl: R_TYP S_NME ';' { if(false == already_defined($2)) symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
-                free($1); free($2); }
-        | var_defn
-        ;
-var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
-                bool variable_defined = already_defined($2);
-                
-                const instance_data *argument_defined = nullptr;
-                for(size_t i = LAST_SCOPE; ; i--)
-                {
-                  argument_defined = symbols[LAST_SCOPE].exists($4);
-                        
-                  if(argument_defined &&
-                  ITEM_TYPE_VAR == argument_defined->get_item_type() &&
-                  0 == strcmp($1, argument_defined->get_data_type()) &&
-                  false == variable_defined){ 
-                    symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
-                    // $2.synopsis = value;
-                    break;
-                  }
-
-                  if(argument_defined) yyerror("incorrect parameter type");
-                  if(0 == i) break;
-                }
-
-                if(nullptr == argument_defined)
-                  yyerror("identifier not found");
-                free($1); free($2); free($4);
-                }
-
-        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
-                bool variable_defined = already_defined($2);
-                
-                void* value = nullptr;
-                switch($4[0])
-                {     
-                default: // number
-                  if(nullptr == strchr($4, '.')) // int
-                  {
-                    if(strcmp($1, DATA_TYPE_INT))
-                      yyerror("incorrect parameter type");
-                    value = new int(atoi($4));
-                    break;
-                  }
-                  
-                  // float
-                  if(strcmp($1, DATA_TYPE_FLT))
-                    yyerror("incorrect parameter type");
-                  value = new float(std::stof($4));
-                  break;
-
-                case '\'': // char
-                  if(strcmp($1, DATA_TYPE_CHR))
-                    yyerror("incorrect parameter type");
-                  value = new char($4[1]);
-                  break;
-                
-                case 't': // bool
-                  if(strcmp($1, DATA_TYPE_BOL))
-                    yyerror("incorrect parameter type");
-                  value = new bool(true);
-                  break;
-                case 'f': // bool
-                  if(strcmp($1, DATA_TYPE_BOL))
-                    yyerror("incorrect parameter type");
-                  value = new bool(false);
-                  break;
-                
-                case '\"': // string
-                  if(strcmp($1, DATA_TYPE_STR))
-                    yyerror("incorrect parameter type");
-                  std::string cst_str($4);
-                  value = new std::string(cst_str);
-                  break;
-                }
-
-                // $2.synopsis = value;
-                delete (char*)value;
-                if(false == variable_defined)
-                  symbols[LAST_SCOPE].add($2, $1, SYNOPSIS);
-                free($1); free($2);
-                };
-
-var_call: S_NME {
-                const instance_data *argument_defined = nullptr;
-                for(size_t i = LAST_SCOPE; ; i--)
-                {
-                  argument_defined = symbols[LAST_SCOPE].exists($1);
-                  if(argument_defined) break;
-                  if(0 == i) break;
-                }
-                
-                if(nullptr == argument_defined)
-                  yyerror("identifier not found");
-                free($1);
-                };
-
 /*! object states */
-obj_decl: S_NME S_NME ';' { if(!type_exists($1)) yyerror("undefined type"); 
-                free($1); free($2); }
+
+obj_decl: S_NME S_NME ';' {
+            if(!type_exists($1))
+              yyerror("undefined type");
+            else
+            {
+              object_data o_data($1);
+              symbols[LAST_SCOPE].object_insert($2, o_data);
+            }
+
+            free($1); free($2);
+          }
         | obj_defn
         ;
-obj_defn: S_NME S_NME OPERATOR_ASSIGN scope_begin scope_end ';' { if(!type_exists($1)) yyerror("undefined type"); };
+
+obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
+            bool error_flag = !type_exists($1);
+            if(error_flag)
+              yyerror("undefined type")
+            error_flag |= is_already_defined($2);
+            
+            // search for the argument
+            const object_data *argument_defined = nullptr;
+            for(size_t i = LAST_SCOPE; ; i--)
+            {
+              argument_defined = symbols[LAST_SCOPE].object_exists($4);
+
+              if(argument_defined)
+              {
+                // type compatibility
+                if(std::string($1) == argument_defined->get_data_type())
+                  break;
+                
+                error_flag = true;
+                yyerror("incorrect argument type");
+              }
+              
+              if(0 == i) break;
+            }
+
+            if(nullptr == argument_defined)
+            {
+              error_flag = true;
+              yyerror("argument not found");
+            }
+
+            // success
+            if(false == error_flag)
+              symbols[LAST_SCOPE].object_insert($2, *argument_defined);
+              
+            free($1); free($2); free($4);
+          }
+        | S_NME S_NME {
+            if(!type_exists($1))
+              yyerror("undefined type");
+            else
+            {
+              object_data o_data($1);
+              symbols[LAST_SCOPE].object_insert($2, o_data);
+            }
+
+            } OPERATOR_ASSIGN '{' obj_vals ';' {
+            free($1); free($2);
+          }
+        ;
+obj_vals: S_NME ','
+        | cst_call ','
+        | '}'
+
 fld_call: S_NME A_FLD S_NME { /* search type, search field */ } ;
-obj_call: S_NME ;
+
+obj_call: S_NME { }
+        ;
 
 /*! text constant states */
+
 cst_call: C_INT { free($1); }
         | C_FLT { free($1); }
         | C_CHR { free($1); }

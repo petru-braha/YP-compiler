@@ -40,7 +40,7 @@ const unsigned char item_data::get_item_type() const
     return item_type;
 }
 
-const std::string &item_data::get_type() const
+const std::string &item_data::get_data_type() const
 {
     return type;
 }
@@ -107,18 +107,18 @@ variable_data::variable_data(const std::string &type,
 {
     if (false == is_primitive(type))
         yyerror("variable data initialization - not primitive type");
-    if (this->get_type() != type_of(value))
+    if (this->get_data_type() != type_of(value))
         yyerror("variable data initialization - not compatible types");
     this->value = value;
 }
 
 // not verification required - v can only be legitimate
 variable_data ::variable_data(const variable_data &v)
-    : item_data(ITEM_TYPE_VAR, v.get_type()), value(v.get_value()) {}
+    : item_data(ITEM_TYPE_VAR, v.get_data_type()), value(v.get_value()) {}
 
 variable_data &variable_data::set_value(const std::string &value)
 {
-    if (this->get_type() != type_of(value))
+    if (this->get_data_type() != type_of(value))
         yyerror("variable data initialization - not compatible types");
     this->value = value;
     return *this;
@@ -171,7 +171,7 @@ function_data &function_data::
 {
     if (index > parameters.size())
         yyerror("function data setting - wrong index");
-    if (value->get_type() != parameters.at(index)->get_type())
+    if (value->get_data_type() != parameters.at(index)->get_data_type())
         yyerror("function data setting - type incompatiblity");
 
     if (ITEM_TYPE_VAR == value->get_item_type())
@@ -224,7 +224,7 @@ void set_default_value(const object_data &o)
         {
             variable_data *v_data = (variable_data *)att;
             std::string v_value =
-                default_value_of(v_data->get_type());
+                default_value_of(v_data->get_data_type());
             v_data->set_value(v_value);
         }
     }
@@ -307,7 +307,7 @@ object_data::
 }
 
 object_data::object_data(const object_data &o)
-    : item_data(ITEM_TYPE_OBJ, o.get_type()),
+    : item_data(ITEM_TYPE_OBJ, o.get_data_type()),
       attributes(o.get_count_attributes())
 {
     for (size_t i = 0; i < o.get_count_attributes(); i++)
@@ -332,7 +332,7 @@ object_data &object_data::
 {
     if (index > attributes.size())
         yyerror("object data setting - wrong index");
-    if (value->get_type() != attributes.at(index)->get_type())
+    if (value->get_data_type() != attributes.at(index)->get_data_type())
         yyerror("object data setting - type incompatiblity");
 
     if (ITEM_TYPE_VAR == value->get_item_type())
@@ -367,93 +367,69 @@ item_data *object_data::
 //!------------------------------------------------
 
 symbol_table &symbol_table::
-    variable_add(const std::string &name,
-                 const variable_data &data)
+    variable_insert(const std::string &id,
+                    const variable_data &data)
 {
-    if (type_table.find(name) != type_table.end())
-    {
-        yyerror("this is a type, not identifier");
-        return *this;
-    }
-
-    if (var.find(name) != var.end() ||
-        fct.find(name) != fct.end() ||
-        obj.find(name) != obj.end())
-    {
-        yyerror("identifier already defined");
-        return *this;
-    }
-
-    var.insert({name, data});
+    var.insert({id, data});
     return *this;
 }
 
 symbol_table &symbol_table::
-    function_add(const std::string &name,
-                 const function_data &data)
+    function_insert(const std::string &id,
+                    const function_data &data)
 {
-    if (type_table.find(name) != type_table.end())
-    {
-        yyerror("this is a type, not identifier");
-        return *this;
-    }
-
-    if (var.find(name) != var.end() ||
-        fct.find(name) != fct.end() ||
-        obj.find(name) != obj.end())
-    {
-        yyerror("identifier already defined");
-        return *this;
-    }
-
-    fct.insert({name, data});
+    fct.insert({id, data});
     return *this;
 }
 
 symbol_table &symbol_table::
-    object_add(const std::string &name,
-               const object_data &data)
+    object_insert(const std::string &id,
+                  const object_data &data)
 {
-    if (type_table.find(name) != type_table.end())
-    {
-        yyerror("this is a type, not identifier");
-        return *this;
-    }
-
-    if (var.find(name) != var.end() ||
-        fct.find(name) != fct.end() ||
-        obj.find(name) != obj.end())
-    {
-        yyerror("identifier already defined");
-        return *this;
-    }
-
-    obj.insert({name, data});
+    obj.insert({id, data});
     return *this;
 }
 
+// doesn't provide error messages 
 variable_data *symbol_table::
-    variable_exists(const std::string &name)
+    variable_exists(const std::string &id)
 {
-    if (var.find(name) != var.end())
-        return &var[name];
+    if (var.find(id) != var.end())
+        return &var[id];
     return nullptr;
 }
 
+// doesn't provide error messages 
 function_data *symbol_table::
-    function_exists(const std::string &name)
+    function_exists(const std::string &id)
 {
-    if (fct.find(name) != fct.end())
-        return &fct[name];
+    if (fct.find(id) != fct.end())
+        return &fct[id];
     return nullptr;
 }
 
+// doesn't provide error messages 
 object_data *symbol_table::
-    object_exists(const std::string &name)
+    object_exists(const std::string &id)
 {
-    if (obj.find(name) != obj.end())
-        return &obj[name];
+    if (obj.find(id) != obj.end())
+        return &obj[id];
     return nullptr;
+}
+
+/* used for type_table
+the only time when we don't check for previous scopes too
+ * doesn't provide error messages 
+ */
+bool symbol_table::exists(const std::string &id) const
+{
+    if (var.find(id) != var.end())
+        return true;
+    if (fct.find(id) != fct.end())
+        return true;
+    if (obj.find(id) != obj.end())
+        return true;
+    return false;
 }
 
 size_t symbol_table::get_count_variable() const
@@ -494,23 +470,35 @@ symbol_table::obj_it symbol_table::object_end()
 //!------------------------------------------------
 //!------------------------------------------------
 
-bool type_insert(const std::string &name,
-                 const symbol_table &s)
+bool type_insert(const std::string &id)
 {
-    if (type_table.find(name) != type_table.end())
+    if (type_table.find(id) != type_table.end())
     {
         yyerror("class already defined");
         return false;
     }
 
-    type_table[name] = s;
+    type_table.insert({id, symbol_table()});
+}
+
+bool type_insert(const std::string &id,
+                 const symbol_table &s)
+{
+    if (type_table.find(id) != type_table.end())
+    {
+        yyerror("class already defined");
+        return false;
+    }
+
+    type_table.insert({id, s});
     return true;
 }
 
-symbol_table *type_exists(const std::string &name)
+// DOES NOT provide error messages
+symbol_table *type_exists(const std::string &id)
 {
-    if (type_table.find(name) != type_table.end())
-        return &type_table.at(name);
+    if (type_table.find(id) != type_table.end())
+        return &type_table.at(id);
     return nullptr;
 }
 

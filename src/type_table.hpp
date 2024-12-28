@@ -7,6 +7,7 @@
 
 std::map<std::string, symbol_table> type_table;
 
+bool type_insert(const std::string &);
 bool type_insert(const std::string &, const symbol_table &);
 symbol_table *type_exists(const std::string &);
 

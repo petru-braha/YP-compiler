@@ -22,7 +22,7 @@ public:
               const std::string &);
 
     const unsigned char get_item_type() const;
-    const std::string &get_type() const;
+    const std::string &get_data_type() const;
 };
 
 #endif
