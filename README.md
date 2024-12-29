@@ -50,7 +50,6 @@ Test-driven development principles were considered in this project.
 0. daca prima eroare e valabila se va printa 
 0. object data vector to unordered map
 0. object data attribute_insert
-0. std::string($1) == std::string VS strcmp
 1. tbh i don't want to add a name field for each symbol table (it's just useless...)
 3. field access through object
 <br>

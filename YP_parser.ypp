@@ -146,7 +146,8 @@ arr_fild: R_TYP S_NME ';' { /* variable */
 
             // it is possible that 0 == strcmp($2, $4)
             // only if their scopes differ
-            error_flag |= (nullptr == arg_data && 0 == strcmp($2, $4));
+            error_flag |= (nullptr == arg_data &&
+                          std::string($2) == std::string($4));
             if(error_flag)
               yyerror("assignation failed: argument not defined");
 

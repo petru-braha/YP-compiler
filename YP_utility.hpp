@@ -39,7 +39,7 @@ const std::string &item_data::get_data_type() const
 bool is_primitive(const std::string &type)
 {
     for (unsigned char i = 0; i < COUNT_RESERVED_TYPES; i++)
-        if (0 == strcmp(RESERVED_TYPES[i], type.c_str()))
+        if (std::string(RESERVED_TYPES[i]) == type)
             return true;
     return false;
 }
@@ -47,15 +47,15 @@ bool is_primitive(const std::string &type)
 // should be used only for primitive types
 std::string default_value_of(const std::string &type)
 {
-    if (0 == strcmp(DATA_TYPE_INT, type.c_str()))
+    if (std::string(DATA_TYPE_INT) == type)
         return "0";
-    if (0 == strcmp(DATA_TYPE_FLT, type.c_str()))
+    if (std::string(DATA_TYPE_FLT) == type)
         return "0.0";
-    if (0 == strcmp(DATA_TYPE_CHR, type.c_str()))
+    if (std::string(DATA_TYPE_CHR) == type)
         return "\'0\'";
-    if (0 == strcmp(DATA_TYPE_STR, type.c_str()))
+    if (std::string(DATA_TYPE_STR) == type)
         return "\"\"";
-    if (0 == strcmp(DATA_TYPE_BOL, type.c_str()))
+    if (std::string(DATA_TYPE_BOL) == type)
         return "false";
 
     // not primitive
