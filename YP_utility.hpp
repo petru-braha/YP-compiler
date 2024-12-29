@@ -9,11 +9,11 @@
 
 void yyerror(const char *s);
 
-#include <src/variable_data.hpp>
-#include <src/function_data.hpp>
-#include <src/object_data.hpp>
-#include <src/symbol_table.hpp>
-#include <src/type_table.hpp>
+#include "src/variable_data.hpp"
+#include "src/function_data.hpp"
+#include "src/object_data.hpp"
+#include "src/symbol_table.hpp"
+#include "src/type_table.hpp"
 
 item_data::item_data(const unsigned char i_t,
                      const std::string &t)

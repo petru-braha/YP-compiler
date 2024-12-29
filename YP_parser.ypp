@@ -151,7 +151,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(error_flag)
               yyerror("assignation failed: argument not defined");
 
-            error_flag |= std::string($1) != arg_data->get_data_type()
+            error_flag |= std::string($1) != arg_data->get_data_type();
             if(error_flag)
               yyerror("incorrect argument type");
             

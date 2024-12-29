@@ -25,7 +25,7 @@ class symbol_table
 
 public:
     ~symbol_table() = default;
-    symbol_table() = default;
+    symbol_table();
     symbol_table(const std::string &);
 
     symbol_table &variable_insert(const std::string &,

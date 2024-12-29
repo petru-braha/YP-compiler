@@ -3,12 +3,6 @@
 
 #include "../../YP_utility.hpp"
 
-int count_error;
-std::vector<symbol_table> symbols;
-#define LAST_SCOPE symbols.size() - 1
-
-void yyerror(const char *s);
-
 /* goes through every scope
  * could add extra traversal of the scopes
  * provides error messages
