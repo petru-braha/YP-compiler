@@ -49,7 +49,9 @@ Test-driven development principles were considered in this project.
         - recursion
         - abstract syntax tree
 
-0. change to unordered map => average time complexity operations constant 
+0. daca prima eroare e valabila se va printa 
+0. change to unordered map => average time complexity operations constant
+0. std::string($1) == std::string VS strcmp
 0. std::unordered_set or std::unordered_map??????????????????????????? NOT std::unordered_set less sugestive and practical 
 0. object data constructors
 1. tbh i don't want to add a name field for each symbol table (it's just useless...)

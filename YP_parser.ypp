@@ -203,7 +203,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(error_flag)
               yyerror("undefined type");
             
-            error_flag |= is_already_defined($4);
+            error_flag |= is_already_defined($2);
             error_flag |= type_table[cls_last_name].exists($2);
             if(error_flag)
               yyerror("identifier already defined");
@@ -263,11 +263,9 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
               if(0 == i) break;
             }
 
-            if(nullptr == argument_defined)
-            {
-              error_flag = true;
+            error_flag |= nullptr == argument_defined;
+            if(error_flag)
               yyerror("argument not found");
-            }
 
             // success
             if(false == error_flag)
@@ -415,9 +413,14 @@ arr_argm: argument ',' arr_argm
 /*! object states */
 
 obj_decl: S_NME S_NME ';' {
-            if(!type_exists($1))
+            bool error_flag = !type_exists($1);
+            if(error_flag)
               yyerror("undefined type");
-            else
+            
+            error_flag |= is_already_defined($2);
+
+            // success
+            if(false == error_flag)
             {
               object_data o_data($1);
               symbols[LAST_SCOPE].object_insert($2, o_data);
