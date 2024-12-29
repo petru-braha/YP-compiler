@@ -15,18 +15,6 @@ void yyerror(const char *s);
 #include <src/symbol_table.hpp>
 #include <src/type_table.hpp>
 
-/* why is it allowed?
- * NOW THAT I'M THINKING I SHOULD REMOVE THIS
- * this parent class only connects derived classes
- * the actual checkings are individual for both variable_data and object_data
- */
-void item_data::set_item_type(const unsigned int i_t)
-{
-    if (i_t > ITEM_TYPE_OBJ)
-        yyerror("item data initialization - wrong parameter");
-    item_type = i_t;
-}
-
 item_data::item_data(const unsigned char i_t,
                      const std::string &t)
     : item_type(i_t), type(t)
@@ -132,55 +120,104 @@ const std::string &variable_data::get_value() const
 //!------------------------------------------------
 //! function
 
+const std::string &function_data::default_id()
+{
+    char character = 0;
+    if ("" == available_id)
+    {
+        if (parameters.find(available_id) ==
+            parameters.end())
+            return available_id;
+        available_id += character;
+    }
+
+    while (parameters.find(available_id) !=
+           parameters.end())
+    {
+        character++;
+        if (0 == character)
+            available_id += character;
+        size_t index_last = available_id.size() - 1;
+        available_id[index_last] = character;
+    }
+
+    return available_id;
+}
+
 function_data::~function_data()
 {
-    for (size_t i = 0; i < parameters.size(); i++)
-        delete parameters[i];
-    parameters.clear();
+    for (auto parameter : parameters)
+        delete parameter.second;
 }
 
 // no parameters
 function_data::function_data(std::string &type)
     : return_type(type) {}
 
-function_data::
-    function_data(std::string &type,
-                  const std::vector<item_data *> &param)
-    : return_type(type), parameters()
+function_data &function_data::
+    parameter_insert(item_data *value)
 {
-    for (size_t i = 0; i < param.size(); i++)
+    if (ITEM_TYPE_VAR == value->get_item_type())
     {
-        item_data *data = param[i];
-        if (ITEM_TYPE_VAR == data->get_item_type())
-        {
-            variable_data *v_data = (variable_data *)data;
-            variable_data *parameter = new variable_data(*v_data);
-            parameters.emplace_back(parameter);
-            continue;
-        }
-
-        object_data *o_data = (object_data *)data;
-        object_data *parameter = new object_data(*o_data);
-        parameters.emplace_back(parameter);
+        variable_data *v_data = (variable_data *)value;
+        variable_data *parameter = new variable_data(*v_data);
+        parameters[default_id()] = parameter;
+        return *this;
     }
+
+    object_data *o_data = (object_data *)value;
+    object_data *parameter = new object_data(*o_data);
+    parameters[default_id()] = parameter;
+    return *this;
+}
+
+function_data &function_data::
+    parameter_insert(const std::string &id, item_data *value)
+{
+    if (parameters.find(id) != parameters.end())
+    {
+        yyerror("parameter already defined");
+        return *this;
+    }
+
+    if (ITEM_TYPE_VAR == value->get_item_type())
+    {
+        variable_data *v_data = (variable_data *)value;
+        variable_data *parameter = new variable_data(*v_data);
+        parameters[id] = parameter;
+        return *this;
+    }
+
+    object_data *o_data = (object_data *)value;
+    object_data *parameter = new object_data(*o_data);
+    parameters[id] = parameter;
+    return *this;
 }
 
 // to be called for every parameter - calling the function
 function_data &function_data::
-    set_parameter(const size_t index, item_data *value)
+    set_parameter(const std::string &id, item_data *value)
 {
-    if (index > parameters.size())
-        yyerror("function data setting - wrong index");
-    if (value->get_data_type() != parameters.at(index)->get_data_type())
+    if (parameters.find(id) == parameters.end())
+    {
+        yyerror("parameter not found");
+        return *this;
+    }
+
+    if (value->get_data_type() !=
+        parameters.at(id)->get_data_type())
+    {
         yyerror("function data setting - type incompatiblity");
+        return *this;
+    }
 
     if (ITEM_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
         variable_data *parameter = new variable_data(*v_data);
         variable_data *old_parameter =
-            (variable_data *)parameters.at(index);
-        parameters[index] = parameter;
+            (variable_data *)parameters.at(id);
+        parameters[id] = parameter;
         delete old_parameter;
         return *this;
     }
@@ -188,8 +225,8 @@ function_data &function_data::
     object_data *o_data = (object_data *)value;
     object_data *parameter = new object_data(*o_data);
     object_data *old_parameter =
-        (object_data *)parameters.at(index);
-    parameters[index] = parameter;
+        (object_data *)parameters.at(id);
+    parameters[id] = parameter;
     delete old_parameter;
     return *this;
 }
@@ -199,12 +236,17 @@ const std::string &function_data::get_return_type() const
     return return_type;
 }
 
-item_data *function_data::
-    get_parameter(const size_t index) const
+size_t function_data::get_count_parameter() const
 {
-    if (index > parameters.size())
-        yyerror("function data retrival - wrong index");
-    return parameters.at(index);
+    return parameters.size();
+}
+
+item_data *function_data::
+    get_parameter(const std::string& id) const
+{
+    if (parameters.find(id) == parameters.end())
+        yyerror("undefined paramater id");
+    return parameters.at(id);
 }
 
 //!------------------------------------------------
@@ -390,7 +432,7 @@ symbol_table &symbol_table::
     return *this;
 }
 
-// doesn't provide error messages 
+// doesn't provide error messages
 variable_data *symbol_table::
     variable_exists(const std::string &id)
 {
@@ -399,7 +441,7 @@ variable_data *symbol_table::
     return nullptr;
 }
 
-// doesn't provide error messages 
+// doesn't provide error messages
 function_data *symbol_table::
     function_exists(const std::string &id)
 {
@@ -408,7 +450,7 @@ function_data *symbol_table::
     return nullptr;
 }
 
-// doesn't provide error messages 
+// doesn't provide error messages
 object_data *symbol_table::
     object_exists(const std::string &id)
 {
@@ -419,7 +461,7 @@ object_data *symbol_table::
 
 /* used for type_table
 the only time when we don't check for previous scopes too
- * doesn't provide error messages 
+ * doesn't provide error messages
  */
 bool symbol_table::exists(const std::string &id) const
 {

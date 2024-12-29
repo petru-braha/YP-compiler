@@ -12,9 +12,6 @@ class item_data
     unsigned char item_type;
     std::string type;
 
-protected:
-    void set_item_type(const unsigned int);
-
 public:
     virtual ~item_data() = default;
     item_data() = delete;

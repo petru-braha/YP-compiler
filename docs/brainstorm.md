@@ -133,3 +133,15 @@ string name = Type(a);
     - return type: int
 
 - every time i call a function it is an assignation of its variable + code jumps; we can view it as a struct in C
+
+
+
+- already defined?
+- treated as a type?
+- does the argument exists?
+- is the argument treated as a type?
+- is the declared the same type as the argument?
+
+- is_already_defined
+    - treated as a type
+    - defined in scopes

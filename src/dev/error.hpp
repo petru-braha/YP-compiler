@@ -10,12 +10,13 @@ std::vector<symbol_table> symbols;
 void yyerror(const char *s);
 
 /* goes through every scope
- * provides error messages
  * could add extra traversal of the scopes
+ * provides error messages
+ * also checks if the id is treated as a type
  */
 bool is_already_defined(const char *id)
 {
-    if (type_exists(id))
+    if (type_exists(id) || is_primitive(id))
     {
         yyerror("types used for identifier");
         return true;
