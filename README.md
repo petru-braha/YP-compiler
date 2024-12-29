@@ -50,7 +50,7 @@ Test-driven development principles were considered in this project.
         - abstract syntax tree
 
 0. daca prima eroare e valabila se va printa 
-0. change to unordered map => average time complexity operations constant
+0. object data vector to unordered map
 0. std::string($1) == std::string VS strcmp
 0. std::unordered_set or std::unordered_map??????????????????????????? NOT std::unordered_set less sugestive and practical 
 0. object data constructors

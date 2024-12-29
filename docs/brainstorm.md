@@ -55,7 +55,6 @@
 
 - class(type) declaration only at global scope
 - stored when declared and defined
-- data structure: map - O(1) search time for a S_NME
 
 - reserved types:
     - int
@@ -68,7 +67,6 @@
 
 - scope depended
 - stored when declared or defined
-- data structure: map - O(1) search time for a S_NME
 
 - symbol = function/variable/object
 - struct symbol: name, item_type, data_type, synopsis(values)
@@ -84,6 +82,21 @@
     - unsigned char - 1 byte always - allows the definition of 256-5 classes (not reliable)
     - unsigned short - 2 bytes always - 65.535-5 classes (is not too reliable)
     - unsigned int - 4 bytes always - allows 4,294,967,295 (could be reliable)
+
+- data structure for symbols (analysis for searches, insertions, deletions):
+    - std::unordered_map
+        - average case constant
+        - worst case linear
+        - better than set: we don't have to create pairs
+    - std::map
+        - worst case logarithmic 
+    - std::set
+        - worst case logarithmic 
+    - std::unordered_set
+        - average case constant
+        - worst case linear
+    - std::vector
+        - worst case linear
 
 - declaration syntax:
     - class: class name_class;
