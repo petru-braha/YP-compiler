@@ -4,8 +4,6 @@
 #include <vector>
 #include "dev/item_data.hpp"
 
-void set_default_value(const object_data &);
-
 // the methods will be stored in the type table
 class object_data final : public item_data
 {

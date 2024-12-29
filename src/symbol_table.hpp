@@ -15,14 +15,18 @@
 
 class symbol_table
 {
+    std::string s_id;
     // identifier => data
     std::unordered_map<std::string, variable_data> var;
     std::unordered_map<std::string, function_data> fct;
     std::unordered_map<std::string, object_data> obj;
 
+    static size_t available_id;
+
 public:
     ~symbol_table() = default;
     symbol_table() = default;
+    symbol_table(const std::string &);
 
     symbol_table &variable_insert(const std::string &,
                                   const variable_data &);
@@ -36,6 +40,7 @@ public:
     object_data *object_exists(const std::string &);
     bool exists(const std::string &) const;
 
+    size_t get_id() const;
     size_t get_count_variable() const;
     size_t get_count_object() const;
     size_t get_count_declared() const;
@@ -49,5 +54,7 @@ public:
     obj_it object_begin();
     obj_it object_end();
 };
+
+size_t symbol_table::available_id = 0;
 
 #endif

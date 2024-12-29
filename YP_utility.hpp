@@ -258,26 +258,6 @@ item_data *function_data::
 //!------------------------------------------------
 //! object
 
-/* should be used only for NON-primitive types
- * TO DELETE: USELESS, DEFAULT VALUES ARE RETRIEVED FROM CLASS DEF
- * recursive method
- */
-void set_default_value(const object_data &o)
-{
-    // for each attribute
-    for (size_t i = 0; i < o.get_count_attributes(); i++)
-    {
-        item_data *att = o.get_attribute(i);
-        if (ITEM_TYPE_VAR == att->get_item_type())
-        {
-            variable_data *v_data = (variable_data *)att;
-            std::string v_value =
-                default_value_of(v_data->get_data_type());
-            v_data->set_value(v_value);
-        }
-    }
-}
-
 object_data::~object_data()
 {
     for (size_t i = 0; i < attributes.size(); i++)
@@ -375,6 +355,15 @@ item_data *object_data::
 //!------------------------------------------------
 //!------------------------------------------------
 
+symbol_table::symbol_table()
+    : s_id(std::to_string(available_id))
+{
+    available_id++;
+}
+
+symbol_table::symbol_table(const std::string &s_id)
+    : s_id(s_id) {}
+
 symbol_table &symbol_table::
     variable_insert(const std::string &id,
                     const variable_data &data)
@@ -439,6 +428,11 @@ bool symbol_table::exists(const std::string &id) const
     if (obj.find(id) != obj.end())
         return true;
     return false;
+}
+
+size_t symbol_table::get_id() const
+{
+    return available_id - 1;
 }
 
 size_t symbol_table::get_count_variable() const

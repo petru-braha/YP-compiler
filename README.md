@@ -47,11 +47,14 @@ Test-driven development principles were considered in this project.
         - recursion
         - abstract syntax tree
 
-0. daca prima eroare e valabila se va printa 
+0. tbh i don't want to add a name field for each symbol table (it's just useless...)
+0. daca prima eroare e valabila se va printa
+0. try compile
+
 0. object data vector to unordered map
 0. object data attribute_insert
-1. tbh i don't want to add a name field for each symbol table (it's just useless...)
-3. field access through object
+0. field access through object
+
 <br>
 
 0. ast - statament recognition and logic
