@@ -37,13 +37,11 @@ Test-driven development principles were considered in this project.
 
 ## To do
 
-- provide for each strdup() call the free() method => no memory leaks
-
 - the development is split in two segments:
     - declaration
         - recognition
-        - jumps
         - synopsis
+        - jumps
         - assignation
     - stataments
         - recursion
@@ -51,14 +49,14 @@ Test-driven development principles were considered in this project.
 
 0. daca prima eroare e valabila se va printa 
 0. object data vector to unordered map
+0. object data attribute_insert
 0. std::string($1) == std::string VS strcmp
-0. std::unordered_set or std::unordered_map??????????????????????????? NOT std::unordered_set less sugestive and practical 
-0. object data constructors
 1. tbh i don't want to add a name field for each symbol table (it's just useless...)
-2. actual variable assignation
 3. field access through object
-4. ast - statament recognition and logic
-5. complete the syntax documentation from the guidline
+<br>
+
+0. ast - statament recognition and logic
+0. complete the syntax documentation from the guidline
 
 <br>
 

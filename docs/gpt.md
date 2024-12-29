@@ -781,3 +781,46 @@ Code Files
 	•	Makefile (optional): For building the project.
 
 Note: The code provided is a template and may require adjustments and additional implementations to handle all edge cases and fully meet the project requirements. Make sure to test thoroughly and expand upon the code to handle all specified features.
+
+
+/* old code:
+// to do: change from std::vector to std::map: we need identifiers
+object_data::
+    object_data(std::string &type,
+                const std::vector<item_data *> &att)
+    : item_data(ITEM_TYPE_OBJ, type)
+{
+    if (is_primitive(type))
+        yyerror("object data initialization - primitive type");
+    symbol_table *s = type_exists(type);
+    if (nullptr == s)
+        yyerror("object data initialization - non-defined type");
+
+    if (att.size() !=
+        s->get_count_variable() + s->get_count_object())
+        yyerror("object data initialization - invalid attributes");
+
+    symbol_table o_attributes = *s;
+
+    // initialization of data
+    auto v = o_attributes.variable_begin();
+    while (v != o_attributes.variable_end())
+    {
+        attributes.emplace_back(
+            new variable_data((*v).second));
+        v++;
+    }
+
+    auto o = o_attributes.object_begin();
+    while (o != o_attributes.object_end())
+    {
+        attributes.emplace_back(
+            new object_data((*o).second));
+        o++;
+    }
+    // check type definition with attributes
+    // same amont and types
+    // assiganation
+}
+
+*/
