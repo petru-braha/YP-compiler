@@ -183,8 +183,8 @@ arr_fild: R_TYP S_NME ';' { /* variable */
           }
 
         | R_TYP S_NME { /*? function */
-            bool error_flag = is_already_defined($4);
-            error_flag |= type_table[type_last_name].exists($2);
+            bool error_flag = is_already_defined($2);
+            error_flag |= type_table[cls_last_name].exists($2);
             if(error_flag)
               yyerror("identifier already defined");
 
@@ -204,7 +204,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("undefined type");
             
             error_flag |= is_already_defined($4);
-            error_flag |= type_table[type_last_name].exists($2);
+            error_flag |= type_table[cls_last_name].exists($2);
             if(error_flag)
               yyerror("identifier already defined");
 
@@ -345,36 +345,72 @@ fct_defn: R_TYP S_NME {
           }
         ;
 
+//** don't check if the id exists
 fct_synp: '(' arr_parm ')'
         | '('')'
 arr_parm: R_TYP S_NME {
-            for(size_t i = 0; 
-                i < f_data_global->get_count_parameter();
-                i++)
-                if(f_data_global->get_parameter(i))
-            // check if it exists already in the parameter list
-            f_data_global->parameter_insert(&variable_data($1));
+            f_data_global->
+              parameter_insert($2, &variable_data($1));
+            }',' arr_parm { free($1); free($2); 
+          }
+        | R_TYP S_NME {
+            f_data_global->
+              parameter_insert($2, &variable_data($1));
+            free($1); free($2);
+          }
+        | S_NME S_NME {
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            else
+              f_data_global->
+                parameter_insert($2, &object_data($1));
+            }',' arr_parm { free($1); free($2);
+          }
+        | S_NME S_NME {
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            else
+              f_data_global->
+                parameter_insert($2, &object_data($1));
+            free($1); free($2);
+          }
 
-          }',' arr_parm { free($1); free($2); }
-        | R_TYP S_NME { free($1); free($2); }
-        | S_NME S_NME ',' arr_parm { free($1); free($2); }
-        | S_NME S_NME { free($1); free($2); }
-
-        | R_TYP ',' arr_parm
-        | R_TYP
-        | S_NME ',' arr_parm
-        | S_NME
+        | R_TYP {
+            f_data_global->
+              parameter_insert(&variable_data($1));
+            } ',' arr_parm { free($1); 
+          }
+        | R_TYP {
+            f_data_global->
+              parameter_insert(&variable_data($1));
+            free($1); 
+          }
+        | S_NME {
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            else
+              f_data_global->
+                parameter_insert(&object_data($1));
+            } ',' arr_parm { free($1); 
+          }
+        | S_NME  { 
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            else
+              f_data_global->
+                parameter_insert(&object_data($1));
+            free($1); 
+          }
         
-        // maybe with assignation too?
-        ;
-
-argument: S_NME | cst_call;
-arr_argm: argument ',' arr_argm
-        | argument
+        // maybe with assignation too? => another 8 rules
         ;
 
 fct_call: S_NME '(' arr_argm ')' { /* provide return capacity */ free($1); } ;
         | S_NME '(' ')' { /* provide return capacity */ free($1); } ;
+argument: S_NME | cst_call;
+arr_argm: argument ',' arr_argm
+        | argument
+        ;
 
 /*! object states */
 

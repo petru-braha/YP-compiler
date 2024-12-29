@@ -52,7 +52,7 @@ std::string default_value_of(const std::string &type)
     if (0 == strcmp(DATA_TYPE_FLT, type.c_str()))
         return "0.0";
     if (0 == strcmp(DATA_TYPE_CHR, type.c_str()))
-        return "\'\'";
+        return "\'0\'";
     if (0 == strcmp(DATA_TYPE_STR, type.c_str()))
         return "\"\"";
     if (0 == strcmp(DATA_TYPE_BOL, type.c_str()))
@@ -154,6 +154,9 @@ function_data::~function_data()
 function_data::function_data(std::string &type)
     : return_type(type) {}
 
+/* DOES NOT provide error messages
+ * DOES NOT check for parameter definition
+ */
 function_data &function_data::
     parameter_insert(item_data *value)
 {
@@ -171,6 +174,9 @@ function_data &function_data::
     return *this;
 }
 
+/* provides error messages
+ * checks for parameter definition
+ */
 function_data &function_data::
     parameter_insert(const std::string &id, item_data *value)
 {
@@ -242,7 +248,7 @@ size_t function_data::get_count_parameter() const
 }
 
 item_data *function_data::
-    get_parameter(const std::string& id) const
+    get_parameter(const std::string &id) const
 {
     if (parameters.find(id) == parameters.end())
         yyerror("undefined paramater id");
