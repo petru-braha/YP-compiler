@@ -1,11 +1,11 @@
 #ifndef __0TYPETABLE0__
 #define __0TYPETABLE0__
 
-#include <map>
+#include <unordered_map>
 #include <string>
 #include "symbol_table.hpp"
 
-std::map<std::string, symbol_table> type_table;
+std::unordered_map<std::string, symbol_table> type_table;
 
 bool type_insert(const std::string &);
 bool type_insert(const std::string &, const symbol_table &);
