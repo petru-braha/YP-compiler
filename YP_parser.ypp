@@ -1,3 +1,8 @@
+/* YP_parser.ypp - bottom-up parser, LARL(1) grammar
+ * (c) authors - Braha Petru Bogdan - <petrubraha@gmail.com>
+ *             - Meraru Ioan Lucian - <https://github.com/Zamdacmalfal>
+ */
+
 %{
 #include <stdio.h>
 #include <cstring>
