@@ -5,7 +5,7 @@
 #include <string>
 #include "symbol_table.hpp"
 
-std::unordered_map<std::string, symbol_table> type_table;
+extern std::unordered_map<std::string, symbol_table> type_table;
 
 bool type_insert(const std::string &);
 bool type_insert(const std::string &, const symbol_table &);

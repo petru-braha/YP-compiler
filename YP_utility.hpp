@@ -482,6 +482,7 @@ bool type_insert(const std::string &id)
     }
 
     type_table.insert({id, symbol_table()});
+    return true;
 }
 
 bool type_insert(const std::string &id,

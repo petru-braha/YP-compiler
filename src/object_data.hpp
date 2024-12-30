@@ -11,6 +11,7 @@ class object_data final : public item_data
 
 public:
     ~object_data();
+    object_data() : item_data(0, std::string(0)) {}
     object_data(std::string &);
     object_data(const object_data &);
 

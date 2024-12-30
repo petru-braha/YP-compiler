@@ -3,6 +3,9 @@
 
 #include "../../YP_utility.hpp"
 
+extern std::vector<symbol_table> symbols;
+#define LAST_SCOPE symbols.size() - 1
+
 /* goes through every scope
  * could add extra traversal of the scopes
  * provides error messages

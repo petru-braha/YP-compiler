@@ -26,9 +26,10 @@ class variable_data final : public item_data
 
 public:
     ~variable_data() = default;
+    variable_data() : item_data(0, std::string(0)) {}
     variable_data(const std::string &);
     variable_data(const std::string &, const std::string &);
-    variable_data(const variable_data&);
+    variable_data(const variable_data &);
 
     variable_data &set_value(const std::string &);
 
