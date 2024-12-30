@@ -1,7 +1,7 @@
 %{
 #include <stdlib.h>
 #include <stdio.h>
-#include "YP_parser.tab.hpp"
+#include "parse.tab.hpp"
 
 void yyerror(const char * s);
 bool master_started = false;
