@@ -1,0 +1,592 @@
+%{
+#include <stdio.h>
+#include <cstring>
+#include <string>
+#include <vector>
+#include "YP_utility.hpp"
+
+extern int yylex();
+void yyerror(const char * s);
+
+extern FILE* yyin;
+extern char* yytext;
+extern int yylineno;
+extern bool method_master_started;
+
+function_data* f_data_global;
+
+std::string cls_last_name;
+std::string fct_last_name;
+
+std::vector<symbol_table> symbols;
+#define LAST_SCOPE symbols.size() - 1
+
+#include "src/dev/error.hpp"
+%}
+
+/* comments:
+ * class == type
+ * the number of started scopes == symbols.size();
+ 
+ * states:
+ ** declaration
+ ** definition
+ ** call
+ * order of state presentation: 
+ ** class
+ ** variable
+ ** function
+ ** object
+ 
+ */
+
+//------------------------------------------------
+//------------------------------------------------
+
+%union {
+    char* token_name;
+    /*
+    int basic_int;
+    float basic_float;
+    char basic_chr;
+    std::string basic_str;
+    bool basic_bol; */
+}
+
+%type method_master
+%type<token_name> cst_call
+%token<token_name> method_type method_print
+%token R_CLS A_PRV A_PUB A_FLD
+%token OPERATOR_ASSIGN OPERATOR_RELTIN
+
+%token<token_name> S_NME R_TYP
+%token<token_name> C_INT C_FLT C_CHR C_STR C_BOL
+
+%token R_SEQ_IF R_SEQ_FOR R_SEQ_WHL
+
+%start starting_symbol
+
+%%
+starting_symbol : { symbols.emplace_back(); } global_declaration {
+                      if(0 == count_error)
+                        printf("the program was compiled correctly.\n");
+                      else
+                        printf("the program has %d errors.\n", count_error);
+                      };
+
+scope_begin : '{' { symbols.emplace_back(); };
+scope_end   : '}' { symbols.pop_back(); };
+method_master   : scope_begin statement_list;
+
+//------------------------------------------------
+
+/*! class states */
+
+cls_decl: R_CLS S_NME ';' {
+            if(LAST_SCOPE)
+              yyerror("classes can only be declared globally");
+              free($2);
+          }
+        | cls_defn {
+            if(LAST_SCOPE)
+              yyerror("classes can only be declared globally");
+          }
+        ;
+
+cls_defn: R_CLS S_NME '{' { // scope_begin => emplaces back
+            cls_last_name = $2;
+            type_insert(cls_last_name); }
+            arr_fild { cls_last_name.clear(); 
+            free($2);
+          }
+        ;
+
+arr_fild: R_TYP S_NME ';' { /* variable */
+            bool error_flag = type_table[cls_last_name].exists($2);
+            if(error_flag)
+              yyerror("identifier already defined");
+            error_flag |= is_primitive($2) || type_exists($2);
+            if(error_flag)
+              yyerror("identifier treated as a type");
+            
+            // success
+            if(false == error_flag)
+            {
+              variable_data v_data($1);
+              type_table[cls_last_name].variable_insert($2, v_data);
+            }
+            
+            free($1); free($2);
+          } arr_fild
+        | R_TYP S_NME OPERATOR_ASSIGN S_NME ';' { /* variable */
+            bool error_flag = type_table[cls_last_name].exists($2);
+            if(error_flag)
+              yyerror("identifier already defined");
+            
+            error_flag |= is_primitive($2) || type_exists($2);
+            if(error_flag)
+              yyerror("first identifier treated as a type");
+            
+            error_flag |= is_primitive($4) || type_exists($4);
+            if(error_flag)
+              yyerror("second identifier treated as a type");
+            
+            // search for the argument
+            const variable_data *arg_data =
+              type_table[cls_last_name].variable_exists($4);
+            for(size_t i = LAST_SCOPE; arg_data; i--)
+            {
+              arg_data = symbols[i].variable_exists($4);
+              if(0 == i) break;
+            }
+              
+            error_flag |= nullptr == arg_data;
+            if(error_flag)
+              yyerror("argument not found");
+
+            // it is possible that 0 == strcmp($2, $4)
+            // only if their scopes differ
+            error_flag |= (nullptr == arg_data &&
+                          std::string($2) == std::string($4));
+            if(error_flag)
+              yyerror("assignation failed: argument not defined");
+
+            error_flag |= std::string($1) != arg_data->get_data_type();
+            if(error_flag)
+              yyerror("incorrect argument type");
+            
+            // success
+            if(false == error_flag)
+            {
+              variable_data v_data($1, arg_data->get_value());
+              type_table[cls_last_name].variable_insert($2, v_data);
+            }
+            
+            free($1); free($2); free($4);
+          }
+        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' { /* variable */
+            bool error_flag = type_table[cls_last_name].exists($2);
+            if(error_flag)
+              yyerror("identifier already defined");
+            
+            error_flag |= (is_primitive($2) || type_exists($2));
+            if(error_flag)
+              yyerror("identifier treated as a type");
+
+            // success
+            if(false == error_flag && is_type_compatible($1, $4))
+            {
+                variable_data v_data($1, $4);
+                type_table[cls_last_name].variable_insert($2, v_data);
+            }
+
+            free($1); free($2); free($4);
+          }
+
+        | R_TYP S_NME { /*? function */
+            bool error_flag = is_already_defined($2);
+            error_flag |= type_table[cls_last_name].exists($2);
+            if(error_flag)
+              yyerror("identifier already defined");
+
+            // success
+            if(false == error_flag)
+            {
+              fct_last_name = $2;
+              function_data f_data($1);
+              f_data_global = &f_data;
+              type_table[cls_last_name].function_insert($2, f_data);
+            }} fct_synp scope_begin statement_list {
+              free($1); free($2);
+          } arr_fild
+        | S_NME S_NME { /*? function */
+            bool error_flag = type_exists($1);
+            if(error_flag)
+              yyerror("undefined type");
+            
+            error_flag |= is_already_defined($2);
+            error_flag |= type_table[cls_last_name].exists($2);
+            if(error_flag)
+              yyerror("identifier already defined");
+
+            // success
+            if(false == error_flag)
+            {
+              fct_last_name = $2;
+              function_data f_data($1);
+              f_data_global = &f_data;
+              type_table[cls_last_name].function_insert($2, f_data);
+            }} fct_synp scope_begin statement_list {
+              free($1); free($2); 
+          } arr_fild
+
+        | obj_decl { type_table[cls_last_name].object_insert(last_object.c_str()); } arr_fild
+        | obj_decl { type_table[cls_last_name].object_insert(last_object.c_str()); } arr_fild
+        | obj_decl { type_table[cls_last_name].object_insert(last_object.c_str()); } arr_fild
+        
+        | A_PRV arr_fild /*TODO: semantics*/
+        | A_PUB arr_fild /*TODO: semantics*/
+        | scope_end
+        ;
+        
+/*! variable states */
+
+var_decl: R_TYP S_NME ';' {
+            if(false == is_already_defined($2))
+            {
+              variable_data v_data($1);
+              symbols[LAST_SCOPE].variable_insert($2, v_data);
+            }
+
+            free($1); free($2); 
+          }
+        | var_defn
+        ;
+var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
+            bool error_flag = is_already_defined($2);
+            
+            // search for argument
+            const variable_data *argument_defined = nullptr;
+            for(size_t i = LAST_SCOPE; ; i--)
+            {
+              argument_defined = symbols[i].variable_exists($4);
+
+              if(argument_defined)
+              {
+                // type compatibility
+                if(std::string($1) == argument_defined->get_data_type())
+                  break;
+                
+                error_flag = true;
+                yyerror("incorrect argument type");
+              }
+              
+              if(0 == i) break;
+            }
+
+            error_flag |= nullptr == argument_defined;
+            if(error_flag)
+              yyerror("argument not found");
+
+            // success
+            if(false == error_flag)
+              symbols[LAST_SCOPE].variable_insert($2, *argument_defined);
+              
+            free($1); free($2); free($4);
+          }
+
+        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
+            // both functions provide error messages
+            // no need of yyerror statements
+            if(false == is_already_defined($2) &&
+            true == is_type_compatible($1, $4))
+            {
+              variable_data v_data($1, $4);
+              symbols[LAST_SCOPE].variable_insert($2, v_data);
+            }
+            
+            free($1); free($2); free($4);
+          };
+
+var_call: S_NME {
+            const variable_data *argument_defined = nullptr;
+            for(size_t i = LAST_SCOPE; ; i--)
+            {
+              argument_defined = symbols[LAST_SCOPE].exists($1);
+              if(argument_defined) break;
+              if(0 == i) break;
+            }
+                
+            if(nullptr == argument_defined)
+              yyerror("identifier not found");
+            free($1); // maybe we need to delete this line
+          };
+
+/*! function states */
+
+fct_decl: R_TYP S_NME fct_synp ';' {
+            free($1); free($2);
+          }
+        | S_NME S_NME fct_synp ';' {
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            free($1); free($2);
+          }
+        | fct_defn
+        ;
+
+fct_defn: R_TYP S_NME {
+            if(false == is_already_defined($2))
+            {
+              fct_last_name = $2;
+              function_data f_data($1);
+              symbols[LAST_SCOPE].functions_insert($2, f_data);
+            }} fct_synp scope_begin statement_list {
+            f_data_global = nullptr;
+            fct_last_name.clear();
+            free($1); free($2);
+          }
+        | S_NME S_NME {
+            bool error_flag = type_exists($1);
+            if(error_flag)
+              yyerror("undefined type");
+            error_flag |= is_already_defined($2);
+            
+            if(false == error_flag)
+            {
+              fct_last_name = $2;
+              function_data f_data($1);
+              symbols[LAST_SCOPE].functions_insert($2, f_data);
+            }} fct_synp scope_begin statement_list {
+            f_data_global = nullptr;
+            fct_last_name.clear();
+            free($1); free($2);
+          }
+        ;
+
+//** don't check if the id exists
+fct_synp: '(' arr_parm ')'
+        | '('')'
+arr_parm: R_TYP S_NME {
+            f_data_global->
+              parameter_insert($2, &variable_data($1));
+            }',' arr_parm { free($1); free($2); 
+          }
+        | R_TYP S_NME {
+            f_data_global->
+              parameter_insert($2, &variable_data($1));
+            free($1); free($2);
+          }
+        | S_NME S_NME {
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            else
+              f_data_global->
+                parameter_insert($2, &object_data($1));
+            }',' arr_parm { free($1); free($2);
+          }
+        | S_NME S_NME {
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            else
+              f_data_global->
+                parameter_insert($2, &object_data($1));
+            free($1); free($2);
+          }
+
+        | R_TYP {
+            f_data_global->
+              parameter_insert(&variable_data($1));
+            } ',' arr_parm { free($1); 
+          }
+        | R_TYP {
+            f_data_global->
+              parameter_insert(&variable_data($1));
+            free($1); 
+          }
+        | S_NME {
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            else
+              f_data_global->
+                parameter_insert(&object_data($1));
+            } ',' arr_parm { free($1); 
+          }
+        | S_NME  { 
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            else
+              f_data_global->
+                parameter_insert(&object_data($1));
+            free($1); 
+          }
+        
+        // maybe with assignation too? => another 8 rules
+        ;
+
+fct_call: S_NME '(' arr_argm ')' { /* provide return capacity */ free($1); } ;
+        | S_NME '(' ')' { /* provide return capacity */ free($1); } ;
+argument: S_NME | cst_call;
+arr_argm: argument ',' arr_argm
+        | argument
+        ;
+
+/*! object states */
+
+obj_decl: S_NME S_NME ';' {
+            bool error_flag = !type_exists($1);
+            if(error_flag)
+              yyerror("undefined type");
+            
+            error_flag |= is_already_defined($2);
+
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data($1);
+              symbols[LAST_SCOPE].object_insert($2, o_data);
+            }
+
+            free($1); free($2);
+          }
+        | obj_defn
+        ;
+
+obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
+            bool error_flag = !type_exists($1);
+            if(error_flag)
+              yyerror("undefined type")
+            error_flag |= is_already_defined($2);
+            
+            // search for the argument
+            const object_data *argument_defined = nullptr;
+            for(size_t i = LAST_SCOPE; ; i--)
+            {
+              argument_defined = symbols[LAST_SCOPE].object_exists($4);
+
+              if(argument_defined)
+              {
+                // type compatibility
+                if(std::string($1) == argument_defined->get_data_type())
+                  break;
+                
+                error_flag = true;
+                yyerror("incorrect argument type");
+              }
+              
+              if(0 == i) break;
+            }
+
+            if(nullptr == argument_defined)
+            {
+              error_flag = true;
+              yyerror("argument not found");
+            }
+
+            // success
+            if(false == error_flag)
+              symbols[LAST_SCOPE].object_insert($2, *argument_defined);
+              
+            free($1); free($2); free($4);
+          }
+        | S_NME S_NME { /*TODO: HARDEST THINGGGGGG */
+            if(false == type_exists($1))
+              yyerror("undefined type");
+            else
+            {
+              object_data o_data($1);
+              symbols[LAST_SCOPE].object_insert($2, o_data);
+            }
+
+            } OPERATOR_ASSIGN '{' obj_vals ';' {
+            free($1); free($2);
+          }
+        ;
+obj_vals: S_NME ','
+        | cst_call ','
+        | '}'
+
+fld_call: S_NME A_FLD S_NME { /* search type, search field */ } ;
+
+obj_call: S_NME { }
+        ;
+
+/*! text constant states */
+
+cst_call: C_INT { free($1); }
+        | C_FLT { free($1); }
+        | C_CHR { free($1); }
+        | C_STR { free($1); }
+        | C_BOL { free($1); }
+        ;
+
+/*! declaration parser */
+global_declaration      : cls_decl global_declaration
+	                | fct_decl global_declaration
+	                | var_decl global_declaration
+                        | obj_decl global_declaration
+                        | ';' global_declaration | cst_call ';' global_declaration
+                        | method_master
+	                ;
+local_declaration       : fct_decl local_declaration | fct_decl
+                        | var_decl local_declaration | var_decl
+                        | obj_decl local_declaration | obj_decl
+                        ;
+
+//------------------------------------------------
+
+/*! statements */
+statement_list  : statement_parse statement_list
+                | scope_begin statement_list scope_end /* adds scopes for the fun of it */
+                | scope_end /* halting condition */
+                ;
+
+/* statements types and parsing technique */
+statement_parse : statement_easy
+                | statement_bool
+                | statement_assg
+                | method_type ';'
+                | method_print ';' { std::string s = $1 + 6; s[s.size() - 1] = '\0'; printf("%s", s.c_str()); }
+                // | statement_cond
+                // | local_declaration
+                ;
+call_parse      : fct_call
+                | var_call
+                | fld_call
+                // | obj_call
+                | cst_call
+                ;
+
+/* redundant statementes */
+ statement_easy  : call_parse ';' | ';' ;
+
+/* assignation statement */// here is needed a recursive approach
+statement_assg  : S_NME OPERATOR_ASSIGN call_parse ';'
+                | S_NME OPERATOR_ASSIGN method_type ';'
+                | S_NME OPERATOR_ASSIGN method_print ';'
+                ;
+
+/* bool returning statements */
+statement_bool  : S_NME OPERATOR_RELTIN S_NME ;
+
+/* conditional statements */
+condition_append: ';'
+                | statement_parse
+                | scope_begin statement_list scope_end
+                | scope_begin scope_end
+                ;
+// statement_if    : R_SEQ_IF '(' statement_bool ')' condition_append;
+// statement_for   : R_SEQ_FOR '(' /* declare */ ';' statement_bool ';' /* statement */ ')' condition_append;
+// statement_whl   : R_SEQ_WHL '(' statement_bool ')' condition_append;
+// statement_cond  : statement_if ;//| statement_for | statement_whl;
+
+%%
+
+//------------------------------------------------
+//------------------------------------------------
+// C++ functions:
+
+void yyerror(const char * s){
+    count_error++;
+    printf("error - line %d: %s.\n", yylineno, s);
+}
+
+int main(int argc, char** argv)
+{
+    if(argc != 2)
+    {
+        yyerror("wrong number of arguments");
+        return EXIT_FAILURE;
+    }
+
+    FILE* ptr = fopen(argv[1],"r");
+    if(nullptr == ptr)
+    {
+        yyerror("invalid file");
+        return EXIT_FAILURE;
+    }
+
+    yyin = ptr;
+    yyparse();
+    return EXIT_SUCCESS;
+}
