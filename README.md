@@ -61,10 +61,11 @@ Test-driven development principles were considered in this project.
 <br>
 
 0. array support
-1. operator[] 
+1. operator[]
 
 <br>
 
+1. maybe we should not allow declarations of already defined symbols
 2. complete romanian version of this document
 2. multi line comment
 
