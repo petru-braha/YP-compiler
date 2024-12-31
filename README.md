@@ -47,23 +47,27 @@ Test-driven development principles were considered in this project.
         - recursion
         - abstract syntax tree
 
-0. object data vector to unordered map
-0. object data attribute_insert
+0. set_parameter(const std::string &id, item_data *value) - gresit
+0. object data vector to unordered map, attribute_insert
 0. field access through object
 
 <br>
 
-0. ast - statament recognition and logic
-0. complete the syntax documentation from the guidline
+0. jump implementation
+0. define what syntacticly correct file means
+0. statement recognition - be able to read any syntactic correct file
+0. build ast
+0. compilation of compiler
+0. test cases
 
 <br>
 
 0. array support
-1. operator[]
+0. operator[]
 
 <br>
 
-1. maybe we should not allow declarations of already defined symbols
-2. complete romanian version of this document
-2. multi line comment
-
+0. maybe we should not allow declarations of already defined symbols
+0. complete romanian version of this document
+0. multi line comment
+0. complete the syntax documentation from the guidline
