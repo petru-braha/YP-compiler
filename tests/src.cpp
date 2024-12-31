@@ -15,6 +15,8 @@ int error_flags()
     return 0;
 }
 
+#include "util.hpp"
+
 int main()
 {
     return 0;

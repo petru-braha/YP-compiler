@@ -164,13 +164,17 @@ function_data &function_data::
     {
         variable_data *v_data = (variable_data *)value;
         variable_data *parameter = new variable_data(*v_data);
-        parameters[default_id()] = parameter;
+        std::pair<std::string, item_data *>
+            f_pair(default_id(), parameter);
+        parameters.insert(f_pair);
         return *this;
     }
 
     object_data *o_data = (object_data *)value;
     object_data *parameter = new object_data(*o_data);
-    parameters[default_id()] = parameter;
+    std::pair<std::string, item_data *>
+        f_pair(default_id(), parameter);
+    parameters.insert(f_pair);
     return *this;
 }
 
@@ -180,6 +184,27 @@ function_data &function_data::
 function_data &function_data::
     parameter_insert(const std::string &id, item_data *value)
 {
+    if (parameters.find(id) != parameters.end())
+    {
+        yyerror("parameter already defined");
+        return *this;
+    }
+
+    if (ITEM_TYPE_VAR == value->get_item_type())
+    {
+        variable_data *v_data = (variable_data *)value;
+        variable_data *parameter = new variable_data(*v_data);
+        std::pair<std::string, item_data *>
+            f_pair(id, parameter);
+        parameters.insert(f_pair);
+        return *this;
+    }
+
+    object_data *o_data = (object_data *)value;
+    object_data *parameter = new object_data(*o_data);
+    std::pair<std::string, item_data *>
+        f_pair(id, parameter);
+    parameters.insert(f_pair);
     return *this;
 }
 
@@ -187,9 +212,6 @@ function_data &function_data::
 function_data &function_data::
     set_parameter(const std::string &id, item_data *value)
 {
-    return *this;
-}
-/*{
     if (parameters.find(id) == parameters.end())
     {
         yyerror("parameter not found");
@@ -209,7 +231,9 @@ function_data &function_data::
         variable_data *parameter = new variable_data(*v_data);
         variable_data *old_parameter =
             (variable_data *)parameters.at(id);
-        parameters[id] = parameter;
+        std::pair<std::string, item_data *>
+            f_pair(id, parameter);
+        parameters.insert(f_pair);
         delete old_parameter;
         return *this;
     }
@@ -218,10 +242,12 @@ function_data &function_data::
     object_data *parameter = new object_data(*o_data);
     object_data *old_parameter =
         (object_data *)parameters.at(id);
-    parameters[id] = parameter;
+    std::pair<std::string, item_data *>
+        f_pair(id, parameter);
+    parameters.insert(f_pair);
     delete old_parameter;
     return *this;
-}*/
+}
 
 const std::string &function_data::get_return_type() const
 {
@@ -330,6 +356,11 @@ object_data &object_data::
     return *this;
 }
 
+size_t object_data::get_count_attributes() const
+{
+    return attributes.size();
+}
+
 item_data *object_data::
     get_attribute(const size_t index) const
 {
@@ -354,7 +385,9 @@ symbol_table &symbol_table::
     variable_insert(const std::string &id,
                     const variable_data &data)
 {
-    var.insert({id, data});
+    std::pair<std::string, variable_data>
+        v_pair(id, data);
+    var.insert(v_pair);
     return *this;
 }
 
@@ -362,7 +395,9 @@ symbol_table &symbol_table::
     function_insert(const std::string &id,
                     const function_data &data)
 {
-    fct.insert({id, data});
+    std::pair<std::string, function_data>
+        f_pair(id, data);
+    fct.insert(f_pair);
     return *this;
 }
 
@@ -370,7 +405,9 @@ symbol_table &symbol_table::
     object_insert(const std::string &id,
                   const object_data &data)
 {
-    obj.insert({id, data});
+    std::pair<std::string, object_data>
+        o_pair(id, data);
+    obj.insert(o_pair);
     return *this;
 }
 
@@ -431,7 +468,7 @@ size_t symbol_table::get_count_object() const
     return obj.size();
 }
 
-size_t symbol_table::get_count_declared() const
+size_t symbol_table::get_count_defined() const
 {
     return var.size() + fct.size() + obj.size();
 }
@@ -467,7 +504,9 @@ bool type_insert(const std::string &id)
         return false;
     }
 
-    type_table.insert({id, symbol_table()});
+    std::pair<std::string, symbol_table>
+        s_pair(id, symbol_table());
+    type_table.insert(s_pair);
     return true;
 }
 
@@ -480,7 +519,9 @@ bool type_insert(const std::string &id,
         return false;
     }
 
-    type_table.insert({id, s});
+    std::pair<std::string, symbol_table>
+        s_pair(id, symbol_table());
+    type_table.insert(s_pair);
     return true;
 }
 

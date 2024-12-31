@@ -43,7 +43,7 @@ public:
     size_t get_id() const;
     size_t get_count_variable() const;
     size_t get_count_object() const;
-    size_t get_count_declared() const;
+    size_t get_count_defined() const;
 
     typedef std::unordered_map<
         std::string, variable_data>::iterator var_it;
