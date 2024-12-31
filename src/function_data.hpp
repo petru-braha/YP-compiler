@@ -18,8 +18,8 @@ class function_data final
 
 public:
     ~function_data();
-    function_data() {}
-    function_data(std::string &);
+    function_data();
+    function_data(const std::string &);
 
     function_data &parameter_insert(item_data *);
     function_data &parameter_insert(const std::string &,

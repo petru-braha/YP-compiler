@@ -7,7 +7,8 @@
  * type_table <- object_data <- symbol_table <- type_table <- object_data
  */
 
-void yyerror(const char *s);
+// be aware: in YP_utility this function should not be defined
+void yyerror(const char *s) {}
 
 #include "../src/variable_data.hpp"
 #include "../src/function_data.hpp"
@@ -81,6 +82,9 @@ std::string type_of(const std::string &primitive_value)
     }
 }
 
+variable_data::variable_data()
+    : item_data(0, std::string(0)) {}
+
 variable_data::variable_data(const std::string &type)
     : item_data(ITEM_TYPE_VAR, type)
 {
@@ -150,8 +154,11 @@ function_data::~function_data()
         delete parameter.second;
 }
 
+function_data::function_data()
+    : return_type(DATA_TYPE_INT) {}
+
 // no parameters
-function_data::function_data(std::string &type)
+function_data::function_data(const std::string &type)
     : return_type(type) {}
 
 /* DOES NOT provide error messages
@@ -277,8 +284,11 @@ object_data::~object_data()
     attributes.clear();
 }
 
+object_data::object_data()
+    : item_data(ITEM_TYPE_OBJ, DATA_TYPE_INT) {}
+
 // default values of fields are being set at compilation time
-object_data::object_data(std::string &type)
+object_data::object_data(const std::string &type)
     : item_data(ITEM_TYPE_OBJ, type)
 {
     if (is_primitive(type))

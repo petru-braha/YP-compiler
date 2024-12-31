@@ -47,8 +47,6 @@ Test-driven development principles were considered in this project.
         - recursion
         - abstract syntax tree
 
-0. if the first error occurs and the second one won't - the error message for the second one will still be printed
-0. try compile
 0. object data vector to unordered map
 0. object data attribute_insert
 0. field access through object

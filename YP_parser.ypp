@@ -238,7 +238,8 @@ arr_fild: R_TYP S_NME ';' { /* variable */
         | S_NME S_NME { /*? function */
             bool is_error = false, error_flag = false;
 
-            error_flag |= is_error = type_exists($1);
+            error_flag |= is_error = 
+              nullptr == type_exists($1);
             if(is_error)
               yyerror("undefined type");
             
@@ -352,7 +353,7 @@ fct_decl: R_TYP S_NME fct_synp ';' {
             free($1); free($2);
           }
         | S_NME S_NME fct_synp ';' {
-            if(false == type_exists($1))
+            if(nullptr == type_exists($1))
               yyerror("undefined type");
             free($1); free($2);
           }
@@ -365,16 +366,18 @@ fct_defn: R_TYP S_NME {
               fct_last_name = $2;
               function_data f_data($1);
               f_data_global = &f_data;
-              symbols[LAST_SCOPE].functions_insert($2, f_data);
+              symbols[LAST_SCOPE].function_insert($2, f_data);
             }} fct_synp scope_begin statement_list {
             f_data_global = nullptr;
             fct_last_name.clear();
             free($1); free($2);
           }
         | S_NME S_NME {
-            bool error_flag = type_exists($1);
+            bool error_flag = 
+              nullptr == type_exists($1);
             if(error_flag)
               yyerror("undefined type");
+            
             error_flag |= is_already_defined($2);
             
             if(false == error_flag)
@@ -382,7 +385,7 @@ fct_defn: R_TYP S_NME {
               fct_last_name = $2;
               function_data f_data($1);
               f_data_global = &f_data;
-              symbols[LAST_SCOPE].functions_insert($2, f_data);
+              symbols[LAST_SCOPE].function_insert($2, f_data);
             }} fct_synp scope_begin statement_list {
             f_data_global = nullptr;
             fct_last_name.clear();
@@ -394,56 +397,72 @@ fct_defn: R_TYP S_NME {
 fct_synp: '(' arr_parm ')'
         | '('')'
 arr_parm: R_TYP S_NME {
+            variable_data v_data($1);
             f_data_global->
-              parameter_insert($2, &variable_data($1));
+              parameter_insert($2, &v_data);
             }',' arr_parm { free($1); free($2); 
           }
         | R_TYP S_NME {
+            variable_data v_data($1);
             f_data_global->
-              parameter_insert($2, &variable_data($1));
+              parameter_insert($2, &v_data);
             free($1); free($2);
           }
         | S_NME S_NME {
-            if(false == type_exists($1))
+            if(nullptr == type_exists($1))
               yyerror("undefined type");
             else
+            {
+              object_data o_data($1);
               f_data_global->
-                parameter_insert($2, &object_data($1));
-            }',' arr_parm { free($1); free($2);
+                parameter_insert($2, &o_data);
+            }}',' arr_parm { free($1); free($2);
           }
         | S_NME S_NME {
-            if(false == type_exists($1))
+            if(nullptr == type_exists($1))
               yyerror("undefined type");
             else
+            {
+              object_data o_data($1);
               f_data_global->
-                parameter_insert($2, &object_data($1));
+                parameter_insert($2, &o_data);
+            }
+            
             free($1); free($2);
           }
 
         | R_TYP {
+            variable_data v_data($1);
             f_data_global->
-              parameter_insert(&variable_data($1));
+              parameter_insert(&v_data);
             } ',' arr_parm { free($1);
           }
         | R_TYP {
+            variable_data v_data($1);
             f_data_global->
-              parameter_insert(&variable_data($1));
+              parameter_insert(&v_data);
             free($1);
           }
         | S_NME {
-            if(false == type_exists($1))
+            if(nullptr == type_exists($1))
               yyerror("undefined type");
             else
+            {
+              object_data o_data($1);
               f_data_global->
-                parameter_insert(&object_data($1));
-            } ',' arr_parm { free($1);
+                parameter_insert(&o_data);
+            }} ',' arr_parm { free($1);
           }
-        | S_NME  {
-            if(false == type_exists($1))
+        | S_NME {
+            if(nullptr == type_exists($1))
               yyerror("undefined type");
             else
+            {
+              object_data o_data($1);
               f_data_global->
-                parameter_insert(&object_data($1));
+                parameter_insert(&o_data);
+            }
+            
             free($1);
           }
         
@@ -460,7 +479,8 @@ arr_argm: argument ',' arr_argm
 /*! object states */
 
 obj_decl: S_NME S_NME ';' {
-            bool error_flag = !type_exists($1);
+            bool error_flag =
+              nullptr == type_exists($1);
             if(error_flag)
               yyerror("undefined type");
             
@@ -479,9 +499,11 @@ obj_decl: S_NME S_NME ';' {
         ;
 
 obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
-            bool error_flag = !type_exists($1);
+            bool error_flag = 
+              nullptr == type_exists($1);
             if(error_flag)
-              yyerror("undefined type")
+              yyerror("undefined type");
+
             error_flag |= is_already_defined($2);
             
             // search for the argument
@@ -516,7 +538,7 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
             free($1); free($2); free($4);
           }
         | S_NME S_NME { /*TODO: HARDEST THINGGGGGG */
-            if(false == type_exists($1))
+            if(nullptr == type_exists($1))
               yyerror("undefined type");
             else
             {
