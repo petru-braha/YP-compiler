@@ -1,0 +1,13 @@
+class number;
+
+class number
+{
+
+}
+
+class number;
+
+master()
+{
+
+}

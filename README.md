@@ -47,7 +47,13 @@ Test-driven development principles were considered in this project.
         - recursion
         - abstract syntax tree
 
-0. set_parameter(const std::string &id, item_data *value) - gresit
+0. who should take care of the error cases? utility or parser? it is confusing when errors are defined in both places
+0. field declaration is done within the class, but its definition is inside the object
+0. friend class std::pair
+
+<br>
+
+0. please create some standard error messages
 0. object data vector to unordered map, attribute_insert
 0. field access through object
 

@@ -1,0 +1,14 @@
+class numeric
+{
+
+}
+
+class numeric
+{
+    int value;
+}
+
+master()
+{
+
+}

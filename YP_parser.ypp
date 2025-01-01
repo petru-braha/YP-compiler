@@ -161,7 +161,12 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               arg_data = symbols[i].variable_exists($4);
               if(0 == i) break;
             }
-              
+
+            // search personal fields
+            if(nullptr == arg_data)
+              arg_data = type_table[cls_last_name].
+                variable_exists($4);
+            
             error_flag |= is_error =
               nullptr == arg_data;
             if(is_error)
@@ -260,9 +265,10 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               free($1); free($2); 
           } arr_fild
 
-        | obj_decl { /*type_table[cls_last_name].object_insert(last_object.c_str());*/ } arr_fild
-        | obj_decl { /*type_table[cls_last_name].object_insert(last_object.c_str());*/ } arr_fild
-        | obj_decl { /*type_table[cls_last_name].object_insert(last_object.c_str());*/ } arr_fild
+
+        | S_NME S_NME ';' { /*type_table[cls_last_name].object_insert(last_object.c_str());*/ } arr_fild
+        | S_NME S_NME OPERATOR_ASSIGN S_NME { /*type_table[cls_last_name].object_insert(last_object.c_str());*/ } arr_fild
+        | S_NME S_NME  { /*type_table[cls_last_name].object_insert(last_object.c_str());*/ } arr_fild
         
         | A_PRV arr_fild /*TODO: semantics*/
         | A_PUB arr_fild /*TODO: semantics*/

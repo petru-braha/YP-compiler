@@ -1,0 +1,11 @@
+class number
+{
+    int value;
+    int value; # error - line 4: identifier already defined
+    int int; # error - line 5: identifier treated as a type
+}
+
+master()
+{
+
+}
