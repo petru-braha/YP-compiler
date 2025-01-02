@@ -1,5 +1,10 @@
 ## Brainstorming - general ideas
 
+- field declaration is done within the class, but its definition is inside the object
+
+- fields: variables, functions (methods), objects
+- attributes: variables, objects
+
 - C's main functions in our program is named "master()":
     - does not take any arguments
     - the program begins by calling master
@@ -147,7 +152,7 @@ string name = Type(a);
 
 - every time i call a function it is an assignation of its variable + code jumps; we can view it as a struct in C
 
-
+## Common errors
 
 - already defined?
 - treated as a type?
@@ -158,3 +163,11 @@ string name = Type(a);
 - is_already_defined
     - treated as a type
     - defined in scopes
+
+## Questions:
+
+- friend class std::unordered_map<std::string, variable_data> does not work
+- global syntax can't be declared after grammar
+
+0. error messages
+

@@ -26,14 +26,14 @@ std::string fct_last_name;
 
 std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
-
-#include "src/dev/error.hpp"
 %}
 
-/* comments:
+/* comments
  * class == type
  * the number of started scopes == symbols.size();
  
+ * the majority of utilities provide error messages
+
  * states:
  ** declaration
  ** definition
@@ -44,6 +44,7 @@ std::vector<symbol_table> symbols;
  ** function
  ** object
  
+ * exception: symbol table insertions won't provide error messages
  */
 
 //------------------------------------------------
@@ -51,12 +52,6 @@ std::vector<symbol_table> symbols;
 
 %union {
     char* token_name;
-    /*
-    int basic_int;
-    float basic_float;
-    char basic_chr;
-    std::string basic_str;
-    bool basic_bol; */
 }
 
 %type method_master
@@ -74,11 +69,11 @@ std::vector<symbol_table> symbols;
 
 %%
 starting_symbol : { symbols.emplace_back(); } global_declaration {
-                      if(0 == count_error)
-                        printf("the program was compiled correctly.\n");
-                      else
-                        printf("the program has %d errors.\n", count_error);
-                      };
+                    if(0 == count_error)
+                      printf("the program was compiled correctly.\n");
+                    else
+                      printf("the program has %d errors.\n", count_error);
+                  };
 
 scope_begin : '{' { symbols.emplace_back(); };
 scope_end   : '}' { symbols.pop_back(); };
@@ -100,13 +95,9 @@ cls_decl: R_CLS S_NME ';' {
         ;
 
 cls_defn: R_CLS S_NME '{' { // scope_begin => emplaces back
-            if(type_exists($2))
-              yyerror("type already defined");
-            else
-            {
-              cls_last_name = $2;
-              type_insert(cls_last_name);
-            }} arr_fild {
+            cls_last_name = $2;
+            type_insert(cls_last_name);
+            } arr_fild {
             cls_last_name.clear();
             free($2);
           }
@@ -302,11 +293,11 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
               if(argument_defined)
               {
                 // type compatibility
-                if(std::string($1) == argument_defined->get_data_type())
-                  break;
-                
-                error_flag = true;
-                yyerror("incorrect argument type");
+                error_flag |= is_error =
+                  std::string($1) != argument_defined->get_data_type();
+                if(is_error)
+                  yyerror("incorrect argument type");
+                break;
               }
               
               if(0 == i) break;
@@ -485,15 +476,8 @@ arr_argm: argument ',' arr_argm
 /*! object states */
 
 obj_decl: S_NME S_NME ';' {
-            bool error_flag =
-              nullptr == type_exists($1);
-            if(error_flag)
-              yyerror("undefined type");
-            
-            error_flag |= is_already_defined($2);
-
-            // success
-            if(false == error_flag)
+  
+            if(false == is_already_defined($2))
             {
               object_data o_data($1);
               symbols[LAST_SCOPE].object_insert($2, o_data);
@@ -505,11 +489,7 @@ obj_decl: S_NME S_NME ';' {
         ;
 
 obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
-            bool error_flag = 
-              nullptr == type_exists($1);
-            if(error_flag)
-              yyerror("undefined type");
-
+            bool is_error = false, error_flag = false;
             error_flag |= is_already_defined($2);
             
             // search for the argument
@@ -521,21 +501,20 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
               if(argument_defined)
               {
                 // type compatibility
-                if(std::string($1) == argument_defined->get_data_type())
-                  break;
-                
-                error_flag = true;
-                yyerror("incorrect argument type");
+                error_flag |= is_error =
+                  std::string($1) != argument_defined->get_data_type();
+                if(is_error)
+                  yyerror("incorrect argument type");
+                break;
               }
               
               if(0 == i) break;
             }
 
-            if(nullptr == argument_defined)
-            {
-              error_flag = true;
+            error_flag |= is_error =
+              nullptr == argument_defined;
+            if(is_error)
               yyerror("argument not found");
-            }
 
             // success
             if(false == error_flag)
@@ -543,15 +522,9 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
               
             free($1); free($2); free($4);
           }
-        | S_NME S_NME { /*TODO: HARDEST THINGGGGGG */
-            if(nullptr == type_exists($1))
-              yyerror("undefined type");
-            else
-            {
+        | S_NME S_NME {
               object_data o_data($1);
               symbols[LAST_SCOPE].object_insert($2, o_data);
-            }
-
             } OPERATOR_ASSIGN '{' obj_vals ';' {
             free($1); free($2);
           }
@@ -641,26 +614,42 @@ condition_append: ';'
 // C++ functions:
 
 void yyerror(const char * s){
-    count_error++;
-    printf("error - line %d: %s.\n", yylineno, s);
+  count_error++;
+  printf("error - line %d: %s.\n", yylineno, s);
+}
+
+/* TODO: complete this function */ 
+item_data* scope_search_argument(const std::string& id)
+{
+  item_data *argument = nullptr;
+  for(size_t i = LAST_SCOPE; ; i--)
+  {
+    argument = symbols[i].object_exists(id);
+
+    if(argument);
+    if(0 == i) break;
+  }
+
+  return argument;
 }
 
 int main(int argc, char** argv)
 {
-    if(argc != 2)
-    {
-        yyerror("wrong number of arguments");
-        return EXIT_FAILURE;
-    }
 
-    FILE* ptr = fopen(argv[1],"r");
-    if(nullptr == ptr)
-    {
-        yyerror("invalid file");
-        return EXIT_FAILURE;
-    }
+  if(argc != 2)
+  {
+      yyerror("wrong number of arguments");
+      return EXIT_FAILURE;
+  }
 
-    yyin = ptr;
-    yyparse();
-    return EXIT_SUCCESS;
+  FILE* ptr = fopen(argv[1],"r");
+  if(nullptr == ptr)
+  {
+    yyerror("invalid file");
+    return EXIT_FAILURE;
+  }
+
+  yyin = ptr;
+  yyparse();
+  return EXIT_SUCCESS;
 }

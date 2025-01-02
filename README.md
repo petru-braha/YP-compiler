@@ -48,14 +48,8 @@ Test-driven development principles were considered in this project.
         - abstract syntax tree
 
 0. who should take care of the error cases? utility or parser? it is confusing when errors are defined in both places
-0. field declaration is done within the class, but its definition is inside the object
-0. friend class std::pair
-
-<br>
-
-0. please create some standard error messages
-0. object data vector to unordered map, attribute_insert
 0. field access through object
+0. const specifier, naming convetions
 
 <br>
 
@@ -77,3 +71,5 @@ Test-driven development principles were considered in this project.
 0. complete romanian version of this document
 0. multi line comment
 0. complete the syntax documentation from the guidline
+0. friend class std::pair - didn't work on a first try
+

@@ -5,8 +5,7 @@
 #include <unordered_map>
 #include "dev/item_data.hpp"
 
-/* we prefer a map of parameters instead of a vector*/
-class function_data final
+class function_data final : public item_data
 {
     std::string return_type;
     std::unordered_map<

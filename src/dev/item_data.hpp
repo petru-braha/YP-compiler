@@ -7,6 +7,11 @@ constexpr unsigned char ITEM_TYPE_VAR = 0;
 constexpr unsigned char ITEM_TYPE_FCT = 1;
 constexpr unsigned char ITEM_TYPE_OBJ = 2;
 
+/* role: provide pointers that can be used with
+ * variable_data
+ * function_data
+ * object_data
+ */
 class item_data
 {
     unsigned char item_type;

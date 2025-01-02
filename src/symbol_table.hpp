@@ -1,18 +1,19 @@
 #ifndef __0SYMBOLTABLE0__
 #define __0SYMBOLTABLE0__
 
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include "variable_data.hpp"
 #include "function_data.hpp"
 #include "object_data.hpp"
 
-/* commments:
+/* commments
  * exists method are useful just
  * already defnied identifiers have to be searched in all scopes
  * not in just one symbol table
- */
 
+ * exception: symbol table insertions won't provide error messages
+ */
 class symbol_table
 {
     std::string s_id;
