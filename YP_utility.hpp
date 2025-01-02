@@ -347,6 +347,16 @@ item_data *function_data::
     return parameters.at(id);
 }
 
+function_data::itm_data function_data::begin()
+{
+    return parameters.begin();
+}
+
+function_data::itm_data function_data::end()
+{
+    return parameters.end();
+}
+
 //!------------------------------------------------
 //! object
 

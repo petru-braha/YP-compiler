@@ -168,7 +168,7 @@ string name = Type(a);
 
 - friend class std::unordered_map<std::string, variable_data> does not work
 - global syntax can't be declared after grammar
-- auto error messages for constructors and insertions (specific methods)
+- auto error messages for constructors and insertions (specific methods) - who should take care of the error cases? utility or parser? it is confusing when errors are defined in both places. short answer in both places, the distinction is made wihtin the type of method: modifiable/interogative
 
 - what happens if error occurs? should we stop the execution?
 - what approach should we follow? map<item_data*> / 3 maps with var fct and obj?

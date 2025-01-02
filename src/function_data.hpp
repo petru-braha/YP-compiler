@@ -33,7 +33,7 @@ public:
     item_data *get_parameter(const std::string &) const;
 
     typedef std::unordered_map<
-        std::string, item_data *>
+        std::string, item_data *>::iterator
         itm_data;
     itm_data begin();
     itm_data end();
