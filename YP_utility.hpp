@@ -385,26 +385,32 @@ object_data::object_data(const std::string &type)
     symbol_table o_attributes = *s;
 
     // initialization of data
-    auto v = o_attributes.variable_begin();
-    while (v != o_attributes.variable_end())
+    auto i = o_attributes.begin();
+    while (i != o_attributes.end())
     {
+        item_data *data = (*i).second;
+        if (ITEM_TYPE_VAR == data->get_item_type())
+        {
+            std::pair<std::string, item_data *>
+                i_pair((*i).first,
+                       new variable_data(*((variable_data *)data)));
+            attributes.insert(i_pair);
+            i++;
+            continue;
+        }
+
+        // it's pointless to copy function_data
+        if (ITEM_TYPE_FCT == data->get_item_type())
+        {
+            i++;
+            continue;
+        }
+
         std::pair<std::string, item_data *>
-            v_pair((*v).first,
-                   new variable_data((*v).second));
-
-        attributes.insert(v_pair);
-        v++;
-    }
-
-    auto o = o_attributes.object_begin();
-    while (o != o_attributes.object_end())
-    {
-        std::pair<std::string, item_data *>
-            o_pair((*o).first,
-                   new object_data((*o).second));
-
-        attributes.insert(o_pair);
-        o++;
+            i_pair((*i).first,
+                   new object_data(*((object_data *)data)));
+        attributes.insert(i_pair);
+        i++;
     }
 }
 
@@ -412,9 +418,18 @@ object_data::object_data(const std::string &type)
  * reach out to tests/extra/memory copy/f1()
  * used only by utility, not by parser
  */
-object_data::object_data(const object_data &o)
-    : item_data(ITEM_TYPE_OBJ, o.get_data_type()),
-      attributes(o.attributes) {}
+object_data::object_data(const std::string &type,
+                         const object_data &o)
+    : item_data(ITEM_TYPE_OBJ, type),
+      attributes(o.attributes) 
+{
+    if(type != o.get_data_type())
+    {
+        yyerror("type incompatibility");
+        this->~object_data();
+        *this = object_data(type);
+    }
+}
 
 /* useful in initialization */
 object_data &object_data::
@@ -434,7 +449,7 @@ object_data &object_data::
 
     // TODO: to remove?
     //  check if id belongs to type - redundant operation
-    if (false == type_exists(get_data_type())->exists(id))
+    if (nullptr == type_exists(get_data_type())->get_data(id))
         yyerror("bad news");
 
     if (ITEM_TYPE_VAR == value->get_item_type())
@@ -472,7 +487,7 @@ object_data &object_data::
         yyerror("bad news");
 
     // check if id belongs to type
-    if (false == type_exists(get_data_type())->exists(id))
+    if (false == type_exists(get_data_type())->get_data(id))
         yyerror("bad news");
 
     if (value->get_data_type() !=
@@ -532,72 +547,25 @@ symbol_table::symbol_table()
 symbol_table::symbol_table(const std::string &s_id)
     : s_id(s_id) {}
 
+// TODO: is here needed a copy?
 symbol_table &symbol_table::
-    variable_insert(const std::string &id,
-                    const variable_data &data)
+    insert(const std::string &id,
+           item_data *data)
 {
-    std::pair<std::string, variable_data>
-        v_pair(id, data);
-    var.insert(v_pair);
+    std::pair<std::string, item_data *>
+        i_pair(id, data);
+    itm.insert(i_pair);
     return *this;
 }
 
-symbol_table &symbol_table::
-    function_insert(const std::string &id,
-                    const function_data &data)
-{
-    std::pair<std::string, function_data>
-        f_pair(id, data);
-    fct.insert(f_pair);
-    return *this;
-}
-
-symbol_table &symbol_table::
-    object_insert(const std::string &id,
-                  const object_data &data)
-{
-    std::pair<std::string, object_data>
-        o_pair(id, data);
-    obj.insert(o_pair);
-    return *this;
-}
-
-variable_data *symbol_table::
-    variable_exists(const std::string &id)
-{
-    if (var.find(id) != var.end())
-        return &var[id];
-    return nullptr;
-}
-
-function_data *symbol_table::
-    function_exists(const std::string &id)
-{
-    if (fct.find(id) != fct.end())
-        return &fct[id];
-    return nullptr;
-}
-
-object_data *symbol_table::
-    object_exists(const std::string &id)
-{
-    if (obj.find(id) != obj.end())
-        return &obj[id];
-    return nullptr;
-}
-
-/* used for type_table
+/* used for type_table too
 the only time when we don't check for previous scopes too
  */
-bool symbol_table::exists(const std::string &id) const
+item_data *symbol_table::get_data(const std::string &id) const
 {
-    if (var.find(id) != var.end())
-        return true;
-    if (fct.find(id) != fct.end())
-        return true;
-    if (obj.find(id) != obj.end())
-        return true;
-    return false;
+    if (itm.find(id) != itm.end())
+        return (*itm.find(id)).second;
+    return nullptr;
 }
 
 size_t symbol_table::get_id() const
@@ -605,39 +573,49 @@ size_t symbol_table::get_id() const
     return available_id - 1;
 }
 
+size_t symbol_table::get_count() const
+{
+    return itm.size();
+}
+
 size_t symbol_table::get_count_variable() const
 {
-    return var.size();
+    size_t count = 0;
+    for (const auto &instance : itm)
+        if (ITEM_TYPE_VAR ==
+            instance.second->get_item_type())
+            count++;
+    return count;
+}
+
+size_t symbol_table::get_count_function() const
+{
+    size_t count = 0;
+    for (const auto &instance : itm)
+        if (ITEM_TYPE_FCT ==
+            instance.second->get_item_type())
+            count++;
+    return count;
 }
 
 size_t symbol_table::get_count_object() const
 {
-    return obj.size();
+    size_t count = 0;
+    for (const auto &instance : itm)
+        if (ITEM_TYPE_OBJ ==
+            instance.second->get_item_type())
+            count++;
+    return count;
 }
 
-size_t symbol_table::get_count_defined() const
+symbol_table::itm_it symbol_table::begin()
 {
-    return var.size() + fct.size() + obj.size();
+    return itm.begin();
 }
 
-symbol_table::var_it symbol_table::variable_begin()
+symbol_table::itm_it symbol_table::end()
 {
-    return var.begin();
-}
-
-symbol_table::var_it symbol_table::variable_end()
-{
-    return var.end();
-}
-
-symbol_table::obj_it symbol_table::object_begin()
-{
-    return obj.begin();
-}
-
-symbol_table::obj_it symbol_table::object_end()
-{
-    return obj.end();
+    return itm.end();
 }
 
 //!------------------------------------------------
@@ -680,7 +658,7 @@ size_t scope_search(std::string id)
 {
     for (size_t scope = LAST_SCOPE;; scope--)
     {
-        if (symbols[scope].exists(id))
+        if (symbols[scope].get_data(id))
             return scope;
         if (0 == scope)
             break;

@@ -19,7 +19,7 @@ public:
     ~object_data();
     object_data();
     object_data(const std::string &);
-    object_data(const object_data &);
+    object_data(const std::string &, const object_data &);
 
     object_data &attribute_insert(const std::string &,
                                   item_data *);

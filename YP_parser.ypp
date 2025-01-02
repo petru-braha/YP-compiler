@@ -22,7 +22,7 @@ size_t count_error;
 std::string cls_last_name;
 function_data* f_data_global;
 object_data* o_data_global;
-size_t o_data_index;
+size_t f_data_index, o_data_index;
 
 std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
@@ -47,6 +47,10 @@ std::vector<symbol_table> symbols;
  ** object
  
  * exception: symbol table insertions won't provide error messages
+
+ * how error checks are written: 
+    for each terminal/non-terminal we perform checks
+    we start with the first one and continue consecutively
  */
 
 //------------------------------------------------
@@ -56,16 +60,17 @@ std::vector<symbol_table> symbols;
     char* token_name;
 }
 
+// %token<token_name> method_type method_print
 %type method_master
 %type<token_name> cst_call
-%token<token_name> method_type method_print
 %token R_CLS A_PRV A_PUB A_FLD
-%token OPERATOR_ASSIGN OPERATOR_RELTIN
 
 %token<token_name> S_NME R_TYP
 %token<token_name> C_INT C_FLT C_CHR C_STR C_BOL
 
-%token R_SEQ_IF R_SEQ_FOR R_SEQ_WHL
+// %token R_SEQ_IF R_SEQ_FOR R_SEQ_WHL
+%token OPERATOR_ASSIGN
+// %token OPERATOR_RELTIN
 
 %start starting_symbol
 
@@ -114,7 +119,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("identifier already defined");
             
             error_flag |= is_error = 
-              is_primitive($2) || type_exists($2);
+              is_type($2);
             if(is_error)
               yyerror("identifier treated as a type");
             
@@ -122,7 +127,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
               variable_data v_data($1);
-              type_table[cls_last_name].variable_insert($2, v_data);
+              type_table[cls_last_name].insert($2, v_data);
             }
             
             free($1); free($2);
@@ -136,29 +141,27 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(is_error)
               yyerror("identifier already defined");
             
-            error_flag |= is_error = 
-              is_primitive($2) || type_exists($2);
+            error_flag |= is_error = is_type($2);
             if(is_error)
               yyerror("first identifier treated as a type");
             
-            error_flag |= is_error =
-              is_primitive($4) || type_exists($4);
+            error_flag |= is_error = is_type($4);
             if(is_error)
               yyerror("second identifier treated as a type");
             
             // search for the argument
             const variable_data *arg_data =
-              type_table[cls_last_name].variable_exists($4);
+              type_table[cls_last_name].get_data($4);
             for(size_t i = LAST_SCOPE; arg_data; i--)
             {
-              arg_data = symbols[i].variable_exists($4);
+              arg_data = symbols[i].get_data($4);
               if(0 == i) break;
             }
 
             // search personal fields
             if(nullptr == arg_data)
               arg_data = type_table[cls_last_name].
-                variable_exists($4);
+                get_data($4);
             
             error_flag |= is_error =
               nullptr == arg_data;
@@ -182,7 +185,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
               variable_data v_data($1, arg_data->get_value());
-              type_table[cls_last_name].variable_insert($2, v_data);
+              type_table[cls_last_name].insert($2, v_data);
             }
             
             free($1); free($2); free($4);
@@ -197,7 +200,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("identifier already defined");
             
             error_flag |= is_error =
-              is_primitive($2) || type_exists($2);
+              is_type($2);
             if(is_error)
               yyerror("identifier treated as a type");
 
@@ -205,13 +208,13 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag && is_type_compatible($1, $4))
             {
                 variable_data v_data($1, $4);
-                type_table[cls_last_name].variable_insert($2, v_data);
+                type_table[cls_last_name].insert($2, v_data);
             }
 
             free($1); free($2); free($4);
           }
 
-        | R_TYP S_NME { /*? function */
+        | R_TYP S_NME { /* function */
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error =
@@ -227,12 +230,12 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             {
               function_data f_data($1);
               f_data_global = &f_data;
-              type_table[cls_last_name].function_insert($2, f_data);
+              type_table[cls_last_name].insert($2, f_data);
             }} fct_synp scope_begin statement_list {
               free($1); free($2);
           } arr_fild
         
-        | S_NME S_NME { /*? function */
+        | S_NME S_NME { /* function */
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = 
@@ -251,28 +254,119 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             {
               function_data f_data($1);
               f_data_global = &f_data;
-              type_table[cls_last_name].function_insert($2, f_data);
+              type_table[cls_last_name].insert($2, f_data);
             }} fct_synp scope_begin statement_list {
               free($1); free($2); 
           } arr_fild
 
+        | S_NME S_NME ';' { /* object */
+            bool is_error = false, error_flag = false;
 
-        | S_NME S_NME ';' { /*type_table[cls_last_name].object_insert(last_object.c_str());*/ } arr_fild
-        | S_NME S_NME OPERATOR_ASSIGN S_NME { /*type_table[cls_last_name].object_insert(last_object.c_str());*/ } arr_fild
-        | S_NME S_NME  { /*type_table[cls_last_name].object_insert(last_object.c_str());*/ } arr_fild
+            error_flag |= is_error =
+              is_type($2);
+            if(is_error)
+              yyerror("type treated as identifier");
+              
+            error_flag |= is_error =
+              type_table[cls_last_name]->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+            
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data($1);
+              type_table[cls_last_name].insert($2, o_data);
+            }
+
+            free($1); free($2); } arr_fild
+
+        | S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error =
+              is_type($2);
+            if(is_error)
+              yyerror("type treated as identifier");
+              
+            error_flag |= is_error =
+              type_table[cls_last_name]->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+
+            item_data* argument = nullptr;
+            size_t scope = scope_search($4);
+            if(size_t(-1) != scope)
+              argument = symbols.at(scope).get_data($4);
+            else
+            {
+              argument = type_table[cls_last_name]->get_data($4);
+              error_flag |= is_error = nullptr == argument;
+              if(is_error)
+                yyerror("identifier not found");
+            }
+              
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data(*argument);
+              type_table[cls_last_name].insert($2, o_data);
+            }
+            
+            free($1); free($2); free($4);
+            } arr_fild
         
-        | A_PRV arr_fild /*TODO: semantics*/
-        | A_PUB arr_fild /*TODO: semantics*/
+        | S_NME S_NME {
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error =
+              is_type($2);
+            if(is_error)
+              yyerror("type treated as identifier");
+              
+            error_flag |= is_error =
+              type_table[cls_last_name]->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+          
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data($1);
+              object_data_global = &o_data;
+              if(type_exists($1))
+                type_table[cls_last_name].insert($2, o_data);
+            }
+            } OPERATOR_ASSIGN '{' obj_vals ';' arr_fild {
+            
+            object_data_global = nullptr;
+            o_data_index = 0;
+            free($1); free($2);
+          }
+        
+        | A_PRV arr_fild /* TODO: semantics but much later */
+        | A_PUB arr_fild /* TODO: semantics but much later */
         | scope_end
         ;
         
 /*! variable states */
 
 var_decl: R_TYP S_NME ';' {
-            if(false == is_already_defined($2))
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an id");
+              
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+            
+            if(false == error_flag)
             {
               variable_data v_data($1);
-              symbols[LAST_SCOPE].variable_insert($2, v_data);
+              symbols[LAST_SCOPE].insert($2, v_data);
             }
 
             free($1); free($2); 
@@ -282,13 +376,21 @@ var_decl: R_TYP S_NME ';' {
 
 var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
             bool is_error = false, error_flag = false;
-            error_flag |= is_already_defined($2);
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an id");
+              
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
             
             // search for argument
             const variable_data *argument_defined = nullptr;
             for(size_t i = LAST_SCOPE; ; i--)
             {
-              argument_defined = symbols[i].variable_exists($4);
+              argument_defined = symbols[i].get_data($4);
 
               if(argument_defined)
               {
@@ -310,7 +412,7 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
 
             // success
             if(false == error_flag)
-              symbols[LAST_SCOPE].variable_insert($2, *argument_defined);
+              symbols[LAST_SCOPE].insert($2, *argument_defined);
               
             free($1); free($2); free($4);
           }
@@ -322,7 +424,7 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
             true == is_type_compatible($1, $4))
             {
               variable_data v_data($1, $4);
-              symbols[LAST_SCOPE].variable_insert($2, v_data);
+              symbols[LAST_SCOPE].insert($2, v_data);
             }
             
             free($1); free($2); free($4);
@@ -334,7 +436,7 @@ var_call: S_NME {
             const variable_data *argument_defined = nullptr;
             for(size_t i = LAST_SCOPE; ; i--)
             {
-              argument_defined = symbols[i].variable_exists($1);
+              argument_defined = symbols[i].get_data($1);
               if(argument_defined) break;
               if(0 == i) break;
             }
@@ -362,7 +464,7 @@ fct_defn: R_TYP S_NME {
             {
               function_data f_data($1);
               f_data_global = &f_data;
-              symbols[LAST_SCOPE].function_insert($2, f_data);
+              symbols[LAST_SCOPE].insert($2, f_data);
             }} fct_synp scope_begin statement_list {
             f_data_global = nullptr;
             free($1); free($2);
@@ -379,7 +481,7 @@ fct_defn: R_TYP S_NME {
             {
               function_data f_data($1);
               f_data_global = &f_data;
-              symbols[LAST_SCOPE].function_insert($2, f_data);
+              symbols[LAST_SCOPE].insert($2, f_data);
             }} fct_synp scope_begin statement_list {
             f_data_global = nullptr;
             free($1); free($2);
@@ -472,11 +574,25 @@ arr_argm: argument ',' arr_argm
 /*! object states */
 
 obj_decl: S_NME S_NME ';' {
-  
-            if(false == is_already_defined($2))
+            bool is_error = false, error_flag = false;
+            
+            
+            
+            error_flag |= is_error =
+              is_type($2);
+            if(is_error)
+              yyerror("type treated as identifier");
+
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+              
+            // success
+            if(false == error_flag)
             {
               object_data o_data($1);
-              symbols[LAST_SCOPE].object_insert($2, o_data);
+              symbols[LAST_SCOPE].insert($2, o_data);
             }
 
             free($1); free($2);
@@ -486,7 +602,18 @@ obj_decl: S_NME S_NME ';' {
 
 obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
             bool is_error = false, error_flag = false;
-            error_flag |= is_already_defined($2);
+            
+            
+            
+            error_flag |= is_error =
+              is_type($2);
+            if(is_error)
+              yyerror("type treated as identifier");
+
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
             
             // search for the argument
             const object_data *argument_defined = nullptr;
@@ -514,7 +641,7 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
 
             // success
             if(false == error_flag)
-              symbols[LAST_SCOPE].object_insert($2, *argument_defined);
+              symbols[LAST_SCOPE].insert($2, *argument_defined);
               
             free($1); free($2); free($4);
           }
@@ -522,7 +649,7 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
             object_data o_data($1);
             object_data_global = &o_data;
             if(type_exists($1))
-              symbols[LAST_SCOPE].object_insert($2, o_data);
+              symbols[LAST_SCOPE].insert($2, o_data);
             } 
             OPERATOR_ASSIGN '{' obj_vals ';' {
             object_data_global = nullptr;
@@ -532,7 +659,15 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
         ;
 
 // all terminals of obj_vals can be variables or objects
-obj_vals: S_NME ',' {          
+obj_vals: S_NME ',' {
+
+            // field interrogation
+            std::pair<std::string, item_data*> 
+              att_pair = *(object_data_global->
+                begin() + object_data_index);
+            std::string att_name = att_pair.first;
+              
+            // get data from id
             size_t scope = scope_search($1);
             if(scope >= symbols.size())
               yyerror("identifier not found");
@@ -540,37 +675,64 @@ obj_vals: S_NME ',' {
             // success
             else
             {
-              item_data * i_data = 
-                symbols.at(scope).exists($1);
-              object_data_global->set_attribute($1, i_data);
+              item_data * i_data =
+                symbols.at(scope).get_data($1);
+              object_data_global->set_attribute(att_name, i_data);
             }
+
+            object_data_index++;
           }
         | S_NME {
+            
+            // field interrogation
+            std::pair<std::string, item_data*> 
+              att_pair = *(object_data_global->
+                begin() + object_data_index);
+            std::string att_name = att_pair.first;
+              
+            // get data from id
             size_t scope = scope_search($1);
             if(scope >= symbols.size())
               yyerror("identifier not found");
-
+          
             // success
             else
             {
-              std::pair<std::string, item_data*> 
-                att_pair = *(object_data_global->
-                  begin() + object_data_index);
-              std::string att_name = att_pair.first;
               item_data * i_data =
-                symbols.at(scope).exists($1);
+                symbols.at(scope).get_data($1);
               object_data_global->set_attribute(att_name, i_data);
             }
 
             object_data_index++;
           }
         | cst_call ',' {
-            variable_data($1);
-            object_data_global->set_attribute($1, i_data);
+            
+            // field interrogation
+            std::pair<std::string, item_data*> 
+              att_pair = *(object_data_global->
+                begin() + object_data_index);
+            std::string att_name = att_pair.first;
+            
+            variable_data(type_of($1), $1);
+            object_data_global->set_attribute(att_name, i_data);
+
+            object_data_index++;
           }
-        | cst_call
+        | cst_call {
+
+            // field interrogation
+            std::pair<std::string, item_data*> 
+              att_pair = *(object_data_global->
+                begin() + object_data_index);
+            std::string att_name = att_pair.first;
+            
+            variable_data(type_of($1), $1);
+            object_data_global->set_attribute(att_name, i_data);
+
+            object_data_index++;
+          }
         
-        // initialization of inside object objects? { cst_call, cst_call }
+        /* TODO: initialization of inside object objects? { cst_call, cst_call } */
         | '}'
 
 fld_call: S_NME A_FLD S_NME { /* search type, search field */ } ;
@@ -588,27 +750,31 @@ cst_call: C_INT { free($1); }
         ;
 
 /*! declaration parser */
-global_declaration      : cls_decl global_declaration
+global_declaration: cls_decl global_declaration
 	                | fct_decl global_declaration
 	                | var_decl global_declaration
-                        | obj_decl global_declaration
-                        | ';' global_declaration | cst_call ';' global_declaration
-                        | method_master
+                  | obj_decl global_declaration
+                  | ';' global_declaration | cst_call ';' global_declaration
+                  | method_master
 	                ;
-local_declaration       : fct_decl local_declaration | fct_decl
-                        | var_decl local_declaration | var_decl
-                        | obj_decl local_declaration | obj_decl
-                        ;
+local_declaration : fct_decl local_declaration | fct_decl
+                  | var_decl local_declaration | var_decl
+                  | obj_decl local_declaration | obj_decl
+                  ;
 
 //------------------------------------------------
 
 /*! statements */
+statement_list  : scope_end;
+/*
 statement_list  : statement_parse statement_list
-                | scope_begin statement_list scope_end /* adds scopes for the fun of it */
-                | scope_end /* halting condition */
+                | scope_begin statement_list scope_end
+                | scope_end
                 ;
+*/
 
 /* statements types and parsing technique */
+/* 
 statement_parse : statement_easy
                 | statement_bool
                 | statement_assg
@@ -623,25 +789,35 @@ call_parse      : fct_call
                 // | obj_call
                 | cst_call
                 ;
+*/
 
 /* redundant statementes */
- statement_easy  : call_parse ';' | ';' ;
+/* 
+statement_easy  : call_parse ';' | ';' ;
+*/
 
 /* assignation statement */// here is needed a recursive approach
+/* 
 statement_assg  : S_NME OPERATOR_ASSIGN call_parse ';'
                 | S_NME OPERATOR_ASSIGN method_type ';'
                 | S_NME OPERATOR_ASSIGN method_print ';'
                 ;
+*/
 
 /* bool returning statements */
+/*
 statement_bool  : S_NME OPERATOR_RELTIN S_NME ;
+*/
 
 /* conditional statements */
+/*
 condition_append: ';'
                 | statement_parse
                 | scope_begin statement_list scope_end
                 | scope_begin scope_end
                 ;
+*/
+
 // statement_if    : R_SEQ_IF '(' statement_bool ')' condition_append;
 // statement_for   : R_SEQ_FOR '(' /* declare */ ';' statement_bool ';' /* statement */ ')' condition_append;
 // statement_whl   : R_SEQ_WHL '(' statement_bool ')' condition_append;

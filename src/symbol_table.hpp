@@ -13,14 +13,13 @@
  * not in just one symbol table
 
  * exception: symbol table insertions won't provide error messages
+ * refined symbol table: 112 bytes removed from each instance
+    but time complexities won't suffer
  */
 class symbol_table
 {
     std::string s_id;
-    // identifier => data
-    std::unordered_map<std::string, variable_data> var;
-    std::unordered_map<std::string, function_data> fct;
-    std::unordered_map<std::string, object_data> obj;
+    std::unordered_map<std::string, item_data *> itm;
 
     static size_t available_id;
 
@@ -29,31 +28,20 @@ public:
     symbol_table();
     symbol_table(const std::string &);
 
-    symbol_table &variable_insert(const std::string &,
-                                  const variable_data &);
-    symbol_table &function_insert(const std::string &,
-                                  const function_data &);
-    symbol_table &object_insert(const std::string &,
-                                const object_data &);
+    symbol_table &insert(const std::string &,
+                         item_data *);
 
-    variable_data *variable_exists(const std::string &);
-    function_data *function_exists(const std::string &);
-    object_data *object_exists(const std::string &);
-    bool exists(const std::string &) const;
-
+    item_data *get_data(const std::string &) const;
     size_t get_id() const;
+    size_t get_count() const;
     size_t get_count_variable() const;
+    size_t get_count_function() const;
     size_t get_count_object() const;
-    size_t get_count_defined() const;
 
     typedef std::unordered_map<
-        std::string, variable_data>::iterator var_it;
-    typedef std::unordered_map<
-        std::string, object_data>::iterator obj_it;
-    var_it variable_begin();
-    var_it variable_end();
-    obj_it object_begin();
-    obj_it object_end();
+        std::string, item_data *>::iterator itm_it;
+    itm_it begin();
+    itm_it end();
 };
 
 size_t symbol_table::available_id = 0;

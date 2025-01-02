@@ -47,9 +47,10 @@ Test-driven development principles were considered in this project.
         - recursion
         - abstract syntax tree
 
-0. field access through object
+0. compilation trial
 0. const specifier
 0. naming convetions
+0. field call
 
 <br>
 
@@ -64,6 +65,7 @@ Test-driven development principles were considered in this project.
 
 0. array support
 0. operator[]
+0. for now we are assuming that our classes work as C's "struct"s
 
 <br>
 

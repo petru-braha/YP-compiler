@@ -1,0 +1,82 @@
+
+
+%
+ o_data_index = 0;
+            free($1); free($2);
+          }
+        ;
+
+// all terminals of obj_vals can be variables or objects
+obj_vals: S_NME ',' {
+
+            // field interrogation
+            std::pair<std::string, item_data*> 
+              att_pair = *(object_data_global->
+                begin() + object_data_index);
+            std::string att_name = att_pair.first;
+              
+            // get data from id
+            size_t scope = scope_search($1);
+            if(scope >= symbols.size())
+              yyerror("identifier not found");
+          
+            // success
+            else
+            {
+              item_data * i_data =
+                symbols.at(scope).get_data($1);
+              object_data_global->set_attribute(att_name, i_data);
+            }
+
+            object_data_index++;
+          }
+        | S_NME {
+            
+            // field interrogation
+            std::pair<std::string, item_data*> 
+              att_pair = *(object_data_global->
+                begin() + object_data_index);
+            std::string att_name = att_pair.first;
+              
+            // get data from id
+            size_t scope = scope_search($1);
+            if(scope >= symbols.size())
+              yyerror("identifier not found");
+          
+            // success
+            else
+            {
+              item_data * i_data =
+                symbols.at(scope).get_data($1);
+              object_data_global->set_attribute(att_name, i_data);
+            }
+
+            object_data_index++;
+          }
+        | cst_call ',' {
+            
+            // field interrogation
+            std::pair<std::string, item_data*> 
+              att_pair = *(object_data_global->
+                begin() + object_data_index);
+            std::string att_name = att_pair.first;
+            
+            variable_data(type_of($1), $1);
+            object_data_global->set_attribute(att_name, i_data);
+
+            object_data_index++;
+          }
+        | cst_call {
+
+            // field interrogation
+            std::pair<std::string, item_data*> 
+              att_pair = *(object_data_global->
+                begin() + object_data_index);
+            std::string att_name = att_pair.first;
+            
+            variable_data(type_of($1), $1);
+            object_data_global->set_attribute(att_name, i_data);
+
+            object_data_index++;
+          }
+%
