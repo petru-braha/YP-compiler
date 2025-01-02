@@ -17,7 +17,10 @@ int error_flags()
 
 #include "util.hpp"
 
+std::vector<symbol_table> symbols;
+
 int main()
 {
+    std::cout << sizeof(symbol_table) << ' ' << sizeof(type_table) << ' ';
     return 0;
 }

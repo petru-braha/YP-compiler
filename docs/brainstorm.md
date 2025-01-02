@@ -168,6 +168,8 @@ string name = Type(a);
 
 - friend class std::unordered_map<std::string, variable_data> does not work
 - global syntax can't be declared after grammar
+- auto error messages for constructors and insertions (specific methods)
 
-0. error messages
+- what happens if error occurs? should we stop the execution?
+- what approach should we follow? map<item_data*> / 3 maps with var fct and obj?
 

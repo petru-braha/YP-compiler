@@ -182,20 +182,29 @@ function_data::function_data()
 // no parameters
 function_data::function_data(const std::string &type)
     : item_data(ITEM_TYPE_FCT, DATA_TYPE_INT),
-      return_type(type)
-{
-}
+      return_type(type) {}
 
-/* DOES NOT provide error messages
- * DOES NOT check for parameter definition
- */
+/* DOES NOT check for parameter definition */
 function_data &function_data::
     parameter_insert(item_data *value)
 {
+    if (nullptr == value)
+    {
+        yyerror("invalid parameter pointer");
+        return *this;
+    }
+
+    // type checking
     if (value->get_item_type() > ITEM_TYPE_OBJ)
+    {
         yyerror("bad news");
+        return *this;
+    }
     if (ITEM_TYPE_FCT == value->get_item_type())
+    {
         yyerror("bad news");
+        return *this;
+    }
 
     if (ITEM_TYPE_VAR == value->get_item_type())
     {
@@ -221,6 +230,24 @@ function_data &function_data::
 function_data &function_data::
     parameter_insert(const std::string &id, item_data *value)
 {
+    if (nullptr == value)
+    {
+        yyerror("invalid parameter pointer");
+        return *this;
+    }
+
+    // type checking
+    if (value->get_item_type() > ITEM_TYPE_OBJ)
+    {
+        yyerror("bad news");
+        return *this;
+    }
+    if (ITEM_TYPE_FCT == value->get_item_type())
+    {
+        yyerror("bad news");
+        return *this;
+    }
+
     if (parameters.find(id) != parameters.end())
     {
         yyerror("parameter already defined");
@@ -254,6 +281,12 @@ function_data &function_data::
 function_data &function_data::
     set_parameter(const std::string &id, item_data *value)
 {
+    if (nullptr == value)
+    {
+        yyerror("invalid parameter pointer");
+        return *this;
+    }
+
     if (parameters.find(id) == parameters.end())
     {
         yyerror("parameter not found");
@@ -365,24 +398,32 @@ object_data::object_data(const std::string &type)
     }
 }
 
-// TODO: not sure if the copies are made
+/* why is this correct?
+ * reach out to tests/extra/memory copy/f1()
+ * used only by utility, not by parser
+ */
 object_data::object_data(const object_data &o)
     : item_data(ITEM_TYPE_OBJ, o.get_data_type()),
-      attributes(o.attributes)
-{
-}
+      attributes(o.attributes) {}
 
 /* useful in initialization */
 object_data &object_data::
     attribute_insert(const std::string &id,
                      item_data *value)
 {
+    if (nullptr == value)
+    {
+        yyerror("invalid parameter pointer");
+        return *this;
+    }
+
     if (value->get_item_type() > ITEM_TYPE_OBJ)
         yyerror("bad news");
     if (ITEM_TYPE_FCT == value->get_item_type())
         yyerror("bad news");
 
-    // check if id belongs to type
+    // TODO: to remove?
+    //  check if id belongs to type - redundant operation
     if (false == type_exists(get_data_type())->exists(id))
         yyerror("bad news");
 
@@ -409,6 +450,12 @@ object_data &object_data::
     set_attribute(const std::string &id,
                   item_data *value)
 {
+    if (nullptr == value)
+    {
+        yyerror("invalid parameter pointer");
+        return *this;
+    }
+
     if (value->get_item_type() > ITEM_TYPE_OBJ)
         yyerror("bad news");
     if (ITEM_TYPE_FCT == value->get_item_type())
@@ -453,6 +500,16 @@ item_data *object_data::
     return attributes.at(id);
 }
 
+object_data::att_it object_data::begin()
+{
+    return attributes.begin();
+}
+
+object_data::att_it object_data::end()
+{
+    return attributes.end();
+}
+
 //!------------------------------------------------
 //!------------------------------------------------
 
@@ -463,9 +520,7 @@ symbol_table::symbol_table()
 }
 
 symbol_table::symbol_table(const std::string &s_id)
-    : s_id(s_id)
-{
-}
+    : s_id(s_id) {}
 
 symbol_table &symbol_table::
     variable_insert(const std::string &id,
@@ -603,10 +658,14 @@ symbol_table *type_exists(const std::string &id)
 
 //!------------------------------------------------
 //!------------------------------------------------
+//! please remember that queries don't print errors
 
 extern std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
 
+/* goes through every scope
+ * could add extra time complexity
+ */
 size_t scope_search(std::string id)
 {
     for (size_t scope = LAST_SCOPE;; scope--)
@@ -625,39 +684,8 @@ bool is_type(std::string id)
     return type_exists(id) || is_primitive(id);
 }
 
-/* goes through every scope
- * could add extra traversal of the scopes
- * provides error messages
- * also checks if the id is treated as a type
- * TODO: change to not check fot types
- */
-bool is_already_defined(const char *id)
-{
-    if (type_exists(id) || is_primitive(id))
-    {
-        yyerror(ERR_TYP_TREAT_ID);
-        return true;
-    }
-
-    for (size_t scope = LAST_SCOPE;; scope--)
-    {
-        if (symbols[scope].exists(id))
-        {
-            yyerror(ERR_DEF_ID);
-            return true;
-        }
-
-        if (0 == scope)
-            break;
-    }
-
-    return false;
-}
-
-/* a constant value can only be primitive
- * provides error messages
- */
-bool is_type_compatible(const char *type, const char *constant_value)
+/* a constant value can only be primitive */
+bool is_compatible(const char *type, const char *constant_value)
 {
     switch (constant_value[0])
     {
@@ -665,50 +693,31 @@ bool is_type_compatible(const char *type, const char *constant_value)
         if (nullptr == strchr(constant_value, '.'))
         {
             if (strcmp(type, DATA_TYPE_INT))
-            {
-                yyerror("incorrect parameter type");
                 return false;
-            }
-            break;
         }
 
         // float
         if (strcmp(type, DATA_TYPE_FLT))
-        {
-            yyerror("incorrect parameter type");
             return false;
-        }
         break;
 
     case '\'': // char
         if (strcmp(type, DATA_TYPE_CHR))
-        {
-            yyerror("incorrect parameter type");
             return false;
-        }
         break;
 
     case 't': // bool
         if (strcmp(type, DATA_TYPE_BOL))
-        {
-            yyerror("incorrect parameter type");
             return false;
-        }
         break;
     case 'f': // bool
         if (strcmp(type, DATA_TYPE_BOL))
-        {
-            yyerror("incorrect parameter type");
             return false;
-        }
         break;
 
     case '\"': // string
         if (strcmp(type, DATA_TYPE_STR))
-        {
-            yyerror("incorrect parameter type");
             return false;
-        }
         break;
     }
 

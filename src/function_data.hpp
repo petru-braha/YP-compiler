@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include "dev/item_data.hpp"
 
+/* iterator methods required for function call */
+
 class function_data final : public item_data
 {
     std::string return_type;
@@ -29,6 +31,12 @@ public:
     const std::string &get_return_type() const;
     size_t get_count_parameter() const;
     item_data *get_parameter(const std::string &) const;
+
+    typedef std::unordered_map<
+        std::string, item_data *>
+        itm_data;
+    itm_data begin();
+    itm_data end();
 };
 
 std::string function_data::available_id = "";

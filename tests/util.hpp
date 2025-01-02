@@ -1,14 +1,27 @@
 #ifndef __0UTILITY0__
 #define __0UTILITY0__
 
-/* comments:
+#include "../src/dev/yyerror.hpp"
+
+/* comments
  * this file is responsable of the inclusion order
- * here, all classes find their implementation
- * type_table <- object_data <- symbol_table <- type_table <- object_data
+ * all classes find their implementation here
+
+ * error messages are provided when foreign keys ask to be
+    included in the current data
+        constructors
+        specific methods (such as insertions)
+    interogations won't send any messages
+    their data is already filtered
+        constant methods
+        iterator methods
+
+ * object_data <- symbol_table <- type_table <- object_data
+
+ * exception: symbol table insertions won't provide error messages
  */
 
-// be aware: in YP_utility this function should not be defined
-void yyerror(const char *s) {}
+void yyerror(const char *s){}
 
 #include "../src/variable_data.hpp"
 #include "../src/function_data.hpp"
@@ -82,8 +95,11 @@ std::string type_of(const std::string &primitive_value)
     }
 }
 
+[[deprecated("not a safe method, always be specific")]]
 variable_data::variable_data()
-    : item_data(0, std::string(0)) {}
+    : item_data(ITEM_TYPE_VAR, std::string(DATA_TYPE_INT))
+{
+}
 
 variable_data::variable_data(const std::string &type)
     : item_data(ITEM_TYPE_VAR, type)
@@ -106,7 +122,9 @@ variable_data::variable_data(const std::string &type,
 
 // not verification required - v can only be legitimate
 variable_data ::variable_data(const variable_data &v)
-    : item_data(ITEM_TYPE_VAR, v.get_data_type()), value(v.get_value()) {}
+    : item_data(ITEM_TYPE_VAR, v.get_data_type()), value(v.get_value())
+{
+}
 
 variable_data &variable_data::set_value(const std::string &value)
 {
@@ -154,12 +172,19 @@ function_data::~function_data()
         delete parameter.second;
 }
 
+[[deprecated("not a safe method, always be specific")]]
 function_data::function_data()
-    : return_type(DATA_TYPE_INT) {}
+    : item_data(ITEM_TYPE_FCT, DATA_TYPE_INT),
+      return_type(DATA_TYPE_INT)
+{
+}
 
 // no parameters
 function_data::function_data(const std::string &type)
-    : return_type(type) {}
+    : item_data(ITEM_TYPE_FCT, DATA_TYPE_INT),
+      return_type(type)
+{
+}
 
 /* DOES NOT provide error messages
  * DOES NOT check for parameter definition
@@ -167,6 +192,11 @@ function_data::function_data(const std::string &type)
 function_data &function_data::
     parameter_insert(item_data *value)
 {
+    if (value->get_item_type() > ITEM_TYPE_OBJ)
+        yyerror("bad news");
+    if (ITEM_TYPE_FCT == value->get_item_type())
+        yyerror("bad news");
+
     if (ITEM_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
@@ -197,6 +227,11 @@ function_data &function_data::
         return *this;
     }
 
+    if (value->get_item_type() > ITEM_TYPE_OBJ)
+        yyerror("bad news");
+    if (ITEM_TYPE_FCT == value->get_item_type())
+        yyerror("bad news");
+
     if (ITEM_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
@@ -224,6 +259,11 @@ function_data &function_data::
         yyerror("parameter not found");
         return *this;
     }
+
+    if (value->get_item_type() > ITEM_TYPE_OBJ)
+        yyerror("bad news");
+    if (ITEM_TYPE_FCT == value->get_item_type())
+        yyerror("bad news");
 
     if (value->get_data_type() !=
         parameters.at(id)->get_data_type())
@@ -279,13 +319,15 @@ item_data *function_data::
 
 object_data::~object_data()
 {
-    for (size_t i = 0; i < attributes.size(); i++)
-        delete attributes[i];
-    attributes.clear();
+    for (auto attribute : attributes)
+        delete attribute.second;
 }
 
+[[deprecated("not a safe method, always be specific")]]
 object_data::object_data()
-    : item_data(ITEM_TYPE_OBJ, DATA_TYPE_INT) {}
+    : item_data(ITEM_TYPE_OBJ, DATA_TYPE_INT)
+{
+}
 
 // default values of fields are being set at compilation time
 object_data::object_data(const std::string &type)
@@ -295,7 +337,7 @@ object_data::object_data(const std::string &type)
         yyerror("primitive type");
     symbol_table *s = type_exists(type);
     if (nullptr == s)
-        yyerror("non-defined type");
+        yyerror(ERR_UNDEF_TYPE);
 
     symbol_table o_attributes = *s;
 
@@ -303,47 +345,84 @@ object_data::object_data(const std::string &type)
     auto v = o_attributes.variable_begin();
     while (v != o_attributes.variable_end())
     {
-        attributes.emplace_back(
-            new variable_data((*v).second));
+        std::pair<std::string, item_data *>
+            v_pair((*v).first,
+                   new variable_data((*v).second));
+
+        attributes.insert(v_pair);
         v++;
     }
 
     auto o = o_attributes.object_begin();
     while (o != o_attributes.object_end())
     {
-        attributes.emplace_back(
-            new object_data((*o).second));
+        std::pair<std::string, item_data *>
+            o_pair((*o).first,
+                   new object_data((*o).second));
+
+        attributes.insert(o_pair);
         o++;
     }
 }
 
+/* why is this correct?
+ * reach out to tests/extra/memory copy/f1()
+ * used only by utility, not by parser
+ */
 object_data::object_data(const object_data &o)
     : item_data(ITEM_TYPE_OBJ, o.get_data_type()),
-      attributes(o.get_count_attributes())
+      attributes(o.attributes)
 {
-    for (size_t i = 0; i < o.get_count_attributes(); i++)
-    {
-        item_data *value = o.get_attribute(i);
-        if (ITEM_TYPE_VAR == value->get_item_type())
-        {
-            variable_data *v_data = (variable_data *)value;
-            variable_data *attribute = new variable_data(*v_data);
-            attributes[i] = attribute;
-            continue;
-        }
-
-        object_data *o_data = (object_data *)value;
-        object_data *attribute = new object_data(*o_data);
-        attributes[i] = attribute;
-    }
 }
 
+/* useful in initialization */
 object_data &object_data::
-    set_attribute(const size_t index, item_data *value)
+    attribute_insert(const std::string &id,
+                     item_data *value)
 {
-    if (index > attributes.size())
-        yyerror("object data setting - wrong index");
-    if (value->get_data_type() != attributes.at(index)->get_data_type())
+    if (value->get_item_type() > ITEM_TYPE_OBJ)
+        yyerror("bad news");
+    if (ITEM_TYPE_FCT == value->get_item_type())
+        yyerror("bad news");
+
+    // check if id belongs to type
+    if (false == type_exists(get_data_type())->exists(id))
+        yyerror("bad news");
+
+    if (ITEM_TYPE_VAR == value->get_item_type())
+    {
+        variable_data *v_data = (variable_data *)value;
+        variable_data *attribute = new variable_data(*v_data);
+        std::pair<std::string, item_data *>
+            o_pair(id, attribute);
+        attributes.insert(o_pair);
+        return *this;
+    }
+
+    object_data *o_data = (object_data *)value;
+    object_data *attribute = new object_data(*o_data);
+    std::pair<std::string, item_data *>
+        o_pair(id, attribute);
+    attributes.insert(o_pair);
+    return *this;
+}
+
+/* useful in assignation */
+object_data &object_data::
+    set_attribute(const std::string &id,
+                  item_data *value)
+{
+    if (value->get_item_type() > ITEM_TYPE_OBJ)
+        yyerror("bad news");
+    if (ITEM_TYPE_FCT == value->get_item_type())
+        yyerror("bad news");
+
+    // check if id belongs to type
+    if (false == type_exists(get_data_type())->exists(id))
+        yyerror("bad news");
+
+    if (value->get_data_type() !=
+        attributes.at(id)->get_data_type())
         yyerror("object data setting - type incompatiblity");
 
     if (ITEM_TYPE_VAR == value->get_item_type())
@@ -351,8 +430,8 @@ object_data &object_data::
         variable_data *v_data = (variable_data *)value;
         variable_data *attribute = new variable_data(*v_data);
         variable_data *old_attribute =
-            (variable_data *)attributes.at(index);
-        attributes[index] = attribute;
+            (variable_data *)attributes.at(id);
+        attributes[id] = attribute;
         delete old_attribute;
         return *this;
     }
@@ -360,8 +439,8 @@ object_data &object_data::
     object_data *o_data = (object_data *)value;
     object_data *attribute = new object_data(*o_data);
     object_data *old_attribute =
-        (object_data *)attributes.at(index);
-    attributes[index] = attribute;
+        (object_data *)attributes.at(id);
+    attributes[id] = attribute;
     delete old_attribute;
     return *this;
 }
@@ -372,11 +451,9 @@ size_t object_data::get_count_attributes() const
 }
 
 item_data *object_data::
-    get_attribute(const size_t index) const
+    get_attribute(const std::string &id) const
 {
-    if (index >= attributes.size())
-        yyerror("object data setting - wrong index");
-    return this->attributes.at(index);
+    return attributes.at(id);
 }
 
 //!------------------------------------------------
@@ -389,7 +466,9 @@ symbol_table::symbol_table()
 }
 
 symbol_table::symbol_table(const std::string &s_id)
-    : s_id(s_id) {}
+    : s_id(s_id)
+{
+}
 
 symbol_table &symbol_table::
     variable_insert(const std::string &id,
@@ -421,7 +500,6 @@ symbol_table &symbol_table::
     return *this;
 }
 
-// doesn't provide error messages
 variable_data *symbol_table::
     variable_exists(const std::string &id)
 {
@@ -430,7 +508,6 @@ variable_data *symbol_table::
     return nullptr;
 }
 
-// doesn't provide error messages
 function_data *symbol_table::
     function_exists(const std::string &id)
 {
@@ -439,7 +516,6 @@ function_data *symbol_table::
     return nullptr;
 }
 
-// doesn't provide error messages
 object_data *symbol_table::
     object_exists(const std::string &id)
 {
@@ -450,7 +526,6 @@ object_data *symbol_table::
 
 /* used for type_table
 the only time when we don't check for previous scopes too
- * doesn't provide error messages
  */
 bool symbol_table::exists(const std::string &id) const
 {
@@ -506,20 +581,6 @@ symbol_table::obj_it symbol_table::object_end()
 //!------------------------------------------------
 //!------------------------------------------------
 
-bool type_insert(const std::string &id)
-{
-    if (type_table.find(id) != type_table.end())
-    {
-        yyerror("class already defined");
-        return false;
-    }
-
-    std::pair<std::string, symbol_table>
-        s_pair(id, symbol_table());
-    type_table.insert(s_pair);
-    return true;
-}
-
 bool type_insert(const std::string &id,
                  const symbol_table &s)
 {
@@ -530,7 +591,7 @@ bool type_insert(const std::string &id,
     }
 
     std::pair<std::string, symbol_table>
-        s_pair(id, symbol_table());
+        s_pair(id, s);
     type_table.insert(s_pair);
     return true;
 }
@@ -541,6 +602,74 @@ symbol_table *type_exists(const std::string &id)
     if (type_table.find(id) != type_table.end())
         return &type_table.at(id);
     return nullptr;
+}
+
+//!------------------------------------------------
+//!------------------------------------------------
+//! please remember that queries don't print errors
+
+extern std::vector<symbol_table> symbols;
+#define LAST_SCOPE symbols.size() - 1
+
+/* goes through every scope
+ * could add extra time complexity
+ */
+size_t scope_search(std::string id)
+{
+    for (size_t scope = LAST_SCOPE;; scope--)
+    {
+        if (symbols[scope].exists(id))
+            return scope;
+        if (0 == scope)
+            break;
+    }
+
+    return -1;
+}
+
+bool is_type(std::string id)
+{
+    return type_exists(id) || is_primitive(id);
+}
+
+/* a constant value can only be primitive */
+bool is_compatible(const char *type, const char *constant_value)
+{
+    switch (constant_value[0])
+    {
+    default: // int
+        if (nullptr == strchr(constant_value, '.'))
+        {
+            if (strcmp(type, DATA_TYPE_INT))
+                return false;
+        }
+
+        // float
+        if (strcmp(type, DATA_TYPE_FLT))
+            return false;
+        break;
+
+    case '\'': // char
+        if (strcmp(type, DATA_TYPE_CHR))
+            return false;
+        break;
+
+    case 't': // bool
+        if (strcmp(type, DATA_TYPE_BOL))
+            return false;
+        break;
+    case 'f': // bool
+        if (strcmp(type, DATA_TYPE_BOL))
+            return false;
+        break;
+
+    case '\"': // string
+        if (strcmp(type, DATA_TYPE_STR))
+            return false;
+        break;
+    }
+
+    return true;
 }
 
 #endif
