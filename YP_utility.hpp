@@ -114,7 +114,7 @@ variable_data::variable_data(const std::string &type,
     : item_data(ITEM_TYPE_VAR, type)
 {
     if (false == is_primitive(type))
-        yyerror("variable data initialization - not primitive type");
+        yyerror("not a primitive type");
     if (this->get_data_type() != type_of(value))
         yyerror("variable data initialization - not compatible types");
     this->value = value;
@@ -487,7 +487,7 @@ object_data &object_data::
         yyerror("bad news");
 
     // check if id belongs to type
-    if (false == type_exists(get_data_type())->get_data(id))
+    if (nullptr == type_exists(get_data_type())->get_data(id))
         yyerror("bad news");
 
     if (value->get_data_type() !=
@@ -568,9 +568,9 @@ item_data *symbol_table::get_data(const std::string &id) const
     return nullptr;
 }
 
-size_t symbol_table::get_id() const
+const std::string& symbol_table::get_id() const
 {
-    return available_id - 1;
+    return s_id;
 }
 
 size_t symbol_table::get_count() const

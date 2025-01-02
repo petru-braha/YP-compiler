@@ -32,12 +32,12 @@ public:
                          item_data *);
 
     item_data *get_data(const std::string &) const;
-    size_t get_id() const;
     size_t get_count() const;
     size_t get_count_variable() const;
     size_t get_count_function() const;
     size_t get_count_object() const;
-
+    const std::string& get_id() const;
+    
     typedef std::unordered_map<
         std::string, item_data *>::iterator itm_it;
     itm_it begin();

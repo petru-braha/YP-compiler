@@ -1,0 +1,20 @@
+/*
+"Print("{constant_int}")" { return method_print; }
+"Print("{constant_flt}")" { return method_print; }
+"Print("{constant_chr}")" { return method_print; }
+"Print("{constant_str}")" { return method_print; }
+"Print("{constant_bol}")" { return method_print; }
+"Print("{something_name}")" { yylval.token_name = strdup(yytext); return method_print; }
+"Type("{something_name}")" { return method_type; }
+*/
+
+/*
+"if" { return R_SEQ_IF; }
+"for" { return R_SEQ_FOR; }
+"while" { return R_SEQ_WHL; }
+*/
+
+/*
+"<"|">"|"<="|">="|"!="|"=="|"===" {
+    return OPERATOR_RELTIN; }
+*/

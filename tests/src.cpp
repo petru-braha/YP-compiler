@@ -15,6 +15,8 @@ int error_flags()
     return 0;
 }
 
+void yyerror(const char *s){}
+
 #include "util.hpp"
 
 std::vector<symbol_table> symbols;

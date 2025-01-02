@@ -29,15 +29,7 @@ comment #.*
 %option noyywrap
 
 %%
-/*
-"Print("{constant_int}")" { return method_print; }
-"Print("{constant_flt}")" { return method_print; }
-"Print("{constant_chr}")" { return method_print; }
-"Print("{constant_str}")" { return method_print; }
-"Print("{constant_bol}")" { return method_print; }
-"Print("{something_name}")" { yylval.token_name = strdup(yytext); return method_print; }
-"Type("{something_name}")" { return method_type; }
-*/
+
 
 "master()" { if(master_started)
     yyerror("the master method can only be declared and defined once");
@@ -51,11 +43,7 @@ comment #.*
 {reserved_type}{type_array} { yylval.token_name = strdup(yytext);
     return R_TYP; }
 
-/*
-"if" { return R_SEQ_IF; }
-"for" { return R_SEQ_FOR; }
-"while" { return R_SEQ_WHL; }
-*/
+
 
 {constant_int} { yylval.token_name = strdup(yytext);
     return C_INT; }
@@ -74,10 +62,7 @@ comment #.*
 {comment}
 
 "<-"|"=" { return OPERATOR_ASSIGN; }
-/*
-"<"|">"|"<="|">="|"!="|"=="|"===" {
-    return OPERATOR_RELTIN; }
-*/
+
 
 [ \t\r] ;
 \n {yylineno++;}
