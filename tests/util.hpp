@@ -1,7 +1,7 @@
 #ifndef __0UTILITY0__
 #define __0UTILITY0__
 
-#include "src/dev/yyerror.hpp"
+#include "../src/dev/yyerror.hpp"
 
 /* comments
  * this file is responsable of the inclusion order
@@ -23,11 +23,11 @@
 
 void yyerror(const char *s);
 
-#include "src/variable_data.hpp"
-#include "src/function_data.hpp"
-#include "src/object_data.hpp"
-#include "src/symbol_table.hpp"
-#include "src/type_table.hpp"
+#include "../src/variable_data.hpp"
+#include "../src/function_data.hpp"
+#include "../src/object_data.hpp"
+#include "../src/symbol_table.hpp"
+#include "../src/type_table.hpp"
 
 item_data::item_data(const unsigned char i_t,
                      const std::string &t)
@@ -487,7 +487,7 @@ object_data &object_data::
         yyerror("bad news");
 
     // check if id belongs to type
-    if (false == type_exists(get_data_type())->get_data(id))
+    if (nullptr == type_exists(get_data_type())->get_data(id))
         yyerror("bad news");
 
     if (value->get_data_type() !=
@@ -568,9 +568,9 @@ item_data *symbol_table::get_data(const std::string &id) const
     return nullptr;
 }
 
-size_t symbol_table::get_id() const
+const std::string& symbol_table::get_id() const
 {
-    return available_id - 1;
+    return s_id;
 }
 
 size_t symbol_table::get_count() const
