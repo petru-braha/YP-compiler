@@ -253,8 +253,9 @@ arr_fild: R_TYP S_NME ';' {
         /*! 3 object rules */
         | S_NME S_NME ';' {
             bool is_error = false, error_flag = false;
-
-            error_flag |= is_error = type_exists($1);
+        
+            error_flag |= is_error =
+              nullptr == type_exists($1);
             if(is_error)
               yyerror("undefined type");
             
@@ -263,6 +264,7 @@ arr_fild: R_TYP S_NME ';' {
               yyerror("type treated as an identifier");
               
             error_flag |= is_error =
+              type_exists(cls_last_name) &&
               type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
@@ -280,7 +282,8 @@ arr_fild: R_TYP S_NME ';' {
         | S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
             bool is_error = false, error_flag = false;
             
-            error_flag |= is_error = type_exists($1);
+            error_flag |= is_error =
+              nullptr == type_exists($1);
             if(is_error)
               yyerror("undefined type");
 
@@ -289,6 +292,7 @@ arr_fild: R_TYP S_NME ';' {
               yyerror("type treated as an identifier");
               
             error_flag |= is_error =
+              type_exists(cls_last_name) &&
               type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
@@ -318,7 +322,8 @@ arr_fild: R_TYP S_NME ';' {
         | S_NME S_NME {
             bool is_error = false, error_flag = false;
             
-            error_flag |= is_error = type_exists($1);
+            error_flag |= is_error =
+              nullptr == type_exists($1);
             if(is_error)
               yyerror("undefined type");
 
@@ -327,6 +332,7 @@ arr_fild: R_TYP S_NME ';' {
               yyerror("type treated as an identifier");
               
             error_flag |= is_error =
+              type_exists(cls_last_name) &&
               type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
@@ -511,7 +517,8 @@ fct_defn: R_TYP S_NME {
         | S_NME S_NME {
             bool is_error = false, error_flag = false;
 
-            error_flag |= is_error = type_exists($1);
+            error_flag |= is_error =
+              nullptr == type_exists($1);
             if(is_error)
               yyerror("undefined type");
             
@@ -614,7 +621,8 @@ arr_parm: R_TYP S_NME {
 obj_decl: S_NME S_NME ';' {
             bool is_error = false, error_flag = false;
             
-            error_flag |= is_error = type_exists($1);
+            error_flag |= is_error =
+              nullptr == type_exists($1);
             if(is_error)
               yyerror("undefined type");
 
@@ -642,7 +650,8 @@ obj_decl: S_NME S_NME ';' {
 obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
             bool is_error = false, error_flag = false;
             
-            error_flag |= is_error = type_exists($1);
+            error_flag |= is_error =
+              nullptr == type_exists($1);
             if(is_error)
               yyerror("undefined type");
             

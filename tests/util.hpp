@@ -1,7 +1,7 @@
 #ifndef __0UTILITY0__
 #define __0UTILITY0__
 
-#include "src/dev/yyerror.hpp"
+#include "../src/dev/yyerror.hpp"
 
 /* comments
  * this file is responsable of the inclusion order
@@ -23,11 +23,11 @@
 
 void yyerror(const char *s);
 
-#include "src/variable_data.hpp"
-#include "src/function_data.hpp"
-#include "src/object_data.hpp"
-#include "src/symbol_table.hpp"
-#include "src/type_table.hpp"
+#include "../src/variable_data.hpp"
+#include "../src/function_data.hpp"
+#include "../src/object_data.hpp"
+#include "../src/symbol_table.hpp"
+#include "../src/type_table.hpp"
 
 item_data::item_data(const unsigned char i_t,
                      const std::string &d_t)
@@ -336,7 +336,7 @@ function_data &function_data::
     if (value->get_data_type() !=
         parameters.at(id)->get_data_type())
     {
-        yyerror("incompatible types");
+        yyerror("function data setting - type incompatiblity");
         return *this;
     }
 
@@ -407,12 +407,12 @@ object_data::~object_data()
             i->get_item_type())
         {
             variable_data *v = (variable_data *)i;
-            // delete v;
+            //delete v;
             continue;
         }
 
         object_data *o = (object_data *)i;
-        // delete o;
+        //delete o;
     }
 }
 
@@ -429,7 +429,6 @@ object_data::object_data(const std::string &type)
     if (is_primitive(type))
         yyerror("primitive type");
     symbol_table *s = type_exists(type);
-
     if (nullptr == s)
         yyerror(ERR_UNDEF_TYPE);
 
@@ -476,7 +475,7 @@ object_data::object_data(const std::string &type,
 {
     if (type != o.get_data_type())
     {
-        yyerror("incompatible types");
+        yyerror("type incompatibility");
         this->~object_data();
         *this = object_data(type);
     }

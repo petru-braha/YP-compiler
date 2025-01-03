@@ -1,0 +1,23 @@
+# function members
+
+class defined_type
+{
+
+}
+
+class number
+{
+    bool standard_function(int, string){} # ok
+    bool defined_type(){} # type treated as an identifier
+    
+    int function; # ok
+
+    float standard_function(){} # identifier already defined in class
+    float function(defined_type, bool){} # identifier already defined in class
+}
+
+# not working
+master()
+{
+
+}

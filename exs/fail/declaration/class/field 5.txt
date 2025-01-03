@@ -1,0 +1,36 @@
+# object members
+
+class defined_type
+{
+
+}
+
+class okay_type
+{
+    string id;
+    int bytes;
+}
+
+class best_type
+{
+    string id;
+    int bytes;
+    defined_type personality;
+}
+
+class number
+{
+    best_type note; # ok
+    
+    weak_type grade; # undefined type
+    weak_type best_type; # undefined type && type treated as an identifier
+    
+    okay_type note; # identifier already defined in class
+    weak_type note; # undefined type && identifier already defined in class
+}
+
+# works as expected
+master()
+{
+
+}

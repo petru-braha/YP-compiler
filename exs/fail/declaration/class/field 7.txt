@@ -1,0 +1,29 @@
+# object members
+
+class defined_type
+{
+
+}
+
+class okay_type
+{
+    string id;
+    size bytes;
+}
+
+class best_type
+{
+    string id;
+    size bytes;
+    defined_type personality;
+}
+
+class number
+{
+    
+}
+
+master()
+{
+
+}

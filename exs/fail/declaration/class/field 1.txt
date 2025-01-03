@@ -1,3 +1,5 @@
+# variable members
+
 class defined_type
 {
 
@@ -21,6 +23,7 @@ class number
     string text = value; # incompatible types
 }
 
+# works as expected
 master()
 {
 

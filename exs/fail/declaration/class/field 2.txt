@@ -1,0 +1,25 @@
+# variable members
+
+class defined_type
+{
+
+}
+
+class number
+{
+    string value = "petru is adorable"; # ok
+    string defined_type = "petru is dumb"; # type treated as an identifier - also false
+    
+    bool value = true; # identifier already defined in class
+    float value = 1.5; # identifier already defined in class
+
+    char word = global_value2; # argument not found
+
+    char text = value; # incompatible types
+}
+
+# works as expected
+master()
+{
+
+}

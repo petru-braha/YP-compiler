@@ -75,3 +75,4 @@ Test-driven development principles were considered in this project.
 0. friend class std::pair - didn't work on a first try
 0. abbreviation?
 0. capslock?
+0. restrict access to type_table

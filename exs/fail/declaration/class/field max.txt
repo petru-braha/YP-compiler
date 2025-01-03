@@ -1,0 +1,34 @@
+# object members
+
+class defined_type
+{
+
+}
+
+class okay_type
+{
+    string id;
+    int bytes;
+}
+
+class best_type
+{
+    string id;
+    int bytes;
+    defined_type personality;
+}
+
+class number
+{
+    best_type note(okay_type o0, best_type o1, best_type o2); # ok
+
+    joke_type grade; # undefined type
+    weak_type weak_type; # undefined type
+    
+    okay_type float; # type treated as an identifier
+}
+
+master()
+{
+
+}

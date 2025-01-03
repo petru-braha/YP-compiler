@@ -1,0 +1,43 @@
+# object members
+
+class defined_type
+{
+
+}
+
+class okay_type
+{
+    string id;
+    int bytes;
+}
+
+class best_type
+{
+    string id;
+    int bytes;
+    defined_type personality;
+}
+
+best_type global_object;
+
+class number
+{
+    best_type note = global_object; # ok
+    
+    joke_type grade = global_object; # undefined type
+    weak_type weak_type = global_object; # undefined type
+    
+    okay_type best_type = global_object; # type treated as an identifier
+    defined_type note = global_object; # identifier already defined in class
+
+    best_type o0 = note; # ok
+    best_type o1 = global_object; # ok
+    best_type o2 = local_object; # argument not found
+    okay_type o3 = note; # incompatible types
+}
+
+# works as expected
+master()
+{
+
+}
