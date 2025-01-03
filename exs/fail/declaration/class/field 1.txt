@@ -1,0 +1,27 @@
+class defined_type
+{
+
+}
+
+char global_value0 = 'G';
+
+class number
+{
+    char value = global_value0; # ok
+    char defined_type = value; # type treated as an identifier
+    char defined_type = defined_type; # type treated as an identifier
+    char character = defined_type; # type treated as an identifier
+    
+    char value = global_value0; # identifier already defined in class
+    string value = global_value0; # identifier already defined in class
+
+    char character = value; # ok
+    char word = global_value2; # argument not found
+
+    string text = value; # incompatible types
+}
+
+master()
+{
+
+}

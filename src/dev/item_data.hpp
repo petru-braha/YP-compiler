@@ -15,7 +15,7 @@ constexpr unsigned char ITEM_TYPE_OBJ = 2;
 class item_data
 {
     unsigned char item_type;
-    std::string type;
+    std::string data_type;
 
 public:
     virtual ~item_data() = default;

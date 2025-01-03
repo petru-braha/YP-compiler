@@ -4,6 +4,9 @@
 #include <vector>
 #include "dev/item_data.hpp"
 
+class function_data;
+class symbol_table;
+
 /* the methods will be stored in the type table
  * every object_data instance will !!! NOT !!! first contain pointers to
     variable_data instances
@@ -14,6 +17,10 @@
 class object_data final : public item_data
 {
     std::unordered_map<std::string, item_data *> attributes;
+
+    friend class function_data;
+    friend class symbol_table;
+    object_data(const object_data &);
 
 public:
     ~object_data();

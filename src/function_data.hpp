@@ -5,14 +5,19 @@
 #include <unordered_map>
 #include "dev/item_data.hpp"
 
-/* iterator methods required for function call */
+class object_data;
+class symbol_table;
 
+/* iterator methods required for function call */
 class function_data final : public item_data
 {
-    std::string return_type;
     std::unordered_map<
         std::string, item_data *>
         parameters;
+
+    friend class object_data;
+    friend class symbol_table;
+    function_data(const function_data &);
 
     static std::string available_id;
     const std::string &default_id();
@@ -28,7 +33,6 @@ public:
     function_data &set_parameter(const std::string &,
                                  item_data *const);
 
-    const std::string &get_return_type() const;
     const size_t get_count_parameter() const;
     item_data *get_parameter(const std::string &) const;
 

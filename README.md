@@ -3,16 +3,23 @@
 You can find the romanian version of this document [here](/docs/README%20RO.md).
 Test-driven development principles were considered in this project.
 
-## Usage (in project's root)
+## Usage
 
 - for improved redability, we recommand VS Code and the "Better Comments" extension
+- commands to be passed in project root terminal:
 
 0. "./setup.sh" - checks for bison and flex installation and builds our compiler
 0. "./compile.sh" - builds the custom compiler
 0. "./src/discard.sh" - delete the additional files
 0. "./run.out <file_path>" - compiles and runs the source code
 
-## Original features
+## Technologies
+
+0. C++
+0. Flex
+0. Yacc/Bison
+
+## Features
 
 - All variables/parameters/objects have:
     - explicit value(s)
@@ -24,7 +31,9 @@ Test-driven development principles were considered in this project.
 
 - Recognize both int[1][3] variable_name and int variable_name[14][5151][62];
 
-- Complex class declarations: see [implementation details](/docs/brainstorm.md)
+- Each file from [examples directory](/exs/) is responsable of one grammar rule.
+
+- See [implementation details](/docs/brainstorm.md) for more.
 
 ## Limitations
 
@@ -36,16 +45,6 @@ Test-driven development principles were considered in this project.
 - No method overloading
 
 ## To do
-
-- the development is split in two segments:
-    - declaration
-        - recognition
-        - synopsis
-        - jumps
-        - assignation
-    - stataments
-        - recursion
-        - abstract syntax tree
 
 0. tests
 0. grammar conflicts

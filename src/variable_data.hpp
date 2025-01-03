@@ -20,9 +20,18 @@ bool is_primitive(const std::string &type);
 std::string default_value_of(const std::string &type);
 std::string type_of(const std::string &primitive_value);
 
+class function_data;
+class object_data;
+class symbol_table;
+
 class variable_data final : public item_data
 {
     std::string value;
+
+    friend class function_data;
+    friend class object_data;
+    friend class symbol_table;
+    variable_data(const variable_data &);
 
 public:
     ~variable_data() = default;

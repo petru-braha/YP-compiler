@@ -24,7 +24,7 @@ class symbol_table
     static size_t available_id;
 
 public:
-    ~symbol_table() = default;
+    ~symbol_table();
     symbol_table();
     symbol_table(const std::string &);
 

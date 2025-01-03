@@ -1,0 +1,17 @@
+class defined_type
+{
+
+}
+
+class number
+{
+    int value; # success
+    int defined_type; # type treated as an identifier
+    int value; # identifier already defined in class
+    float value; # identifier already defined in class
+}
+
+master()
+{
+
+}

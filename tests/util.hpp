@@ -30,8 +30,8 @@ void yyerror(const char *s);
 #include "src/type_table.hpp"
 
 item_data::item_data(const unsigned char i_t,
-                     const std::string &t)
-    : item_type(i_t), type(t)
+                     const std::string &d_t)
+    : item_type(i_t), data_type(d_t)
 {
     if (i_t > ITEM_TYPE_OBJ)
         yyerror("item data initialization - wrong parameter");
@@ -44,7 +44,7 @@ const unsigned char item_data::get_item_type() const
 
 const std::string &item_data::get_data_type() const
 {
-    return type;
+    return data_type;
 }
 
 //!------------------------------------------------
@@ -81,9 +81,9 @@ std::string type_of(const std::string &primitive_value)
     switch (primitive_value.at(0))
     {
     default:
-        if (primitive_value.find('.') != std::string::npos)
-            return DATA_TYPE_FLT;
-        return DATA_TYPE_INT;
+        if (primitive_value.find('.') == std::string::npos)
+            return DATA_TYPE_INT;
+        return DATA_TYPE_FLT;
     case '\'':
         return DATA_TYPE_CHR;
     case '\"':
@@ -93,6 +93,13 @@ std::string type_of(const std::string &primitive_value)
     case 'f':
         return DATA_TYPE_BOL;
     }
+}
+
+// private
+variable_data::variable_data(const variable_data &v)
+    : item_data(ITEM_TYPE_VAR, v.get_data_type()),
+      value(v.get_value())
+{
 }
 
 [[deprecated("not a safe method, always be specific")]]
@@ -149,6 +156,13 @@ const std::string &variable_data::get_value() const
 //!------------------------------------------------
 //! function
 
+// private
+function_data::function_data(const function_data &f)
+    : item_data(ITEM_TYPE_FCT, f.get_data_type()),
+      parameters(f.parameters)
+{
+}
+
 const std::string &function_data::default_id()
 {
     char character = 0;
@@ -181,15 +195,15 @@ function_data::~function_data()
 
 [[deprecated("not a safe method, always be specific")]]
 function_data::function_data()
-    : item_data(ITEM_TYPE_FCT, DATA_TYPE_INT),
-      return_type(DATA_TYPE_INT)
+    : item_data(ITEM_TYPE_FCT, DATA_TYPE_INT)
 {
 }
 
 // no parameters
 function_data::function_data(const std::string &type)
-    : item_data(ITEM_TYPE_FCT, DATA_TYPE_INT),
-      return_type(type) {}
+    : item_data(ITEM_TYPE_FCT, type)
+{
+}
 
 /* DOES NOT check for parameter definition */
 function_data &function_data::
@@ -338,11 +352,6 @@ function_data &function_data::
     return *this;
 }
 
-const std::string &function_data::get_return_type() const
-{
-    return return_type;
-}
-
 const size_t function_data::get_count_parameter() const
 {
     return parameters.size();
@@ -368,6 +377,13 @@ function_data::it function_data::end()
 
 //!------------------------------------------------
 //! object
+
+// private
+object_data::object_data(const object_data &o)
+    : item_data(ITEM_TYPE_OBJ, o.get_data_type()),
+      attributes(o.attributes)
+{
+}
 
 object_data::~object_data()
 {
@@ -556,13 +572,41 @@ symbol_table::symbol_table()
 symbol_table::symbol_table(const std::string &s_id)
     : s_id(s_id) {}
 
-// TODO: is here needed a copy?
+/* makes a copy of the pointer */
 symbol_table &symbol_table::
     insert(const std::string &id,
-           item_data *const data)
+           item_data *const value)
 {
+    if (nullptr == value)
+    {
+        yyerror("invalid parameter pointer");
+        return *this;
+    }
+
+    if (ITEM_TYPE_VAR == value->get_item_type())
+    {
+        variable_data *v_data = (variable_data *)value;
+        variable_data *to_insert = new variable_data(*v_data);
+        std::pair<std::string, item_data *>
+            i_pair(id, to_insert);
+        itm.insert(i_pair);
+        return *this;
+    }
+
+    if (ITEM_TYPE_FCT == value->get_item_type())
+    {
+        function_data *f_data = (function_data *)value;
+        function_data *to_insert = new function_data(*f_data);
+        std::pair<std::string, item_data *>
+            i_pair(id, to_insert);
+        itm.insert(i_pair);
+        return *this;
+    }
+
+    object_data *o_data = (object_data *)value;
+    object_data *to_insert = new object_data(*o_data);
     std::pair<std::string, item_data *>
-        i_pair(id, data);
+        i_pair(id, to_insert);
     itm.insert(i_pair);
     return *this;
 }

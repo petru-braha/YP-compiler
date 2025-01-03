@@ -79,7 +79,7 @@ starting_symbol : { symbols.emplace_back(); } global_declaration {
                     if(0 == count_error)
                       printf("the program was compiled correctly.\n");
                     else
-                      printf("the program has %d errors.\n", count_error);
+                      printf("the program has %zu errors.\n", count_error);
                   };
 
 scope_begin : '{' { symbols.emplace_back(); };
@@ -117,15 +117,16 @@ cls_defn: R_CLS S_NME '{' { // scope_begin => emplaces back
           }
         ;
 
-arr_fild: R_TYP S_NME ';' { /* variable */
+          /*! 3 variable rules */
+arr_fild: R_TYP S_NME ';' {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($2);
             if(is_error)
               yyerror("type treated as an identifier");
-            
+
             error_flag |= is_error =
-              type_table[cls_last_name].get_data($2);
+              type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
             
@@ -133,13 +134,13 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
               variable_data v_data($1);
-              type_table[cls_last_name].insert($2, &v_data);
+              type_exists(cls_last_name)->insert($2, &v_data);
             }
             
             free($1); free($2);
           } arr_fild
-        
-        | R_TYP S_NME OPERATOR_ASSIGN S_NME ';' { /* variable */
+
+        | R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2) || is_type($4);
@@ -147,17 +148,20 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("type treated as an identifier");
 
             error_flag |= is_error =
-              type_table[cls_last_name].get_data($2);
+              type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
             
             item_data* argument = nullptr;
             size_t scope = scope_search($4);
             if(size_t(-1) != scope)
+            {
               argument = symbols.at(scope).get_data($4);
+              printf("uauuu: %s\n", $4);
+            }
             else
-              argument = type_table[cls_last_name].get_data($4);
-            
+              argument = type_exists(cls_last_name)->get_data($4);
+                        
             error_flag |= is_error = (nullptr == argument) ||
                 (argument && std::string($2) == std::string($4));
             if(is_error)
@@ -166,14 +170,15 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             // success
             if(false == error_flag)
             {
+              printf("%s.\n", argument->get_data_type().c_str());
               variable_data v_data($1, *(variable_data*)argument);
-              type_table[cls_last_name].insert($2, &v_data);
+              type_exists(cls_last_name)->insert($2, &v_data);
             }
             
             free($1); free($2); free($4);
           } arr_fild
 
-        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' { /* variable */
+        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($2);
@@ -181,7 +186,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("type treated as an identifier");
 
             error_flag |= is_error =
-              type_table[cls_last_name].get_data($2);
+              type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
             
@@ -189,13 +194,14 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
                 variable_data v_data($1, $4);
-                type_table[cls_last_name].insert($2, &v_data);
+                type_exists(cls_last_name)->insert($2, &v_data);
             }
 
             free($1); free($2); free($4);
           } arr_fild
 
-        | R_TYP S_NME { /* function */
+        /*! 2 function rules */
+        | R_TYP S_NME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($2);
@@ -203,7 +209,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("type treated as an identifier");
             
             error_flag |= is_error =
-              type_table[cls_last_name].get_data($2);
+              type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
 
@@ -211,15 +217,15 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
               function_data f_data($1);
-              type_table[cls_last_name].insert($2, &f_data);
+              type_exists(cls_last_name)->insert($2, &f_data);
               f_data_global = (function_data*)
-                type_table[cls_last_name].get_data($2);
+                type_exists(cls_last_name)->get_data($2);
             }} '(' arr_parm scope_begin statement_list {
               f_data_global = nullptr;
               free($1); free($2);
           } arr_fild
         
-        | S_NME S_NME { /* function */
+        | S_NME S_NME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = 
@@ -232,7 +238,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("type treated as an identifier");
             
             error_flag |= is_error =
-              type_table[cls_last_name].get_data($2);
+              type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
 
@@ -240,15 +246,16 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
               function_data f_data($1);
-              type_table[cls_last_name].insert($2, &f_data);
+              type_exists(cls_last_name)->insert($2, &f_data);
               f_data_global = (function_data*)
-                type_table[cls_last_name].get_data($2);
+                type_exists(cls_last_name)->get_data($2);
             }} '(' arr_parm scope_begin statement_list {
               f_data_global = nullptr;
               free($1); free($2); 
           } arr_fild
 
-        | S_NME S_NME ';' { /* object */
+        /*! 3 object rules */
+        | S_NME S_NME ';' {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = type_exists($1);
@@ -260,7 +267,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("type treated as an identifier");
               
             error_flag |= is_error =
-              type_table[cls_last_name].get_data($2);
+              type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
             
@@ -268,7 +275,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
               object_data o_data($1);
-              type_table[cls_last_name].insert($2, &o_data);
+              type_exists(cls_last_name)->insert($2, &o_data);
             }
 
             free($1); free($2); 
@@ -286,7 +293,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("type treated as an identifier");
               
             error_flag |= is_error =
-              type_table[cls_last_name].get_data($2);
+              type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
 
@@ -295,7 +302,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(size_t(-1) != scope)
               argument = symbols.at(scope).get_data($4);
             else
-              argument = type_table[cls_last_name].get_data($4);
+              argument = type_exists(cls_last_name)->get_data($4);
 
             error_flag |= is_error = (nullptr == argument) ||
                 (argument && std::string($2) == std::string($4));
@@ -306,7 +313,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
               object_data o_data($1, *(object_data*)argument);
-              type_table[cls_last_name].insert($2, &o_data);
+              type_exists(cls_last_name)->insert($2, &o_data);
             }
             
             free($1); free($2); free($4);
@@ -324,7 +331,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               yyerror("type treated as an identifier");
               
             error_flag |= is_error =
-              type_table[cls_last_name].get_data($2);
+              type_exists(cls_last_name)->get_data($2);
             if(is_error)
               yyerror("identifier already defined in class");
           
@@ -333,7 +340,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             {
               object_data o_data($1);
               o_data_global = &o_data;
-              type_table[cls_last_name].insert($2, &o_data);
+              type_exists(cls_last_name)->insert($2, &o_data);
             }
             } OPERATOR_ASSIGN '{' obj_vals ';' arr_fild {
             
@@ -346,9 +353,42 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             free($1); free($2);
           }
         
+        /*! 2 access rules */
         | A_PRV arr_fild /* TODO: semantics but much later */
         | A_PUB arr_fild /* TODO: semantics but much later */
         | '}'
+
+        /*! 6 error rules */
+        | R_TYP R_TYP ';' {
+            yyerror("type treated as an identifier");
+            free($1); free($2);
+          } arr_fild
+        | R_TYP R_TYP OPERATOR_ASSIGN S_NME ';' {
+            yyerror("type treated as an identifier");
+            free($1); free($2); free($4);
+          } arr_fild
+        | R_TYP R_TYP OPERATOR_ASSIGN cst_call ';' {
+            yyerror("type treated as an identifier");
+            free($1); free($2); free($4);
+          } arr_fild
+        | S_NME R_TYP ';' {
+            if(nullptr == type_exists($1))
+              yyerror("undefined type");
+            yyerror("type treated as an identifier");
+            free($1); free($2);
+          } arr_fild
+        | S_NME R_TYP OPERATOR_ASSIGN S_NME ';' {
+            if(nullptr == type_exists($1))
+              yyerror("undefined type");
+            yyerror("type treated as an identifier");
+            free($1); free($2); free($4);
+          } arr_fild
+        | S_NME R_TYP OPERATOR_ASSIGN obj_vals ';' {
+            if(nullptr == type_exists($1))
+              yyerror("undefined type");
+            yyerror("type treated as an identifier");
+            free($1); free($2);
+          } arr_fild
         ;
         
 /*!------------------------------------------------
@@ -430,6 +470,9 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
             }
             
             free($1); free($2); free($4);
+            printf("%s\n", symbols[LAST_SCOPE].get_data($2)->get_data_type().c_str());
+            // printf("%s\n", symbols[LAST_SCOPE].get_data($2)->get_value().c_str());
+              
           };
 
 /*!------------------------------------------------
@@ -873,6 +916,7 @@ condition_append: ';'
 /*!------------------------------------------------
 /*! C++ functions */
 
+// does not stop the compilation
 void yyerror(const char * s){
   count_error++;
   printf("error - line %d: %s.\n", yylineno, s);
