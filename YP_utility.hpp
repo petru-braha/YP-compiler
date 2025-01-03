@@ -336,7 +336,7 @@ const std::string &function_data::get_return_type() const
     return return_type;
 }
 
-const size_t &function_data::get_count_parameter() const
+const size_t function_data::get_count_parameter() const
 {
     return parameters.size();
 }
@@ -516,7 +516,7 @@ object_data &object_data::
     return *this;
 }
 
-const size_t &object_data::get_count_attributes() const
+const size_t object_data::get_count_attributes() const
 {
     return attributes.size();
 }
@@ -575,12 +575,12 @@ const std::string &symbol_table::get_id() const
     return s_id;
 }
 
-const size_t &symbol_table::get_count() const
+const size_t symbol_table::get_count() const
 {
     return itm.size();
 }
 
-const size_t &symbol_table::get_count_variable() const
+const size_t symbol_table::get_count_variable() const
 {
     size_t count = 0;
     for (const auto &instance : itm)
@@ -590,7 +590,7 @@ const size_t &symbol_table::get_count_variable() const
     return count;
 }
 
-const size_t &symbol_table::get_count_function() const
+const size_t symbol_table::get_count_function() const
 {
     size_t count = 0;
     for (const auto &instance : itm)
@@ -600,7 +600,7 @@ const size_t &symbol_table::get_count_function() const
     return count;
 }
 
-const size_t &symbol_table::get_count_object() const
+const size_t symbol_table::get_count_object() const
 {
     size_t count = 0;
     for (const auto &instance : itm)

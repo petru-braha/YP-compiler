@@ -26,7 +26,7 @@ public:
     object_data &set_attribute(const std::string &,
                                item_data *const);
 
-    const size_t &get_count_attributes() const;
+    const size_t get_count_attributes() const;
     item_data *get_attribute(const std::string &) const;
 
     typedef std::unordered_map<

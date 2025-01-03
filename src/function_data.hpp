@@ -29,7 +29,7 @@ public:
                                  item_data *const);
 
     const std::string &get_return_type() const;
-    const size_t &get_count_parameter() const;
+    const size_t get_count_parameter() const;
     item_data *get_parameter(const std::string &) const;
 
     typedef std::unordered_map<

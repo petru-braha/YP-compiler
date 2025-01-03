@@ -32,10 +32,10 @@ public:
                          item_data *const);
 
     item_data *get_data(const std::string &) const;
-    const size_t &get_count() const;
-    const size_t &get_count_variable() const;
-    const size_t &get_count_function() const;
-    const size_t &get_count_object() const;
+    const size_t get_count() const;
+    const size_t get_count_variable() const;
+    const size_t get_count_function() const;
+    const size_t get_count_object() const;
     const std::string &get_id() const;
 
     typedef std::unordered_map<

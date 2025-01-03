@@ -47,9 +47,8 @@ Test-driven development principles were considered in this project.
         - recursion
         - abstract syntax tree
 
-0. const specifier
-0. call states
-0. naming convetions
+0. tests
+0. grammar conflicts
 0. assignation for object of object (etc)
 
 <br>
@@ -75,4 +74,5 @@ Test-driven development principles were considered in this project.
 0. multi line comment
 0. complete the syntax documentation from the guidline
 0. friend class std::pair - didn't work on a first try
-
+0. abbreviation?
+0. capslock?
