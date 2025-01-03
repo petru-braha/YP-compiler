@@ -35,7 +35,7 @@ comment #.*
     yyerror("the master method can only be declared and defined once");
     master_started = true; }
 
-"->"|"." { return A_FLD; } /* for both type.field and object.field */
+
 "private:" { return A_PRV; }
 "public:" { return A_PUB; }
 "class" { return R_CLS; }

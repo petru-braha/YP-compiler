@@ -1,8 +1,8 @@
 #ifndef __0TYPETABLE0__
 #define __0TYPETABLE0__
 
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include "symbol_table.hpp"
 
 std::unordered_map<std::string, symbol_table> type_table;

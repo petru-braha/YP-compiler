@@ -186,7 +186,7 @@ function_data::function_data(const std::string &type)
 
 /* DOES NOT check for parameter definition */
 function_data &function_data::
-    parameter_insert(item_data *value)
+    parameter_insert(item_data *const value)
 {
     if (nullptr == value)
     {
@@ -228,7 +228,8 @@ function_data &function_data::
  * checks for parameter definition
  */
 function_data &function_data::
-    parameter_insert(const std::string &id, item_data *value)
+    parameter_insert(const std::string &id,
+                     item_data *const value)
 {
     if (nullptr == value)
     {
@@ -279,7 +280,8 @@ function_data &function_data::
 
 // to be called for every parameter - calling the function
 function_data &function_data::
-    set_parameter(const std::string &id, item_data *value)
+    set_parameter(const std::string &id,
+                  item_data *const value)
 {
     if (nullptr == value)
     {
@@ -334,7 +336,7 @@ const std::string &function_data::get_return_type() const
     return return_type;
 }
 
-size_t function_data::get_count_parameter() const
+const size_t &function_data::get_count_parameter() const
 {
     return parameters.size();
 }
@@ -421,9 +423,9 @@ object_data::object_data(const std::string &type)
 object_data::object_data(const std::string &type,
                          const object_data &o)
     : item_data(ITEM_TYPE_OBJ, type),
-      attributes(o.attributes) 
+      attributes(o.attributes)
 {
-    if(type != o.get_data_type())
+    if (type != o.get_data_type())
     {
         yyerror("type incompatibility");
         this->~object_data();
@@ -434,7 +436,7 @@ object_data::object_data(const std::string &type,
 /* useful in initialization */
 object_data &object_data::
     attribute_insert(const std::string &id,
-                     item_data *value)
+                     item_data *const value)
 {
     if (nullptr == value)
     {
@@ -473,7 +475,7 @@ object_data &object_data::
 /* useful in assignation */
 object_data &object_data::
     set_attribute(const std::string &id,
-                  item_data *value)
+                  item_data *const value)
 {
     if (nullptr == value)
     {
@@ -514,7 +516,7 @@ object_data &object_data::
     return *this;
 }
 
-size_t object_data::get_count_attributes() const
+const size_t &object_data::get_count_attributes() const
 {
     return attributes.size();
 }
@@ -550,7 +552,7 @@ symbol_table::symbol_table(const std::string &s_id)
 // TODO: is here needed a copy?
 symbol_table &symbol_table::
     insert(const std::string &id,
-           item_data *data)
+           item_data *const data)
 {
     std::pair<std::string, item_data *>
         i_pair(id, data);
@@ -568,17 +570,17 @@ item_data *symbol_table::get_data(const std::string &id) const
     return nullptr;
 }
 
-const std::string& symbol_table::get_id() const
+const std::string &symbol_table::get_id() const
 {
     return s_id;
 }
 
-size_t symbol_table::get_count() const
+const size_t &symbol_table::get_count() const
 {
     return itm.size();
 }
 
-size_t symbol_table::get_count_variable() const
+const size_t &symbol_table::get_count_variable() const
 {
     size_t count = 0;
     for (const auto &instance : itm)
@@ -588,7 +590,7 @@ size_t symbol_table::get_count_variable() const
     return count;
 }
 
-size_t symbol_table::get_count_function() const
+const size_t &symbol_table::get_count_function() const
 {
     size_t count = 0;
     for (const auto &instance : itm)
@@ -598,7 +600,7 @@ size_t symbol_table::get_count_function() const
     return count;
 }
 
-size_t symbol_table::get_count_object() const
+const size_t &symbol_table::get_count_object() const
 {
     size_t count = 0;
     for (const auto &instance : itm)

@@ -14,6 +14,10 @@
 "while" { return R_SEQ_WHL; }
 */
 
+"->"|"." { return A_FLD; } /* for both type.field and object.field */
+
+
+
 /*
 "<"|">"|"<="|">="|"!="|"=="|"===" {
     return OPERATOR_RELTIN; }

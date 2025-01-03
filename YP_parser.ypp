@@ -52,8 +52,9 @@ std::vector<symbol_table> symbols;
     we start with the first one and continue consecutively
  */
 
-//------------------------------------------------
-//------------------------------------------------
+/*!------------------------------------------------
+/*!------------------------------------------------
+/*! grammar */
 
 %union {
     char* token_name;
@@ -62,7 +63,7 @@ std::vector<symbol_table> symbols;
 // %token<token_name> method_type method_print
 %type method_master
 %type<token_name> cst_call
-%token R_CLS A_PRV A_PUB A_FLD
+%token R_CLS A_PRV A_PUB /*A_FLD*/
 
 %token<token_name> S_NME R_TYP
 %token<token_name> C_INT C_FLT C_CHR C_STR C_BOL
@@ -92,12 +93,7 @@ global_declaration: cls_decl global_declaration
                   | ';' global_declaration | cst_call ';' global_declaration
                   | method_master
 	                ;
-local_declaration : fct_decl local_declaration | fct_decl
-                  | var_decl local_declaration | var_decl
-                  | obj_decl local_declaration | obj_decl
-                  ;
 
-/*!------------------------------------------------
 /*!------------------------------------------------
 /*! class states */
 
@@ -114,7 +110,7 @@ cls_decl: R_CLS S_NME ';' {
 
 cls_defn: R_CLS S_NME '{' { // scope_begin => emplaces back
             cls_last_name = $2;
-            type_insert(cls_last_name, symbol_table());
+            type_insert(cls_last_name, symbol_table($2));
             } arr_fild {
             cls_last_name.clear();
             free($2);
@@ -219,7 +215,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               type_table[cls_last_name].insert($2, &f_data);
               f_data_global = (function_data*)
                 type_table[cls_last_name].get_data($2);
-            }} fct_synp scope_begin statement_list {
+            }} '(' arr_parm scope_begin statement_list {
               f_data_global = nullptr;
               free($1); free($2);
           } arr_fild
@@ -248,7 +244,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               type_table[cls_last_name].insert($2, &f_data);
               f_data_global = (function_data*)
                 type_table[cls_last_name].get_data($2);
-            }} fct_synp scope_begin statement_list {
+            }} '(' arr_parm scope_begin statement_list {
               f_data_global = nullptr;
               free($1); free($2); 
           } arr_fild
@@ -440,10 +436,10 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
 /*!------------------------------------------------
 /*! function states */
 
-fct_decl: R_TYP S_NME fct_synp ';' {
+fct_decl: R_TYP S_NME '(' arr_parm ';' {
             free($1); free($2);
           }
-        | S_NME S_NME fct_synp ';' {
+        | S_NME S_NME '(' arr_parm ';' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             free($1); free($2);
@@ -469,7 +465,7 @@ fct_defn: R_TYP S_NME {
               symbols[LAST_SCOPE].insert($2, &f_data);
               f_data_global = (function_data*)
                 symbols[LAST_SCOPE].get_data($2);
-            }} fct_synp scope_begin statement_list {
+            }} '(' arr_parm scope_begin statement_list {
             f_data_global = nullptr;
             free($1); free($2);
           }
@@ -494,22 +490,19 @@ fct_defn: R_TYP S_NME {
               function_data f_data($1);
               f_data_global = &f_data;
               symbols[LAST_SCOPE].insert($2, &f_data);
-            }} fct_synp scope_begin statement_list {
+            }} '(' arr_parm scope_begin statement_list {
             f_data_global = nullptr;
             free($1); free($2);
           }
         ;
 
-//** don't check if the id exists
-fct_synp: '(' arr_parm ')'
-        | '('')'
 arr_parm: R_TYP S_NME {
             variable_data v_data($1);
             f_data_global->
               parameter_insert($2, &v_data);
             }',' arr_parm { free($1); free($2); 
           }
-        | R_TYP S_NME {
+        | R_TYP S_NME ')' {
             variable_data v_data($1);
             f_data_global->
               parameter_insert($2, &v_data);
@@ -525,7 +518,7 @@ arr_parm: R_TYP S_NME {
                 parameter_insert($2, &o_data);
             }}',' arr_parm { free($1); free($2);
           }
-        | S_NME S_NME {
+        | S_NME S_NME ')' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             else
@@ -544,7 +537,7 @@ arr_parm: R_TYP S_NME {
               parameter_insert(&v_data);
             } ',' arr_parm { free($1);
           }
-        | R_TYP {
+        | R_TYP ')' {
             variable_data v_data($1);
             f_data_global->
               parameter_insert(&v_data);
@@ -560,7 +553,7 @@ arr_parm: R_TYP S_NME {
                 parameter_insert(&o_data);
             }} ',' arr_parm { free($1);
           }
-        | S_NME {
+        | S_NME ')' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             else
@@ -574,13 +567,6 @@ arr_parm: R_TYP S_NME {
           }
         
         /*TODO: maybe with assignation too? => another 8 rules */
-        ;
-
-fct_call: S_NME '(' arr_argm ')' { /* provide return capacity */ free($1); } ;
-        | S_NME '(' ')' { /* provide return capacity */ free($1); } ;
-argument: S_NME | cst_call;
-arr_argm: argument ',' arr_argm
-        | argument
         ;
 
 /*!------------------------------------------------
@@ -746,6 +732,10 @@ obj_vals: S_NME ',' {
         /* TODO: initialization of inside object objects? { cst_call, cst_call } */
         | '}'
 
+/*!------------------------------------------------
+/*! calling states */
+
+/*
 fld_call: S_NME A_FLD S_NME {
             bool is_error = false, error_flag = false;
 
@@ -790,6 +780,14 @@ itm_call: S_NME {
             free($1);
           };
 
+fct_call: S_NME '(' arr_argm ')' { free($1); } ;
+        | S_NME '(' ')' { free($1); } ;
+argument: S_NME | cst_call;
+arr_argm: argument ',' arr_argm
+        | argument
+        ;
+*/
+
 /*! text constant states */
 
 cst_call: C_INT { free($1); }
@@ -802,6 +800,14 @@ cst_call: C_INT { free($1); }
 /*!------------------------------------------------
 /*!------------------------------------------------
 /*! statements */
+
+/*
+local_declaration : fct_decl local_declaration | fct_decl
+                  | var_decl local_declaration | var_decl
+                  | obj_decl local_declaration | obj_decl
+                  ;
+*/
+
 statement_list  : scope_end;
 /*
 statement_list  : statement_parse statement_list

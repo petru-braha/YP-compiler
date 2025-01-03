@@ -1,7 +1,7 @@
 #ifndef __0UTILITY0__
 #define __0UTILITY0__
 
-#include "../src/dev/yyerror.hpp"
+#include "src/dev/yyerror.hpp"
 
 /* comments
  * this file is responsable of the inclusion order
@@ -23,11 +23,11 @@
 
 void yyerror(const char *s);
 
-#include "../src/variable_data.hpp"
-#include "../src/function_data.hpp"
-#include "../src/object_data.hpp"
-#include "../src/symbol_table.hpp"
-#include "../src/type_table.hpp"
+#include "src/variable_data.hpp"
+#include "src/function_data.hpp"
+#include "src/object_data.hpp"
+#include "src/symbol_table.hpp"
+#include "src/type_table.hpp"
 
 item_data::item_data(const unsigned char i_t,
                      const std::string &t)
@@ -186,7 +186,7 @@ function_data::function_data(const std::string &type)
 
 /* DOES NOT check for parameter definition */
 function_data &function_data::
-    parameter_insert(item_data *value)
+    parameter_insert(item_data *const value)
 {
     if (nullptr == value)
     {
@@ -228,7 +228,8 @@ function_data &function_data::
  * checks for parameter definition
  */
 function_data &function_data::
-    parameter_insert(const std::string &id, item_data *value)
+    parameter_insert(const std::string &id,
+                     item_data *const value)
 {
     if (nullptr == value)
     {
@@ -279,7 +280,8 @@ function_data &function_data::
 
 // to be called for every parameter - calling the function
 function_data &function_data::
-    set_parameter(const std::string &id, item_data *value)
+    set_parameter(const std::string &id,
+                  item_data *const value)
 {
     if (nullptr == value)
     {
@@ -347,12 +349,12 @@ item_data *function_data::
     return parameters.at(id);
 }
 
-function_data::itm_data function_data::begin()
+function_data::it function_data::begin()
 {
     return parameters.begin();
 }
 
-function_data::itm_data function_data::end()
+function_data::it function_data::end()
 {
     return parameters.end();
 }
@@ -421,9 +423,9 @@ object_data::object_data(const std::string &type)
 object_data::object_data(const std::string &type,
                          const object_data &o)
     : item_data(ITEM_TYPE_OBJ, type),
-      attributes(o.attributes) 
+      attributes(o.attributes)
 {
-    if(type != o.get_data_type())
+    if (type != o.get_data_type())
     {
         yyerror("type incompatibility");
         this->~object_data();
@@ -434,7 +436,7 @@ object_data::object_data(const std::string &type,
 /* useful in initialization */
 object_data &object_data::
     attribute_insert(const std::string &id,
-                     item_data *value)
+                     item_data *const value)
 {
     if (nullptr == value)
     {
@@ -473,7 +475,7 @@ object_data &object_data::
 /* useful in assignation */
 object_data &object_data::
     set_attribute(const std::string &id,
-                  item_data *value)
+                  item_data *const value)
 {
     if (nullptr == value)
     {
@@ -525,12 +527,12 @@ item_data *object_data::
     return attributes.at(id);
 }
 
-object_data::att_it object_data::begin()
+object_data::it object_data::begin()
 {
     return attributes.begin();
 }
 
-object_data::att_it object_data::end()
+object_data::it object_data::end()
 {
     return attributes.end();
 }
@@ -568,7 +570,7 @@ item_data *symbol_table::get_data(const std::string &id) const
     return nullptr;
 }
 
-const std::string& symbol_table::get_id() const
+const std::string &symbol_table::get_id() const
 {
     return s_id;
 }
@@ -608,12 +610,12 @@ size_t symbol_table::get_count_object() const
     return count;
 }
 
-symbol_table::itm_it symbol_table::begin()
+symbol_table::it symbol_table::begin()
 {
     return itm.begin();
 }
 
-symbol_table::itm_it symbol_table::end()
+symbol_table::it symbol_table::end()
 {
     return itm.end();
 }
