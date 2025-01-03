@@ -189,8 +189,20 @@ const std::string &function_data::default_id()
 
 function_data::~function_data()
 {
-    for (const auto &parameter : parameters)
-        delete parameter.second;
+    for (const auto &item_pair : parameters)
+    {
+        item_data *i = item_pair.second;
+        if (ITEM_TYPE_VAR ==
+            i->get_item_type())
+        {
+            variable_data *v = (variable_data *)i;
+            delete v;
+            continue;
+        }
+
+        object_data *o = (object_data *)i;
+        delete o;
+    }
 }
 
 [[deprecated("not a safe method, always be specific")]]
@@ -378,17 +390,30 @@ function_data::it function_data::end()
 //!------------------------------------------------
 //! object
 
+// TODO : make copy for objects
+
 // private
 object_data::object_data(const object_data &o)
-    : item_data(ITEM_TYPE_OBJ, o.get_data_type()),
-      attributes(o.attributes)
+    : item_data(ITEM_TYPE_OBJ, o.get_data_type())
 {
 }
 
 object_data::~object_data()
 {
-    for (const auto &attribute : attributes)
-        delete attribute.second;
+    for (const auto &item_pair : attributes)
+    {
+        item_data *i = item_pair.second;
+        if (ITEM_TYPE_VAR ==
+            i->get_item_type())
+        {
+            variable_data *v = (variable_data *)i;
+            //delete v;
+            continue;
+        }
+
+        object_data *o = (object_data *)i;
+        //delete o;
+    }
 }
 
 [[deprecated("not a safe method, always be specific")]]
@@ -566,7 +591,34 @@ object_data::it object_data::end()
 symbol_table::~symbol_table()
 {
     for (const auto &item_pair : itm)
-        delete item_pair.second;
+    {
+        item_data *i = item_pair.second;
+        if (nullptr == i)
+            continue;
+
+        if (ITEM_TYPE_VAR ==
+            i->get_item_type())
+        {
+            variable_data *v = (variable_data *)i;
+            delete v;
+            continue;
+        }
+
+        if (ITEM_TYPE_FCT ==
+            i->get_item_type())
+        {
+            function_data *f = (function_data *)i;
+            delete f;
+            continue;
+        }
+
+        if (ITEM_TYPE_OBJ ==
+            i->get_item_type())
+        {
+            object_data *o = (object_data *)i;
+            delete o;
+        }
+    }
 }
 
 symbol_table::symbol_table()
