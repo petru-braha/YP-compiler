@@ -162,7 +162,7 @@ arr_fild: R_TYP S_NME ';' {
             error_flag |= is_error = (nullptr == argument) ||
                 (argument && std::string($2) == std::string($4));
             if(is_error)
-              yyerror("argument not found");
+              yyerror("undefined argument");
             
             // success
             if(false == error_flag)
@@ -307,7 +307,7 @@ arr_fild: R_TYP S_NME ';' {
             error_flag |= is_error = (nullptr == argument) ||
                 (argument && std::string($2) == std::string($4));
             if(is_error)
-              yyerror("argument not found");
+              yyerror("undefined argument");
               
             // success
             if(false == error_flag)
@@ -440,7 +440,7 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
             error_flag |= is_error = (nullptr == argument) ||
                 (argument && std::string($2) == std::string($4));
             if(is_error)
-              yyerror("argument not found");
+              yyerror("undefined argument");
 
             // success
             if(false == error_flag)
@@ -672,7 +672,7 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
             error_flag |= is_error = (nullptr == argument) ||
                 (argument && std::string($2) == std::string($4));
             if(is_error)
-              yyerror("argument not found");
+              yyerror("undefined argument");
 
             // success
             if(false == error_flag)

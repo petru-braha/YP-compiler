@@ -34,7 +34,7 @@ item_data::item_data(const unsigned char i_t,
     : item_type(i_t), data_type(d_t)
 {
     if (i_t > ITEM_TYPE_OBJ)
-        yyerror("item data initialization - wrong parameter");
+        yyerror("wrong item type");
 }
 
 const unsigned char item_data::get_item_type() const
@@ -112,7 +112,7 @@ variable_data::variable_data(const std::string &type)
     : item_data(ITEM_TYPE_VAR, type)
 {
     if (false == is_primitive(type))
-        yyerror("not a primitive type");
+        yyerror("the argument should be primitive");
     value = default_value_of(type);
 }
 
@@ -121,7 +121,7 @@ variable_data::variable_data(const std::string &type,
     : item_data(ITEM_TYPE_VAR, type)
 {
     if (false == is_primitive(type))
-        yyerror("not a primitive type");
+        yyerror("the argument should be primitive");
     if (type != type_of(value))
         yyerror("incompatible types");
     this->value = value;
@@ -143,7 +143,7 @@ variable_data ::variable_data(const std::string &type,
 variable_data &variable_data::set_value(const std::string &value)
 {
     if (this->get_data_type() != type_of(value))
-        yyerror("variable data initialization - not compatible types");
+        yyerror("incompatible types");
     this->value = value;
     return *this;
 }
@@ -431,7 +431,7 @@ object_data::object_data(const std::string &type)
     symbol_table *s = type_exists(type);
 
     if (nullptr == s)
-        yyerror(ERR_UNDEF_TYPE);
+        ERR_UNDEF_TYPE;
 
     symbol_table o_attributes = *s;
 
@@ -543,7 +543,7 @@ object_data &object_data::
 
     if (value->get_data_type() !=
         attributes.at(id)->get_data_type())
-        yyerror("object data setting - type incompatiblity");
+        yyerror("incompatible types");
 
     if (ITEM_TYPE_VAR == value->get_item_type())
     {
