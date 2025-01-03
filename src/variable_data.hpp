@@ -29,7 +29,7 @@ public:
     variable_data();
     variable_data(const std::string &);
     variable_data(const std::string &, const std::string &);
-    variable_data(const variable_data &);
+    variable_data(const std::string &, const variable_data &);
 
     variable_data &set_value(const std::string &);
 

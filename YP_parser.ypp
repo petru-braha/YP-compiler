@@ -141,7 +141,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
         
         | R_TYP S_NME OPERATOR_ASSIGN S_NME ';' { /* variable */
             bool is_error = false, error_flag = false;
-
+            
             error_flag |= is_error = is_type($2) || is_type($4);
             if(is_error)
               yyerror("type treated as an identifier");
@@ -157,7 +157,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
               argument = symbols.at(scope).get_data($4);
             else
               argument = type_table[cls_last_name].get_data($4);
-              
+            
             error_flag |= is_error = (nullptr == argument) ||
                 (argument && std::string($2) == std::string($4));
             if(is_error)
@@ -166,8 +166,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             // success
             if(false == error_flag)
             {
-              variable_data v_data($1, ((variable_data*)argument)->
-                get_value());
+              variable_data v_data($1, *(variable_data*)argument);
               type_table[cls_last_name].insert($2, &v_data);
             }
             
@@ -349,7 +348,7 @@ arr_fild: R_TYP S_NME ';' { /* variable */
         
         | A_PRV arr_fild /* TODO: semantics but much later */
         | A_PUB arr_fild /* TODO: semantics but much later */
-        | scope_end
+        | '}'
         ;
         
 /*!------------------------------------------------
@@ -715,6 +714,7 @@ obj_vals: S_NME ',' {
             o_data_global->set_attribute(att_name, &v_data);
 
             objit_global++;
+            free($1);
           }
         | cst_call {
 
@@ -727,6 +727,7 @@ obj_vals: S_NME ',' {
             o_data_global->set_attribute(att_name, &v_data);
 
             objit_global++;
+            free($1);
           }
         
         /* TODO: initialization of inside object objects? { cst_call, cst_call } */
@@ -790,11 +791,11 @@ arr_argm: argument ',' arr_argm
 
 /*! text constant states */
 
-cst_call: C_INT { free($1); }
-        | C_FLT { free($1); }
-        | C_CHR { free($1); }
-        | C_STR { free($1); }
-        | C_BOL { free($1); }
+cst_call: C_INT
+        | C_FLT
+        | C_CHR
+        | C_STR
+        | C_BOL
         ;
 
 /*!------------------------------------------------

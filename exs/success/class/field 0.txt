@@ -1,0 +1,43 @@
+class integer
+{
+    int a;
+    int b = a;
+    int c = 5;
+}
+
+class real_number
+{
+    float a;
+    float b = a;
+    float c = 5.0;
+}
+
+char model;
+
+class true_character
+{
+    char a = model;
+    char b = a;
+    char c = 'm';
+}
+
+string author = "petru";
+
+class text
+{
+    string a = author;
+    string b = "60 commits in two weeks?";
+    string c = "he's a god damn genius?";
+}
+
+class is_true
+{
+    bool a = true;
+    bool b = a;
+    bool c = false;
+}
+
+master()
+{
+
+}

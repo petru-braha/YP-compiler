@@ -81,7 +81,7 @@ std::string type_of(const std::string &primitive_value)
     switch (primitive_value.at(0))
     {
     default:
-        if (primitive_value.find('.') != std::string::npos)
+        if (primitive_value.find('.') == std::string::npos)
             return DATA_TYPE_INT;
         return DATA_TYPE_FLT;
     case '\'':
@@ -105,7 +105,7 @@ variable_data::variable_data(const std::string &type)
     : item_data(ITEM_TYPE_VAR, type)
 {
     if (false == is_primitive(type))
-        yyerror("variable data initialization - not primitive type");
+        yyerror("not a primitive type");
     value = default_value_of(type);
 }
 
@@ -115,15 +115,22 @@ variable_data::variable_data(const std::string &type,
 {
     if (false == is_primitive(type))
         yyerror("not a primitive type");
-    if (this->get_data_type() != type_of(value))
-        yyerror("variable data initialization - not compatible types");
+    if (type != type_of(value))
+        yyerror("incompatible types");
     this->value = value;
 }
 
 // not verification required - v can only be legitimate
-variable_data ::variable_data(const variable_data &v)
-    : item_data(ITEM_TYPE_VAR, v.get_data_type()), value(v.get_value())
+variable_data ::variable_data(const std::string &type,
+                              const variable_data &v)
+    : item_data(ITEM_TYPE_VAR, type),
+      value(v.get_value())
 {
+    if (type != v.get_data_type())
+    {
+        yyerror("incompatible types");
+        value = default_value_of(type);
+    }
 }
 
 variable_data &variable_data::set_value(const std::string &value)
@@ -656,7 +663,7 @@ extern std::vector<symbol_table> symbols;
 /* goes through every scope
  * could add extra time complexity
  */
-size_t scope_search(std::string id)
+size_t scope_search(const std::string &id)
 {
     for (size_t scope = LAST_SCOPE;; scope--)
     {
@@ -669,7 +676,7 @@ size_t scope_search(std::string id)
     return -1;
 }
 
-bool is_type(std::string id)
+bool is_type(const std::string &id)
 {
     return type_exists(id) || is_primitive(id);
 }

@@ -1,0 +1,31 @@
+class integer
+{
+    int a(){}
+}
+
+class real_number
+{
+    float a;
+    float b = a;
+    float c = 5.0;
+}
+
+class true_character
+{
+    char a = model;
+    char b = a;
+    char c = 'm';
+}
+
+class text
+{
+}
+
+class is_true
+{
+}
+
+master()
+{
+
+}
