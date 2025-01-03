@@ -22,7 +22,8 @@ size_t count_error;
 std::string cls_last_name;
 function_data* f_data_global;
 object_data* o_data_global;
-size_t f_data_index, o_data_index;
+function_data::it fctit_global;
+object_data::it objit_global;
 
 std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
@@ -203,9 +204,11 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
               function_data f_data($1);
-              f_data_global = &f_data;
               type_table[cls_last_name].insert($2, &f_data);
+              f_data_global = (function_data*)
+                type_table[cls_last_name].get_data($2);
             }} fct_synp scope_begin statement_list {
+              f_data_global = nullptr;
               free($1); free($2);
           } arr_fild
         
@@ -230,9 +233,11 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             if(false == error_flag)
             {
               function_data f_data($1);
-              f_data_global = &f_data;
               type_table[cls_last_name].insert($2, &f_data);
+              f_data_global = (function_data*)
+                type_table[cls_last_name].get_data($2);
             }} fct_synp scope_begin statement_list {
+              f_data_global = nullptr;
               free($1); free($2); 
           } arr_fild
 
@@ -325,8 +330,12 @@ arr_fild: R_TYP S_NME ';' { /* variable */
             }
             } OPERATOR_ASSIGN '{' obj_vals ';' arr_fild {
             
-            o_data_global = nullptr;
-            o_data_index = 0;
+            if(o_data_global)
+            {
+              objit_global = o_data_global->end();
+              o_data_global = nullptr;
+            }
+            
             free($1); free($2);
           }
         
@@ -464,8 +473,9 @@ fct_defn: R_TYP S_NME {
             if(false == error_flag)
             {
               function_data f_data($1);
-              f_data_global = &f_data;
               symbols[LAST_SCOPE].insert($2, &f_data);
+              f_data_global = (function_data*)
+                symbols[LAST_SCOPE].get_data($2);
             }} fct_synp scope_begin statement_list {
             f_data_global = nullptr;
             free($1); free($2);
@@ -647,14 +657,25 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
             free($1); free($2); free($4);
           }
         | S_NME S_NME {
-            object_data o_data($1);
-            o_data_global = &o_data;
-            if(type_exists($1))
+
+            if(nullptr == type_exists($1))
+              yyerror("undefined type");
+            else
+            {
+              object_data o_data($1);
               symbols[LAST_SCOPE].insert($2, &o_data);
-            } 
+              o_data_global = (object_data*)
+                symbols[LAST_SCOPE].get_data($2);
+              objit_global = o_data_global->begin();
+            }} 
             OPERATOR_ASSIGN '{' obj_vals ';' {
-            o_data_global = nullptr;
-            o_data_index = 0;
+            
+            if(o_data_global)
+            {
+              objit_global = o_data_global->end();
+              o_data_global = nullptr;
+            }
+
             free($1); free($2);
           }
         ;
@@ -664,8 +685,7 @@ obj_vals: S_NME ',' {
 
             // field interrogation
             std::pair<std::string, item_data*> 
-              att_pair = *(o_data_global->
-                begin() + o_data_index);
+              att_pair = *objit_global;
             std::string att_name = att_pair.first;
               
             // get data from id
@@ -676,19 +696,18 @@ obj_vals: S_NME ',' {
             // success
             else
             {
-              item_data * i_data =
+              item_data* i_data =
                 symbols.at(scope).get_data($1);
               o_data_global->set_attribute(att_name, i_data);
             }
 
-            o_data_index++;
+            objit_global++;
           }
         | S_NME {
             
             // field interrogation
             std::pair<std::string, item_data*> 
-              att_pair = *(o_data_global->
-                begin() + o_data_index);
+              att_pair = *objit_global;
             std::string att_name = att_pair.first;
               
             // get data from id
@@ -699,38 +718,36 @@ obj_vals: S_NME ',' {
             // success
             else
             {
-              item_data * i_data =
+              item_data* i_data =
                 symbols.at(scope).get_data($1);
               o_data_global->set_attribute(att_name, i_data);
             }
 
-            o_data_index++;
+            objit_global++;
           }
         | cst_call ',' {
             
             // field interrogation
             std::pair<std::string, item_data*> 
-              att_pair = *(o_data_global->
-                begin() + o_data_index);
+              att_pair = *objit_global;
             std::string att_name = att_pair.first;
             
             variable_data v_data(type_of($1), $1);
             o_data_global->set_attribute(att_name, &v_data);
 
-            o_data_index++;
+            objit_global++;
           }
         | cst_call {
 
             // field interrogation
             std::pair<std::string, item_data*> 
-              att_pair = *(o_data_global->
-                begin() + o_data_index);
+              att_pair = *objit_global;
             std::string att_name = att_pair.first;
             
             variable_data v_data(type_of($1), $1);
             o_data_global->set_attribute(att_name, &v_data);
 
-            o_data_index++;
+            objit_global++;
           }
         
         /* TODO: initialization of inside object objects? { cst_call, cst_call } */

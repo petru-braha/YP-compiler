@@ -347,12 +347,12 @@ item_data *function_data::
     return parameters.at(id);
 }
 
-function_data::itm_data function_data::begin()
+function_data::it function_data::begin()
 {
     return parameters.begin();
 }
 
-function_data::itm_data function_data::end()
+function_data::it function_data::end()
 {
     return parameters.end();
 }
@@ -525,12 +525,12 @@ item_data *object_data::
     return attributes.at(id);
 }
 
-object_data::att_it object_data::begin()
+object_data::it object_data::begin()
 {
     return attributes.begin();
 }
 
-object_data::att_it object_data::end()
+object_data::it object_data::end()
 {
     return attributes.end();
 }
@@ -608,12 +608,12 @@ size_t symbol_table::get_count_object() const
     return count;
 }
 
-symbol_table::itm_it symbol_table::begin()
+symbol_table::it symbol_table::begin()
 {
     return itm.begin();
 }
 
-symbol_table::itm_it symbol_table::end()
+symbol_table::it symbol_table::end()
 {
     return itm.end();
 }

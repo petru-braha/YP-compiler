@@ -31,9 +31,9 @@ public:
 
     typedef std::unordered_map<
         std::string, item_data *>::iterator
-        att_it;
-    att_it begin();
-    att_it end();
+        it;
+    it begin();
+    it end();
 };
 
 #endif

@@ -39,9 +39,9 @@ public:
     const std::string& get_id() const;
     
     typedef std::unordered_map<
-        std::string, item_data *>::iterator itm_it;
-    itm_it begin();
-    itm_it end();
+        std::string, item_data *>::iterator it;
+    it begin();
+    it end();
 };
 
 size_t symbol_table::available_id = 0;

@@ -34,9 +34,9 @@ public:
 
     typedef std::unordered_map<
         std::string, item_data *>::iterator
-        itm_data;
-    itm_data begin();
-    itm_data end();
+        it;
+    it begin();
+    it end();
 };
 
 std::string function_data::available_id = "";
