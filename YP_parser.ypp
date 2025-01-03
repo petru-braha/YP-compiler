@@ -85,6 +85,18 @@ scope_begin : '{' { symbols.emplace_back(); };
 scope_end   : '}' { symbols.pop_back(); };
 method_master   : scope_begin statement_list;
 
+global_declaration: cls_decl global_declaration
+	                | fct_decl global_declaration
+	                | var_decl global_declaration
+                  | obj_decl global_declaration
+                  | ';' global_declaration | cst_call ';' global_declaration
+                  | method_master
+	                ;
+local_declaration : fct_decl local_declaration | fct_decl
+                  | var_decl local_declaration | var_decl
+                  | obj_decl local_declaration | obj_decl
+                  ;
+
 /*!------------------------------------------------
 /*!------------------------------------------------
 /*! class states */
@@ -425,25 +437,6 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
             free($1); free($2); free($4);
           };
 
-var_call: S_NME {
-            bool is_error = false, error_flag = false;
-
-            error_flag |= is_error = is_type($1);
-            if(is_error)
-              yyerror("type treated as an identifier");
-            
-            item_data* argument = nullptr;
-            size_t scope = scope_search($1);
-            if(size_t(-1) != scope)
-              argument = symbols.at(scope).get_data($1);
-              
-            error_flag |= is_error = (nullptr == argument);
-            if(is_error)
-              yyerror("identifier not found");
-
-            free($1);
-          };
-
 /*!------------------------------------------------
 /*! function states */
 
@@ -753,10 +746,49 @@ obj_vals: S_NME ',' {
         /* TODO: initialization of inside object objects? { cst_call, cst_call } */
         | '}'
 
-fld_call: S_NME A_FLD S_NME { /* search type, search field */ } ;
+fld_call: S_NME A_FLD S_NME {
+            bool is_error = false, error_flag = false;
 
-obj_call: S_NME { }
-        ;
+            error_flag |= is_error = is_type($1) || is_type($3);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            item_data* argument = nullptr;
+            size_t scope = scope_search($1);
+            if(size_t(-1) != scope)
+              argument = symbols.at(scope).get_data($1);
+              
+            error_flag |= is_error = (nullptr == argument);
+            if(is_error)
+              yyerror("identifier not found");
+
+            if(argument)
+            {
+              std::string cls_name = argument->get_data_type();
+              type_exists(cls_name)->get_data($3); 
+            }
+
+            free($1); free($3);
+          };
+
+itm_call: S_NME {
+            bool is_error = false, error_flag = false;
+
+            error_flag |= is_error = is_type($1);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            item_data* argument = nullptr;
+            size_t scope = scope_search($1);
+            if(size_t(-1) != scope)
+              argument = symbols.at(scope).get_data($1);
+              
+            error_flag |= is_error = (nullptr == argument);
+            if(is_error)
+              yyerror("identifier not found");
+
+            free($1);
+          };
 
 /*! text constant states */
 
@@ -767,21 +799,8 @@ cst_call: C_INT { free($1); }
         | C_BOL { free($1); }
         ;
 
-/*! declaration parser */
-global_declaration: cls_decl global_declaration
-	                | fct_decl global_declaration
-	                | var_decl global_declaration
-                  | obj_decl global_declaration
-                  | ';' global_declaration | cst_call ';' global_declaration
-                  | method_master
-	                ;
-local_declaration : fct_decl local_declaration | fct_decl
-                  | var_decl local_declaration | var_decl
-                  | obj_decl local_declaration | obj_decl
-                  ;
-
-//------------------------------------------------
-
+/*!------------------------------------------------
+/*!------------------------------------------------
 /*! statements */
 statement_list  : scope_end;
 /*
@@ -843,9 +862,9 @@ condition_append: ';'
 
 %%
 
-//------------------------------------------------
-//------------------------------------------------
-// C++ functions:
+/*!------------------------------------------------
+/*!------------------------------------------------
+/*! C++ functions */
 
 void yyerror(const char * s){
   count_error++;
@@ -854,14 +873,13 @@ void yyerror(const char * s){
 
 int main(int argc, char** argv)
 {
-
   if(argc != 2)
   {
-      yyerror("wrong number of arguments");
-      return EXIT_FAILURE;
+    yyerror("wrong number of arguments");
+    return EXIT_FAILURE;
   }
 
-  FILE* ptr = fopen(argv[1],"r");
+  FILE* ptr = fopen(argv[1], "r");
   if(nullptr == ptr)
   {
     yyerror("invalid file");

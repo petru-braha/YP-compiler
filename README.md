@@ -47,11 +47,9 @@ Test-driven development principles were considered in this project.
         - recursion
         - abstract syntax tree
 
-0. compilation trial
-0. call states
 0. const specifier
+0. call states
 0. naming convetions
-0. field call
 0. assignation for object of object (etc)
 
 <br>

@@ -154,6 +154,8 @@ string name = Type(a);
 
 ## Order of error checking
 
+### for declaration
+
 * type_exists($1)
 - is_type(id)
 * is_type(argument)
