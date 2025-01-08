@@ -43,7 +43,18 @@ comment #.*
 {reserved_type}{type_array} { yylval.token_name = strdup(yytext);
     return R_TYP; }
 
-
+'+'|'-'|'*'|'/'|'%'|'^' { yylval.token_name = strdup(yytext);
+    return OP_INT; }
+'+'|'-'|'*'|'/'|'^' { yylval.token_name = strdup(yytext);
+    return OP_FLT; }
+'+'|'-'|'*'|'/'|'%'|'^' { yylval.token_name = strdup(yytext);
+    return OP_INT; }
+'+'|'-' { yylval.token_name = strdup(yytext);
+    return OP_STR; }
+'=''='|'!''=' { yylval.token_name = strdup(yytext);
+    return OP_BOL; }
+'!' { yylval.token_name = strdup(yytext);
+    return U_OP_BOL; }
 
 {constant_int} { yylval.token_name = strdup(yytext);
     return C_INT; }

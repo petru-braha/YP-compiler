@@ -72,6 +72,8 @@ std::vector<symbol_table> symbols;
 %token OPERATOR_ASSIGN
 // %token OPERATOR_RELTIN
 
+%token<token_name> OP_INT OP_FLT OP_CHR OP_STR OP_BOL U_OP_BOL
+
 %start starting_symbol
 
 %%
@@ -196,7 +198,26 @@ arr_fild: R_TYP S_NME ';' {
             free($1); free($2); free($4);
           } arr_fild
 
-        /*! 2 function rules */
+        /*! 3 function rules */
+        | S_NME {
+            bool is_error = false, error_flag = false;
+
+            // it must be a type - the class type
+            error_flag |= is_error = !is_type($2);
+            if(is_error)
+              yyerror("constructor should be labeled as class");
+
+            // success
+            if(false == error_flag)
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($2, &f_data);
+              f_data_global = (function_data*)
+                type_exists(cls_last_name)->get_data($2);
+            }} '(' arr_parm scope_begin statement_list {
+            f_data_global = nullptr;
+            free($1);
+          } arr_fild
         | R_TYP S_NME {
             bool is_error = false, error_flag = false;
 
@@ -862,32 +883,63 @@ statement_list  : scope_end;
 /*
 statement_list  : statement_parse statement_list
                 | scope_begin statement_list scope_end
+                | local declaratui
                 | scope_end
                 ;
 */
 
 /* statements types and parsing technique */
-/* 
-statement_parse : statement_easy
-                | statement_bool
-                | statement_assg
-                | method_type ';'
-                | method_print ';' { std::string s = $1 + 6; s[s.size() - 1] = '\0'; printf("%s", s.c_str()); }
-                // | statement_cond
-                // | local_declaration
-                ;
-call_parse      : fct_call
-                | var_call
-                | fld_call
-                // | obj_call
-                | cst_call
-                ;
-*/
 
-/* redundant statementes */
-/* 
-statement_easy  : call_parse ';' | ';' ;
-*/
+statement_parse : statement_int
+                | statement_flt
+                | statement_chr
+                | statement_str
+                | statement_bol
+                | fct_call 
+                ;
+
+arr_argm        : ',' statement_parse arr_argm
+                | ')'
+fct_call        : S_NME '(' statement_parse arr_argm
+                | S_NME '('')'
+                ;
+
+statement_int   : S_NME OP_INT statement_int
+                | S_NME 
+                | C_INT OP_INT statement_int
+                | C_INT 
+                | method_print ';' { std::string s = $1 + 6; s[s.size() - 1] = '\0'; printf("%s", s.c_str()); }
+                ;
+
+statement_flt   : S_NME OP_FLT statement_flt
+                | S_NME 
+                | C_FLT OP_FLT statement_flt
+                | C_FLT 
+                ;
+statement_chr   : S_NME OP_CHR statement_chr
+                | S_NME 
+                | C_CHR OP_CHR statement_chr
+                | C_CHR 
+                ;
+statement_str   : S_NME OP_STR statement_str
+                | S_NME 
+                | C_STR OP_STR statement_str
+                | C_STR 
+                | method_type
+                ;
+statement_bol   : S_NME OP_BOL statement_bol
+                | S_NME 
+                | C_BOL OP_BOL statement_bol
+                | C_BOL 
+                | U_OP_BOL S_NME statement_bol
+                | U_OP_BOL S_NME 
+                | U_OP_BOL C_BOL statement_bol
+                | U_OP_BOL C_BOL 
+                ;
+                | statement_flt
+                | statement_chr
+                | statement_chr
+                | statement_bol
 
 /* assignation statement */// here is needed a recursive approach
 /* 

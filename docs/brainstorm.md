@@ -171,3 +171,33 @@ string name = Type(a);
 - ids from scopes have priority before ids from the class definition
 
 - what happens if error occurs? should we stop the execution?
+
+
+- ++ constructors
+class cacat
+{
+
+}
+
+class apa
+{
+    int filed0;
+    int field1;
+    cacat object_apa;
+
+public:
+    apa() { field0 = 0; prinf("mata"); }
+    apa(int, int, int) {}
+}
+
+
+apa object(1, 1, 2);
+printf("tactu");
+
+
+for(int i = 0 ; i < 10 ; i ++;)
+for(auto i : container) == for(auto i = begin(); i != end(); i++)
+
+i == iterator
+*i == std::pair<std::string, item_data*>
+(*i).second == 
