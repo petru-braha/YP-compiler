@@ -1,6 +1,8 @@
 /* YP_parser.ypp - bottom-up parser, LARL(1) grammar
  * (c) authors - Braha Petru Bogdan - <petrubraha@gmail.com>
  *             - Meraru Ioan Lucian - <https://github.com/Zamdacmalfal>
+ * building the compiler: ./build
+ *
  */
 
 %{
@@ -51,6 +53,9 @@ std::vector<symbol_table> symbols;
     for each terminal/non-terminal we perform checks
     we start with the first one and continue consecutively
  */
+
+%left '+' '-' 
+%left '*'
 
 /*!------------------------------------------------
 /*!------------------------------------------------

@@ -47,7 +47,7 @@ Test-driven development principles were considered in this project.
 ## To do
 
 0. tests
-0. grammar conflicts
+0. grammar conflicts, allow no parameter for function, add return
 0. assignation for object of object (etc)
 
 <br>
