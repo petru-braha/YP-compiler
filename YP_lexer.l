@@ -51,7 +51,7 @@ comment #.*
     return OP_INT; }
 '+'|'-' { yylval.token_name = strdup(yytext);
     return OP_STR; }
-'=''='|'!''=' { yylval.token_name = strdup(yytext);
+'=''='|'!''='|'|''|'|'&''&' { yylval.token_name = strdup(yytext);
     return OP_BOL; }
 '!' { yylval.token_name = strdup(yytext);
     return U_OP_BOL; }
