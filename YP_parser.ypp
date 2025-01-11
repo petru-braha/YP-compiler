@@ -105,11 +105,15 @@ global_declaration: cls_decl global_declaration
 /*! class states */
 
 cls_decl: R_CLS S_NME ';' {
+            if(size_t(-1) != scope_search($2))
+              yyerror("identifier already defined");
             if(LAST_SCOPE)
               yyerror("classes can only be declared globally");
               free($2);
           }
         | cls_defn {
+            if(size_t(-1) != scope_search($2))
+              yyerror("identifier already defined");
             if(LAST_SCOPE)
               yyerror("classes can only be declared globally");
           }
