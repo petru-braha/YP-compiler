@@ -1,0 +1,34 @@
+int nr0;
+int nr1 = nr0;
+int nr2 = 5;
+
+float pt0;
+float pt1 = pt0;
+float pt2 = 0.2;
+
+char ch0;
+char ch1 = ch0;
+char ch2 = 'a';
+
+string tx0;
+string tx1 = tx0;
+string tx2 = "yes";
+
+bool ft0;
+bool ft1 = ft0;
+bool ft2 = true;
+
+# works as expected
+master(){
+    int nr3;
+    int nr4 = nr2;
+    int nr5 = nr3;
+    int nr6 = 6;
+
+    string te_fut_in_gat;
+
+
+    bool ft4 = ft1;
+    bool ft5 = ft1;
+    bool ft6 = true;
+}

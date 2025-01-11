@@ -66,10 +66,10 @@ std::vector<symbol_table> symbols;
     char* token_name;
 }
 
-%type method_master method_print method_type
-%type<token_name> cst_call
+%type method_master // method_print method_type
 %token R_CLS A_PRV A_PUB /*A_FLD*/
 
+%type<token_name> cst_call
 %token<token_name> S_NME R_TYP
 %token<token_name> C_INT C_FLT C_CHR C_STR C_BOL
 
@@ -89,18 +89,6 @@ starting_symbol : { symbols.emplace_back(); } global_declaration {
                       printf("the program has %zu errors.\n", count_error);
                   };
 
-scope_begin : '{' { symbols.emplace_back(); };
-scope_end   : '}' { symbols.pop_back(); };
-method_master   : scope_begin statement_list;
-
-global_declaration: cls_decl global_declaration
-	                | fct_decl global_declaration
-	                | var_decl global_declaration
-                  | obj_decl global_declaration
-                  | ';' global_declaration | cst_call ';' global_declaration
-                  | method_master
-	                ;
-
 /*!------------------------------------------------
 /*! class states */
 
@@ -111,18 +99,29 @@ cls_decl: R_CLS S_NME ';' {
               yyerror("classes can only be declared globally");
               free($2);
           }
-        | cls_defn {
-            if(size_t(-1) != scope_search($2))
-              yyerror("identifier already defined");
-            if(LAST_SCOPE)
-              yyerror("classes can only be declared globally");
-          }
-        ;
+        | cls_defn;
 
 cls_defn: R_CLS S_NME '{' { // scope_begin => emplaces back
-            cls_last_name = $2;
-            type_insert(cls_last_name, symbol_table($2));
-            } arr_fild {
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+            
+            error_flag |= is_error = 0 != LAST_SCOPE;
+            if(is_error)
+              yyerror("classes can only be declared globally");
+            
+            // success
+            if(false == error_flag)
+            {
+              cls_last_name = $2;
+              type_insert(cls_last_name, symbol_table($2));
+            }
+          }
+
+          arr_fild {
             cls_last_name.clear();
             free($2);
           }
@@ -207,12 +206,15 @@ arr_fild: R_TYP S_NME ';' {
             free($1); free($2); free($4);
           } arr_fild
 
-        /*! 3 function rules */
+        /*! 5 function rules */
+
+        // constructors
         | S_NME {
             bool is_error = false, error_flag = false;
 
             // it must be a type - the class type
-            error_flag |= is_error = !is_type($2);
+            error_flag |= is_error =
+              std::string($1) != cls_last_name;
             if(is_error)
               yyerror("constructor should be labeled as class");
 
@@ -220,13 +222,14 @@ arr_fild: R_TYP S_NME ';' {
             if(false == error_flag)
             {
               function_data f_data($1);
-              type_exists(cls_last_name)->insert($2, &f_data);
+              type_exists(cls_last_name)->insert($1, &f_data);
               f_data_global = (function_data*)
-                type_exists(cls_last_name)->get_data($2);
+                type_exists(cls_last_name)->get_data($1);
             }} '(' arr_parm scope_begin statement_list {
             f_data_global = nullptr;
             free($1);
           } arr_fild
+
         | R_TYP S_NME {
             bool is_error = false, error_flag = false;
 
@@ -246,8 +249,28 @@ arr_fild: R_TYP S_NME ';' {
               type_exists(cls_last_name)->insert($2, &f_data);
               f_data_global = (function_data*)
                 type_exists(cls_last_name)->get_data($2);
-            }} '(' arr_parm scope_begin statement_list {
+            }} '(' parametr arr_parm scope_begin statement_list {
               f_data_global = nullptr;
+              free($1); free($2);
+          } arr_fild
+        | R_TYP S_NME {
+            bool is_error = false, error_flag = false;
+
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($2, &f_data);
+            }} '('')' scope_begin statement_list {
               free($1); free($2);
           } arr_fild
         
@@ -275,8 +298,33 @@ arr_fild: R_TYP S_NME ';' {
               type_exists(cls_last_name)->insert($2, &f_data);
               f_data_global = (function_data*)
                 type_exists(cls_last_name)->get_data($2);
-            }} '(' arr_parm scope_begin statement_list {
+            }} '(' parametr arr_parm scope_begin statement_list {
               f_data_global = nullptr;
+              free($1); free($2); 
+          } arr_fild
+        | S_NME S_NME {
+            bool is_error = false, error_flag = false;
+
+            error_flag |= is_error = 
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($2, &f_data);
+            }} '('')' scope_begin statement_list {
               free($1); free($2); 
           } arr_fild
 
@@ -441,8 +489,18 @@ var_decl: R_TYP S_NME ';' {
             // success
             if(false == error_flag)
             {
+          
               variable_data v_data($1);
+    if((symbols.at(0).get_data(std::string("ft1"))))
+                printf("regula 0: %s ft1 %s\n", $2 ,((variable_data *)(symbols.at(0).get_data(std::string("ft1"))))->get_value().c_str());
+             
               symbols[LAST_SCOPE].insert($2, &v_data);
+            
+            if((symbols.at(0).get_data(std::string("ft1"))))
+                printf("regula 0: ft1 %s\n",((variable_data *)(symbols.at(0).get_data(std::string("ft1"))))->get_value().c_str());
+
+
+             
             }
 
             free($1); free($2); 
@@ -475,12 +533,8 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
             // success
             if(false == error_flag)
             {
-              //printf("%s\n", symbols[LAST_SCOPE].
-                //get_data(std::string($2))->
-                //get_data_type().c_str());
-
-              variable_data v_data($1, 
-                ((variable_data *)(argument))->get_value());              
+              variable_data v_data($1,
+                ((variable_data *)(argument))->get_value());
               symbols[LAST_SCOPE].insert($2, &v_data);
             }
               
@@ -506,20 +560,46 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
               symbols[LAST_SCOPE].insert($2, &v_data);
             }
             
-            free($1); free($2); free($4);
+            free($1); free($2); /*free($4);*/
           };
 
 /*!------------------------------------------------
 /*! function states */
 
-fct_decl: R_TYP S_NME '(' arr_parm ';' {
+fct_decl: R_TYP S_NME '(' parametr arr_parm ';' {
+            size_t scope = scope_search($2);
+            if(size_t(-1) != scope)
+            {
+              item_data* i_data = symbols.at(scope).get_data($2);
+              if(i_data && ITEM_TYPE_FCT !=
+                i_data->get_item_type())
+                yyerror("identifier already defined");
+            }
             free($1); free($2);
           }
-        | S_NME S_NME '(' arr_parm ';' {
+        | R_TYP S_NME '('')' ';' {
+            size_t scope = scope_search($2);
+            if(size_t(-1) != scope)
+            {
+              item_data* i_data = symbols.at(scope).get_data($2);
+              if(i_data && ITEM_TYPE_FCT !=
+                i_data->get_item_type())
+                yyerror("identifier already defined");
+            }
+            free($1); free($2);
+          }
+
+        | S_NME S_NME '(' parametr arr_parm ';' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             free($1); free($2);
           }
+        | S_NME S_NME '('')' ';' {
+            if(nullptr == type_exists($1))
+              yyerror("undefined type");
+            free($1); free($2);
+          }
+
         | fct_defn
         ;
 
@@ -540,8 +620,8 @@ fct_defn: R_TYP S_NME {
               function_data f_data($1);
               symbols[LAST_SCOPE].insert($2, &f_data);
               f_data_global = (function_data*)
-                symbols[LAST_SCOPE].get_data($2);
-            }} '(' arr_parm scope_begin statement_list {
+                symbols.at(LAST_SCOPE).get_data($2);
+            }} '(' parametr arr_parm scope_begin statement_list {
             f_data_global = nullptr;
             free($1); free($2);
           }
@@ -567,83 +647,86 @@ fct_defn: R_TYP S_NME {
               function_data f_data($1);
               f_data_global = &f_data;
               symbols[LAST_SCOPE].insert($2, &f_data);
-            }} '(' arr_parm scope_begin statement_list {
+            }} '(' parametr arr_parm scope_begin statement_list {
             f_data_global = nullptr;
             free($1); free($2);
           }
         ;
 
-arr_parm: R_TYP S_NME {
-            variable_data v_data($1);
-            f_data_global->
-              parameter_insert($2, &v_data);
-            }',' arr_parm { free($1); free($2); 
-          }
-        | R_TYP S_NME ')' {
-            variable_data v_data($1);
-            f_data_global->
-              parameter_insert($2, &v_data);
-            free($1); free($2);
-          }
-        | S_NME S_NME {
-            if(nullptr == type_exists($1))
-              yyerror("undefined type");
+arr_parm: parametr arr_parm;
+parametr: ',' R_TYP S_NME {
+            if(nullptr == f_data_global)
+              yyerror("function parameter can't be created");
             else
             {
-              object_data o_data($1);
+              variable_data v_data($2);
               f_data_global->
-                parameter_insert($2, &o_data);
-            }}',' arr_parm { free($1); free($2);
-          }
-        | S_NME S_NME ')' {
-            if(nullptr == type_exists($1))
-              yyerror("undefined type");
-            else
-            {
-              object_data o_data($1);
-              f_data_global->
-                parameter_insert($2, &o_data);
+                parameter_insert($3, &v_data);
             }
             
-            free($1); free($2);
+            free($2); free($3); 
+          }
+        | ',' S_NME S_NME {
+            bool is_error = false, error_flag = false;
+
+            error_flag |= is_error =
+              nullptr == f_data_global;
+            if(is_error)
+              yyerror("function parameter can't be created");
+            
+            error_flag |= is_error =
+              nullptr == type_exists($2);
+            if(is_error)
+              yyerror("undefined type");
+            
+            if(false == error_flag)
+            {
+              object_data o_data($2);
+              f_data_global->
+                parameter_insert($3, &o_data);
+            }
+            
+            free($2); free($3);
           }
 
-        | R_TYP {
-            variable_data v_data($1);
-            f_data_global->
-              parameter_insert(&v_data);
-            } ',' arr_parm { free($1);
-          }
-        | R_TYP ')' {
-            variable_data v_data($1);
-            f_data_global->
-              parameter_insert(&v_data);
-            free($1);
-          }
-        | S_NME {
-            if(nullptr == type_exists($1))
-              yyerror("undefined type");
+        | ',' R_TYP {
+            if(nullptr == f_data_global)
+              yyerror("function parameter can't be created");
             else
             {
-              object_data o_data($1);
+              variable_data v_data($2);
               f_data_global->
-                parameter_insert(&o_data);
-            }} ',' arr_parm { free($1);
+                parameter_insert(&v_data);
+            }
+            
+            free($2);
           }
-        | S_NME ')' {
-            if(nullptr == type_exists($1))
+        | ',' S_NME {
+            bool is_error = false, error_flag = false;
+
+            error_flag |= is_error =
+              nullptr == f_data_global;
+            if(is_error)
+              yyerror("function parameter can't be created");
+            
+            error_flag |= is_error =
+              nullptr == type_exists($2);
+            if(is_error)
               yyerror("undefined type");
-            else
+            
+            if(false == error_flag)
             {
-              object_data o_data($1);
+              object_data o_data($2);
               f_data_global->
                 parameter_insert(&o_data);
             }
             
-            free($1);
+            free($2);
           }
+
+        | ')'
         
-        /*TODO: maybe with assignation too? => another 8 rules */
+        /*TODO: maybe with assignation too? => another 4 rules */
         ;
 
 /*!------------------------------------------------
@@ -723,7 +806,7 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
               object_data o_data($1);
               symbols[LAST_SCOPE].insert($2, &o_data);
               o_data_global = (object_data*)
-                symbols[LAST_SCOPE].get_data($2);
+                symbols.at(LAST_SCOPE).get_data($2);
               objit_global = o_data_global->begin();
             }} 
             OPERATOR_ASSIGN '{' obj_vals ';' {
@@ -871,32 +954,44 @@ arr_argm: argument ',' arr_argm
 
 /*! text constant states */
 
-cst_call: C_INT
-        | C_FLT
-        | C_CHR
-        | C_STR
-        | C_BOL
+cst_call: C_INT { $$ = ($1); }
+        | C_FLT { $$ = ($1); }
+        | C_CHR { $$ = ($1); }
+        | C_STR { $$ = ($1); }
+        | C_BOL { $$ = ($1); }
         ;
 
 /*!------------------------------------------------
 /*!------------------------------------------------
 /*! statements */
 
+global_declaration: cls_decl global_declaration
+	                | fct_decl global_declaration
+	                | var_decl global_declaration
+                  | obj_decl global_declaration
+                  | ';' global_declaration
+                  | method_master
+                  /*todo should allow expressions here too*/
+	                ;
 
-local_declaration : fct_decl local_declaration
-                  | var_decl local_declaration
+scope_begin : '{' { symbols.emplace_back(); };
+scope_end   : '}' { symbols.pop_back(); };
+method_master   : scope_begin statement_list;
+
+local_declaration : var_decl local_declaration
+                  | fct_decl local_declaration
                   | obj_decl local_declaration
                   | statement_list
                   ;
 
-statement_list  : expression_parse statement_list
-                | scope_begin statement_list scope_end
-                | local_declaration
-                | scope_end
-                ;
+statement_list: local_declaration statement_list
+              | scope_begin statement_list scope_end statement_list
+              //| expression_parse statement_list
+              | scope_end
+              ;
 
 /* statements types and parsing technique */
-
+/*
 expression_parse: expression_int
                 | expression_flt
                 | expression_chr
@@ -907,6 +1002,7 @@ expression_parse: expression_int
 
 arr_argm        : ',' expression_parse arr_argm
                 | ')'
+                ;
 fct_call        : S_NME '(' expression_parse arr_argm
                 | S_NME '('')'
                 ;
@@ -915,7 +1011,7 @@ expression_int  : S_NME OP_INT expression_int
                 | S_NME 
                 | C_INT OP_INT expression_int
                 | C_INT 
-                | method_print ';' { std::string s = $1 + 6; s[s.size() - 1] = '\0'; printf("%s", s.c_str()); }
+                //| method_print ';' { std::string s = $1 + 6; s[s.size() - 1] = '\0'; printf("%s", s.c_str()); }
                 ;
 
 expression_flt  : S_NME OP_FLT expression_flt
@@ -932,7 +1028,7 @@ expression_str  : S_NME OP_STR expression_str
                 | S_NME 
                 | C_STR OP_STR expression_str
                 | C_STR 
-                | method_type
+                //| method_type
                 ;
 expression_bol  : S_NME OP_BOL expression_bol
                 | S_NME 
@@ -943,6 +1039,7 @@ expression_bol  : S_NME OP_BOL expression_bol
                 | U_OP_BOL C_BOL expression_bol
                 | U_OP_BOL C_BOL 
                 ;
+*
 
 /* assignation statement */// here is needed a recursive approach
 /* 

@@ -1,0 +1,16 @@
+    float pt3;
+    float pt4 = pt2;
+    float pt5 = pt4;
+    float pt6 = 6.0;
+
+    char ch3;
+    char ch4 = ch2;
+    char ch5 = ch4;
+    char ch6 = 'a';
+
+    string tx3;
+    string tx4 = tx0;
+    string tx5 = tx1;
+    string tx6 = "no?";
+
+    bool ft3;

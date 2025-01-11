@@ -3,7 +3,7 @@
 ./src/discard.sh
 bison -d YP_parser.ypp
 lex YP_lexer.l
-g++ -std=c++17 lex.yy.c YP_parser.tab.cpp -o run.out
+g++ -std=c++17 lex.yy.c YP_parser.tab.cpp -o YP
 
 rm -f lex.yy.c
 rm -f YP_parser.tab.cpp

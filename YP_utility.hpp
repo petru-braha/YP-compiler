@@ -113,18 +113,18 @@ variable_data::variable_data(const std::string &type)
 {
     if (false == is_primitive(type))
         yyerror("the argument should be primitive");
-    value = default_value_of(type);
+    this->value = default_value_of(type);
 }
 
 variable_data::variable_data(const std::string &type,
-                             const std::string &value)
-    : item_data(ITEM_TYPE_VAR, type)
+                             const std::string &v)
+    : item_data(ITEM_TYPE_VAR, type), value()
 {
     if (false == is_primitive(type))
         yyerror("the argument should be primitive");
-    if (type != type_of(value))
+    if (type != type_of(v))
         yyerror("incompatible types");
-    this->value = value;
+    this->value = v;
 }
 
 // not verification required - v can only be legitimate
@@ -645,7 +645,9 @@ symbol_table &symbol_table::
     if (ITEM_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
-        variable_data *to_insert = new variable_data(*v_data);
+        variable_data *to_insert =
+            new variable_data(v_data->get_data_type(),
+                              v_data->get_value());
         std::pair<std::string, item_data *>
             i_pair(id, to_insert);
         itm.insert(i_pair);
