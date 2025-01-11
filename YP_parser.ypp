@@ -54,9 +54,13 @@ std::vector<symbol_table> symbols;
     we start with the first one and continue consecutively
  */
 
+//%left boolop
 %left '+' '-' 
 %left '*' '/' '%'
-%left '^'
+%left '(' ')'
+
+%right '='
+%right '^'
 
 /*!------------------------------------------------
 /*!------------------------------------------------

@@ -407,12 +407,12 @@ object_data::~object_data()
             i->get_item_type())
         {
             variable_data *v = (variable_data *)i;
-            //delete v;
+            // delete v;
             continue;
         }
 
         object_data *o = (object_data *)i;
-        //delete o;
+        // delete o;
     }
 }
 
@@ -430,7 +430,7 @@ object_data::object_data(const std::string &type)
         yyerror("primitive type");
     symbol_table *s = type_exists(type);
     if (nullptr == s)
-        yyerror(ERR_UNDEF_TYPE);
+        ERR_UNDEF_TYPE;
 
     symbol_table o_attributes = *s;
 
@@ -821,6 +821,29 @@ bool is_compatible(const char *type, const char *constant_value)
     }
 
     return true;
+}
+
+#include <stdlib.h>
+
+char *function(char *left, char *op, char *right)
+{
+    int result = 0;
+    switch (op[0])
+    {
+    case '+':
+        result = atoi(left) + atoi(right);
+        break;
+    case '*':
+        result = atoi(left) * atoi(right);
+        break;
+
+    default:
+        break;
+    }
+
+    char *pointer = (char *)malloc(10);
+    sprintf(pointer, "%d", result);
+    return pointer;
 }
 
 #endif
