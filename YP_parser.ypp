@@ -74,14 +74,14 @@ std::vector<symbol_table> symbols;
 %token R_CLS A_PRV A_PUB /*A_FLD*/
 
 %type<token_name> cst_call
-%token<token_name> S_NME R_TYP
-%token<token_name> C_INT C_FLT C_CHR C_STR C_BOL
+%token<token_name> SMT_NAME RSV_TYPE
+%token<token_name> LIT_INTG LIT_FLOT LIT_CHAR LIT_STRG LIT_BOOL
 
 // %token R_SEQ_IF R_SEQ_FOR R_SEQ_WHL
 %token OPERATOR_ASSIGN
 // %token OPERATOR_RELTIN
 
-%token<token_name> OP_INT OP_FLT OP_CHR OP_STR OP_BOL U_OP_BOL
+%token<token_name> OPR_INTG OPR_FLOT OPR_CHAR OPR_STRG OPR_BOOL U_OPR_BOOL
 
 %start starting_symbol
 
@@ -96,7 +96,7 @@ starting_symbol : { symbols.emplace_back(); } global_declaration {
 /*!------------------------------------------------
 /*! class states */
 
-cls_decl: R_CLS S_NME ';' {
+cls_decl: R_CLS SMT_NAME ';' {
             if(size_t(-1) != scope_search($2))
               yyerror("identifier already defined");
             if(LAST_SCOPE)
@@ -105,7 +105,7 @@ cls_decl: R_CLS S_NME ';' {
           }
         | cls_defn;
 
-cls_defn: R_CLS S_NME '{' { // scope_begin => emplaces back
+cls_defn: R_CLS SMT_NAME '{' { // scope_begin => emplaces back
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -132,7 +132,7 @@ cls_defn: R_CLS S_NME '{' { // scope_begin => emplaces back
         ;
 
           /*! 3 variable rules */
-arr_fild: R_TYP S_NME ';' {
+arr_fild: RSV_TYPE SMT_NAME ';' {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($2);
@@ -154,7 +154,7 @@ arr_fild: R_TYP S_NME ';' {
             free($1); free($2);
           } arr_fild
 
-        | R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
+        | RSV_TYPE SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2) || is_type($4);
@@ -188,7 +188,7 @@ arr_fild: R_TYP S_NME ';' {
             free($1); free($2); free($4);
           } arr_fild
 
-        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
+        | RSV_TYPE SMT_NAME OPERATOR_ASSIGN cst_call ';' {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($2);
@@ -213,7 +213,7 @@ arr_fild: R_TYP S_NME ';' {
         /*! 5 function rules */
 
         // constructors
-        | S_NME {
+        | SMT_NAME {
             bool is_error = false, error_flag = false;
 
             // it must be a type - the class type
@@ -234,7 +234,7 @@ arr_fild: R_TYP S_NME ';' {
             free($1);
           } arr_fild
 
-        | R_TYP S_NME {
+        | RSV_TYPE SMT_NAME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($2);
@@ -257,7 +257,7 @@ arr_fild: R_TYP S_NME ';' {
               f_data_global = nullptr;
               free($1); free($2);
           } arr_fild
-        | R_TYP S_NME {
+        | RSV_TYPE SMT_NAME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($2);
@@ -278,7 +278,7 @@ arr_fild: R_TYP S_NME ';' {
               free($1); free($2);
           } arr_fild
         
-        | S_NME S_NME {
+        | SMT_NAME SMT_NAME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = 
@@ -306,7 +306,7 @@ arr_fild: R_TYP S_NME ';' {
               f_data_global = nullptr;
               free($1); free($2); 
           } arr_fild
-        | S_NME S_NME {
+        | SMT_NAME SMT_NAME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = 
@@ -333,7 +333,7 @@ arr_fild: R_TYP S_NME ';' {
           } arr_fild
 
         /*! 3 object rules */
-        | S_NME S_NME ';' {
+        | SMT_NAME SMT_NAME ';' {
             bool is_error = false, error_flag = false;
         
             error_flag |= is_error =
@@ -361,7 +361,7 @@ arr_fild: R_TYP S_NME ';' {
             free($1); free($2); 
           } arr_fild
 
-        | S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
+        | SMT_NAME SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -401,7 +401,7 @@ arr_fild: R_TYP S_NME ';' {
             free($1); free($2); free($4);
             } arr_fild
         
-        | S_NME S_NME {
+        | SMT_NAME SMT_NAME {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -443,31 +443,31 @@ arr_fild: R_TYP S_NME ';' {
         | '}'
 
         /*! 6 error rules */
-        | R_TYP R_TYP ';' {
+        | RSV_TYPE RSV_TYPE ';' {
             yyerror("type treated as an identifier");
             free($1); free($2);
           } arr_fild
-        | R_TYP R_TYP OPERATOR_ASSIGN S_NME ';' {
+        | RSV_TYPE RSV_TYPE OPERATOR_ASSIGN SMT_NAME ';' {
             yyerror("type treated as an identifier");
             free($1); free($2); free($4);
           } arr_fild
-        | R_TYP R_TYP OPERATOR_ASSIGN cst_call ';' {
+        | RSV_TYPE RSV_TYPE OPERATOR_ASSIGN cst_call ';' {
             yyerror("type treated as an identifier");
             free($1); free($2); free($4);
           } arr_fild
-        | S_NME R_TYP ';' {
+        | SMT_NAME RSV_TYPE ';' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             yyerror("type treated as an identifier");
             free($1); free($2);
           } arr_fild
-        | S_NME R_TYP OPERATOR_ASSIGN S_NME ';' {
+        | SMT_NAME RSV_TYPE OPERATOR_ASSIGN SMT_NAME ';' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             yyerror("type treated as an identifier");
             free($1); free($2); free($4);
           } arr_fild
-        | S_NME R_TYP OPERATOR_ASSIGN obj_vals ';' {
+        | SMT_NAME RSV_TYPE OPERATOR_ASSIGN obj_vals ';' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             yyerror("type treated as an identifier");
@@ -478,7 +478,7 @@ arr_fild: R_TYP S_NME ';' {
 /*!------------------------------------------------
 /*! variable states */
 
-var_decl: R_TYP S_NME ';' {
+var_decl: RSV_TYPE SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2);
@@ -512,7 +512,7 @@ var_decl: R_TYP S_NME ';' {
         | var_defn
         ;
 
-var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
+var_defn: RSV_TYPE SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2);
@@ -545,7 +545,7 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
             free($1); free($2); free($4);
           }
 
-        | R_TYP S_NME OPERATOR_ASSIGN cst_call ';' {
+        | RSV_TYPE SMT_NAME OPERATOR_ASSIGN cst_call ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2);
@@ -570,7 +570,7 @@ var_defn: R_TYP S_NME OPERATOR_ASSIGN S_NME ';' {
 /*!------------------------------------------------
 /*! function states */
 
-fct_decl: R_TYP S_NME '(' parametr arr_parm ';' {
+fct_decl: RSV_TYPE SMT_NAME '(' parametr arr_parm ';' {
             size_t scope = scope_search($2);
             if(size_t(-1) != scope)
             {
@@ -581,7 +581,7 @@ fct_decl: R_TYP S_NME '(' parametr arr_parm ';' {
             }
             free($1); free($2);
           }
-        | R_TYP S_NME '('')' ';' {
+        | RSV_TYPE SMT_NAME '('')' ';' {
             size_t scope = scope_search($2);
             if(size_t(-1) != scope)
             {
@@ -593,12 +593,12 @@ fct_decl: R_TYP S_NME '(' parametr arr_parm ';' {
             free($1); free($2);
           }
 
-        | S_NME S_NME '(' parametr arr_parm ';' {
+        | SMT_NAME SMT_NAME '(' parametr arr_parm ';' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             free($1); free($2);
           }
-        | S_NME S_NME '('')' ';' {
+        | SMT_NAME SMT_NAME '('')' ';' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             free($1); free($2);
@@ -607,7 +607,7 @@ fct_decl: R_TYP S_NME '(' parametr arr_parm ';' {
         | fct_defn
         ;
 
-fct_defn: R_TYP S_NME {
+fct_defn: RSV_TYPE SMT_NAME {
             bool is_error = false, error_flag = false;
   
             error_flag |= is_error = is_type($2);
@@ -629,7 +629,7 @@ fct_defn: R_TYP S_NME {
             f_data_global = nullptr;
             free($1); free($2);
           }
-        | S_NME S_NME {
+        | SMT_NAME SMT_NAME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error =
@@ -658,7 +658,7 @@ fct_defn: R_TYP S_NME {
         ;
 
 arr_parm: parametr arr_parm;
-parametr: ',' R_TYP S_NME {
+parametr: ',' RSV_TYPE SMT_NAME {
             if(nullptr == f_data_global)
               yyerror("function parameter can't be created");
             else
@@ -670,7 +670,7 @@ parametr: ',' R_TYP S_NME {
             
             free($2); free($3); 
           }
-        | ',' S_NME S_NME {
+        | ',' SMT_NAME SMT_NAME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error =
@@ -693,7 +693,7 @@ parametr: ',' R_TYP S_NME {
             free($2); free($3);
           }
 
-        | ',' R_TYP {
+        | ',' RSV_TYPE {
             if(nullptr == f_data_global)
               yyerror("function parameter can't be created");
             else
@@ -705,7 +705,7 @@ parametr: ',' R_TYP S_NME {
             
             free($2);
           }
-        | ',' S_NME {
+        | ',' SMT_NAME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error =
@@ -736,7 +736,7 @@ parametr: ',' R_TYP S_NME {
 /*!------------------------------------------------
 /*! object states */
 
-obj_decl: S_NME S_NME ';' {
+obj_decl: SMT_NAME SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -765,7 +765,7 @@ obj_decl: S_NME S_NME ';' {
         | obj_defn
         ;
 
-obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
+obj_defn: SMT_NAME SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -801,7 +801,7 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
               
             free($1); free($2); free($4);
           }
-        | S_NME S_NME {
+        | SMT_NAME SMT_NAME {
 
             if(nullptr == type_exists($1))
               yyerror("undefined type");
@@ -826,7 +826,7 @@ obj_defn: S_NME S_NME OPERATOR_ASSIGN S_NME ';' {
         ;
 
 // all terminals of obj_vals can be variables or objects
-obj_vals: S_NME ',' {
+obj_vals: SMT_NAME ',' {
 
             // field interrogation
             std::pair<std::string, item_data*> 
@@ -848,7 +848,7 @@ obj_vals: S_NME ',' {
 
             objit_global++;
           }
-        | S_NME {
+        | SMT_NAME {
             
             // field interrogation
             std::pair<std::string, item_data*> 
@@ -904,7 +904,7 @@ obj_vals: S_NME ',' {
 /*! calling states */
 
 /*
-fld_call: S_NME A_FLD S_NME {
+fld_call: SMT_NAME A_FLD SMT_NAME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($1) || is_type($3);
@@ -929,7 +929,7 @@ fld_call: S_NME A_FLD S_NME {
             free($1); free($3);
           };
 
-itm_call: S_NME {
+itm_call: SMT_NAME {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($1);
@@ -948,9 +948,9 @@ itm_call: S_NME {
             free($1);
           };
 
-fct_call: S_NME '(' arr_argm ')' { free($1); } ;
-        | S_NME '(' ')' { free($1); } ;
-argument: S_NME | cst_call;
+fct_call: SMT_NAME '(' arr_argm ')' { free($1); } ;
+        | SMT_NAME '(' ')' { free($1); } ;
+argument: SMT_NAME | cst_call;
 arr_argm: argument ',' arr_argm
         | argument
         ;
@@ -958,11 +958,11 @@ arr_argm: argument ',' arr_argm
 
 /*! text constant states */
 
-cst_call: C_INT { $$ = ($1); }
-        | C_FLT { $$ = ($1); }
-        | C_CHR { $$ = ($1); }
-        | C_STR { $$ = ($1); }
-        | C_BOL { $$ = ($1); }
+cst_call: LIT_INTG { $$ = ($1); }
+        | LIT_FLOT { $$ = ($1); }
+        | LIT_CHAR { $$ = ($1); }
+        | LIT_STRG { $$ = ($1); }
+        | LIT_BOOL { $$ = ($1); }
         ;
 
 /*!------------------------------------------------
@@ -996,6 +996,19 @@ statement_list: local_declaration statement_list
 
 /* statements types and parsing technique */
 /*
+
+expression: expression '+' term
+          | expression '-' term
+          | term
+          ;
+term: term '*' factor
+    | term '/' factor
+    | term '%' factor
+    | factor
+    ;
+factor: '(' expression ')'
+      | LIT_INTG
+      | ID
 expression_parse: expression_int
                 | expression_flt
                 | expression_chr
@@ -1007,55 +1020,55 @@ expression_parse: expression_int
 arr_argm        : ',' expression_parse arr_argm
                 | ')'
                 ;
-fct_call        : S_NME '(' expression_parse arr_argm
-                | S_NME '('')'
+fct_call        : SMT_NAME '(' expression_parse arr_argm
+                | SMT_NAME '('')'
                 ;
 
-expression_int  : S_NME OP_INT expression_int
-                | S_NME 
-                | C_INT OP_INT expression_int
-                | C_INT 
+expression_int  : SMT_NAME OPR_INTG expression_int
+                | SMT_NAME 
+                | LIT_INTG OPR_INTG expression_int
+                | LIT_INTG 
                 //| method_print ';' { std::string s = $1 + 6; s[s.size() - 1] = '\0'; printf("%s", s.c_str()); }
                 ;
 
-expression_flt  : S_NME OP_FLT expression_flt
-                | S_NME 
-                | C_FLT OP_FLT expression_flt
-                | C_FLT 
+expression_flt  : SMT_NAME OPR_FLOT expression_flt
+                | SMT_NAME 
+                | LIT_FLOT OPR_FLOT expression_flt
+                | LIT_FLOT 
                 ;
-expression_chr  : S_NME OP_CHR expression_chr
-                | S_NME 
-                | C_CHR OP_CHR expression_chr
-                | C_CHR 
+expression_chr  : SMT_NAME OPR_CHAR expression_chr
+                | SMT_NAME 
+                | LIT_CHAR OPR_CHAR expression_chr
+                | LIT_CHAR 
                 ;
-expression_str  : S_NME OP_STR expression_str
-                | S_NME 
-                | C_STR OP_STR expression_str
-                | C_STR 
+expression_str  : SMT_NAME OPR_STRG expression_str
+                | SMT_NAME 
+                | LIT_STRG OPR_STRG expression_str
+                | LIT_STRG 
                 //| method_type
                 ;
-expression_bol  : S_NME OP_BOL expression_bol
-                | S_NME 
-                | C_BOL OP_BOL expression_bol
-                | C_BOL 
-                | U_OP_BOL S_NME expression_bol
-                | U_OP_BOL S_NME 
-                | U_OP_BOL C_BOL expression_bol
-                | U_OP_BOL C_BOL 
+expression_bol  : SMT_NAME OPR_BOOL expression_bol
+                | SMT_NAME 
+                | LIT_BOOL OPR_BOOL expression_bol
+                | LIT_BOOL 
+                | U_OPR_BOOL SMT_NAME expression_bol
+                | U_OPR_BOOL SMT_NAME 
+                | U_OPR_BOOL LIT_BOOL expression_bol
+                | U_OPR_BOOL LIT_BOOL 
                 ;
 *
 
 /* assignation statement */// here is needed a recursive approach
 /* 
-statement_assg  : S_NME OPERATOR_ASSIGN call_parse ';'
-                | S_NME OPERATOR_ASSIGN method_type ';'
-                | S_NME OPERATOR_ASSIGN method_print ';'
+statement_assg  : SMT_NAME OPERATOR_ASSIGN call_parse ';'
+                | SMT_NAME OPERATOR_ASSIGN method_type ';'
+                | SMT_NAME OPERATOR_ASSIGN method_print ';'
                 ;
 */
 
 /* bool returning statements */
 /*
-statement_bool  : S_NME OPERATOR_RELTIN S_NME ;
+statement_bool  : SMT_NAME OPERATOR_RELTIN SMT_NAME ;
 */
 
 /* conditional statements */

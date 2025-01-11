@@ -9,7 +9,7 @@ Test-driven development principles were considered in this project.
 - commands to be passed in project root terminal:
 
 0. "./setup.sh" - checks for bison and flex installation and builds our compiler
-0. "./compile.sh" - builds the custom compiler
+0. "./build.sh" - builds the custom compiler
 0. "./src/discard.sh" - delete the additional files
 0. "./run.out <file_path>" - compiles and runs the source code
 

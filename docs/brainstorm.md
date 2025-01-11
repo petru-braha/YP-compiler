@@ -1,40 +1,20 @@
 ## To do
 
-0. tests
-0. grammar conflicts
+0. Print Type
+0. expression
+0. array support, operator[]
 0. assignation for object of object (etc)
-
-<br>
-
-/* citit exemple/teorie */
-/* cum cacat facem ordinea operatiilor */
-/* implement classes */
-/* grammar evolve */
-
+0. constructors
 0. jump implementation
-0. define what syntacticly correct file means
-0. statement recognition - be able to read any syntactic correct file
-0. build ast
-0. compilation of compiler
-0. test cases
 
 <br>
 
-0. array support
-0. operator[]
-0. for now we are assuming that our classes work as C's "struct"s
-0. add constructor constraint for classes
-
-<br>
-
-0. maybe we should not allow declarations of already defined symbols
-0. complete romanian version of this document
-0. multi line comment
+0. grammar conflicts
+0. allow declarations of already defined symbols?
 0. complete the syntax documentation from the guidline
-0. friend class std::pair - didn't work on a first try
-0. abbreviation?
-0. capslock?
+0. better names: abbreviation capslock?
 0. restrict access to type_table
+0. multi line comment
 
 ## Brainstorming - general ideas
 
