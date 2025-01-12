@@ -14,7 +14,7 @@ bool master_started = false;
 %}
 
 /* lexical description - regex */
-reserved_type "int"|"float"|"char"|"string"|"bool"
+/* reserved_type "int"|"float"|"char"|"string"|"bool" */
 /* type_array (\[([1-9][0-9]*)\])* */
 
 something_name [a-zA-Z_][a-zA-Z0-9_]*
@@ -25,6 +25,14 @@ literal_str \"[^\"]+\"
 literal_bol "true"|"false"
 
 comment #.*
+
+/*
+"int "{something_name}    { yylval.information = strdup(yytext + 4); return NME_INTG; }
+"float "{something_name}  { yylval.information = strdup(yytext + 6); return NME_FLOT; }
+"char "{something_name}   { yylval.information = strdup(yytext + 5); return NME_CHAR; }
+"string "{something_name} { yylval.information = strdup(yytext + 7); return NME_STRG; }
+"bool "{something_name}   { yylval.information = strdup(yytext + 5); return NME_BOOL; }
+*/
 
 %option noyywrap
 
@@ -39,9 +47,6 @@ comment #.*
 "private:" { return ACS_PRIV; }
 "public:" { return ACS_PUBL; }
 
-{reserved_type} { yylval.information = strdup(yytext);
-  return RSV_TYPE; }
-
 "<-"|"="  { return OPR_ASSIGN; }
 "+"|"-"   { yylval.character = *yytext; return OPR0; }
 "*"|"/"   { yylval.character = *yytext; return OPR1; }
@@ -49,20 +54,21 @@ comment #.*
 "%"       { yylval.character = *yytext; return OPR3; }
 "&"|"|"   { yylval.character = *yytext; return OPR4; }
 "=="|"!="|"<="|"<"|">="|">" { yylval.information = strdup(yytext);
-  return OPR_RELTN; }
+  return OPR_RELTON; }
 
 {literal_int} { yylval.intg_number = atoll(yytext);
   return LIT_INTG; }
 {literal_flt} { yylval.real_number = atof(yytext);
   return LIT_FLOT; }
-{literal_chr} { yylval.intg_number = atoi(yytext);
+{literal_chr} { yylval.intg_number = yytext[1];
   return LIT_CHAR; }
-{literal_str} { yylval.information = strdup(yytext);
+{literal_str} { yytext[strlen(yytext) - 1] = '\0';
+  yylval.information = strdup(yytext + 1);
   return LIT_STRG; }
-{literal_bol} { yylval.intg_number = strcmp(yytext, "false");
+{literal_bol} { yylval.bool_number = (bool)strcmp(yytext, "false");
   return LIT_BOOL; }
 
-{something_name} { yylval.information = strdup(yytext); 
+{something_name} { yylval.information = strdup(yytext);
   return SMT_NAME; }
 
 {comment}

@@ -1,7 +1,9 @@
 ## To do
 
-0. Print Type
 0. expression
+0. Print Type
+0. access field
+0. control statements
 0. array support, operator[]
 0. assignation for object of object (etc)
 0. constructors
