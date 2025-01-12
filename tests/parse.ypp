@@ -1,21 +1,20 @@
 %{
-#include <stdio.h>
-#include <cstring>
-#include <cmath>
-#include <string>
-#include <vector>
-#include "util.hpp"
+  #include <stdio.h>
+  #include <cstring>
+  #include <cmath>
+  #include <string>
+  #include <vector>
+  #include "util.hpp"
 
-extern int yylex();
-void yyerror(const char * s);
+  extern int yylex();
+  void yyerror(const char * s);
 
-extern FILE* yyin;
-extern char* yytext;
-extern int yylineno;
-extern bool method_master_started;
-size_t count_error;
-std::vector<symbol_table> symbols;
-#define LAST_SCOPE symbols.size() - 1
+  extern FILE* yyin;
+  extern char* yytext;
+  extern int yylineno;
+  size_t count_error;
+  std::vector<symbol_table> symbols;
+  #define LAST_SCOPE symbols.size() - 1
 %}
 
 %left '&' '|'
@@ -63,9 +62,27 @@ std::vector<symbol_table> symbols;
 %%
 /*! declaration */
 
-starting_symbol : global_declaration;
+starting_symbol : { /** initialize the compiler */
+                    function_data f_data0("int"),
+                      f_data1("string");
+                    
+                    symbol_table s;
+                    s.insert("print", &f_data0);
+                    s.insert("type", &f_data1);
+                    
+                    symbols.emplace_back();
+                    symbols[0] = s;
+                  }
+                  global_declaration
+                  { /** check for errors at the end */
+                    if(0 == count_error)
+                      printf("the program was compiled correctly.\n");
+                    else
+                      printf("the program has %zu errors.\n", count_error);
+                  };
+
 global_declaration: MASTER
-                    SCOPE_BEGIN { symbols.emplace_back(); }
+                    SCOPE_BEGIN
                     statement_list
                   | cls_decl global_declaration
                   | cls_defn global_declaration
@@ -77,7 +94,8 @@ global_declaration: MASTER
                   | obj_defn global_declaration
                   ;
 
-cls_decl: RSV_CLSS SMT_NAME ';';
+cls_decl: RSV_CLSS SMT_NAME ';'
+        ;
 
 cls_defn: RSV_CLSS SMT_NAME '{' cls_fild arr_fild
         | RSV_CLSS SMT_NAME '{' '}'

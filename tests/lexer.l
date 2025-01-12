@@ -4,8 +4,6 @@
 #include "parse.tab.hpp"
 
 void yyerror(const char * s);
-bool master_started = false;
-
 %}
 
 /* lexical description - regex */
@@ -28,7 +26,7 @@ comment #.*
 
 "print"     { return PRINTF; }
 "type"      { return TYPEOF; }
-"master()"  { master_started = true; return MASTER; }
+"master()"  { return MASTER; }
 "{" { return SCOPE_BEGIN; }
 "}" { return SCOPE_END; }
 

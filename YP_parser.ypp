@@ -113,7 +113,7 @@ std::vector<symbol_table> symbols;
 /*! grammar */
 
 %%
-starting_symbol : { /* TODO add Type and Print */ 
+starting_symbol : {
                     symbols.emplace_back(); } 
                   global_declaration MASTER {
                     if(false == master_started)

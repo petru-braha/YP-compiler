@@ -1,0 +1,6 @@
+class new_type;
+
+# works as expected
+master()
+{
+}
