@@ -1,12 +1,6 @@
 ## To do
 
-0. expression - add iden ,array support, operator[], access field
-0. control statements
-0. jump implementation, return
-
-<br>
-
-0. grammar conflicts
+0. semantic, ast
 0. allow declarations of already defined symbols?
 0. complete the syntax documentation from the guidline
 0. better names: abbreviation capslock?
@@ -15,6 +9,7 @@
 
 ## Brainstorming - general ideas
 
+- initializing an array of object - initialize every object the same
 - each test which will be marked as "# works as expected"
 - field declaration is done within the class, but its definition is inside the object
 
