@@ -1,1 +1,4 @@
-bool value;
+master()
+{
+    print( "da"+" "+ ( "ada" - "d") + " " + type("da") );
+} 

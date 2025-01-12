@@ -1,8 +1,3 @@
-/* YP_lexer.l - text recognition component
- * (c) authors - Braha Petru Bogdan - <petrubraha@gmail.com>
- *             - Meraru Ioan Lucian - <https://github.com/Zamdacmalfal>
- */
-
 %{
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,22 +21,14 @@ literal_bol "true"|"false"
 
 comment #.*
 
-/*
-"int "{something_name}    { yylval.information = strdup(yytext + 4); return NME_INTG; }
-"float "{something_name}  { yylval.information = strdup(yytext + 6); return NME_FLOT; }
-"char "{something_name}   { yylval.information = strdup(yytext + 5); return NME_CHAR; }
-"string "{something_name} { yylval.information = strdup(yytext + 7); return NME_STRG; }
-"bool "{something_name}   { yylval.information = strdup(yytext + 5); return NME_BOOL; }
-*/
-
 %option noyywrap
 
 %%
-"Print" { return PRINTF; }
-"Type"  { return TYPEOF; }
-"master()" { if(master_started)
-  yyerror("the master method can only be declared and defined once");
-  master_started = true; }
+"print" { return PRINTF; }
+"type"  { return TYPEOF; }
+"master()" { master_started = true; return MASTER; }
+"{" { return SCOPE_BEGIN; }
+"}" { return SCOPE_END; }
 
 "class" { return RSV_CLSS; }
 "private:" { return ACS_PRIV; }

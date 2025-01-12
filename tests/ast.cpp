@@ -1,3 +1,9 @@
+#include <string>
+#include <vector>
+#include "ast_base.hpp"
+#include "ast_ctrl.hpp"
+
+/*
 %{
 #include <stdio.h>
 #include <cstring>
@@ -18,6 +24,7 @@ std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
 %}
 
+
 %left '&' '|'
 %left "==" "!=" "<=" "<" ">=" ">"
 %left '+' '-'
@@ -27,30 +34,28 @@ std::vector<symbol_table> symbols;
 %right '='
 %right '^'
 
+
 %union {
-  char* information;
-  unsigned char character;
-    
-  bool bool_number;
-  long long intg_number;
-  double real_number;
+    char* information;
+    unsigned char character;
+
+    bool bool_number;
+    long long intg_number;
+    double real_number;
 }
 
-%token SCOPE_BEGIN SCOPE_END
-%token MASTER TYPEOF PRINTF
-
+%token<information> MASTER TYPEOF PRINTF
 %token RSV_CLSS ACS_PRIV ACS_PUBL ACS_FILD
 
 %token<information> SMT_NAME RSV_TYPE
+// %token<information> NME_INTG NME_FLOT NME_CHAR NME_STRG NME_BOOL
 %token<intg_number> LIT_INTG LIT_CHAR LIT_BOOL
 %token<real_number> LIT_FLOT
 %token<information> LIT_STRG
-%type<information> LIT_CALL
 
 %token<character> OPR_ASSIGN OPR0 OPR1 OPR2 OPR3 OPR4
 %token<information> OPR_RELTON
 
-%type<information> expression
 %type<intg_number> expression_intg
 %type<intg_number> term_intg
 %type<intg_number> fact_intg
@@ -75,168 +80,23 @@ std::vector<symbol_table> symbols;
 %start starting_symbol
 
 %%
-/*! declaration */
 
-starting_symbol : global_declaration;
-global_declaration: MASTER
-                    SCOPE_BEGIN { symbols.emplace_back(); }
-                    statement_list
-                  | cls_decl global_declaration
-                  | cls_defn global_declaration
-                  | var_decl global_declaration
-                  | var_defn global_declaration
-                  | fct_decl global_declaration
-                  | fct_defn global_declaration
-                  | obj_decl global_declaration
-                  | obj_defn global_declaration
-                  ;
+starting_symbol : expression;
 
-cls_decl: RSV_CLSS SMT_NAME ';';
-
-cls_defn: RSV_CLSS SMT_NAME '{' cls_fild arr_fild
-        | RSV_CLSS SMT_NAME '{' '}'
-        ;
-
-arr_fild: cls_fild arr_fild
-        | '}'
-        ;
-
-cls_fild: RSV_TYPE SMT_NAME ';'
-        | RSV_TYPE SMT_NAME OPR_ASSIGN expression ';'
-        
-        | RSV_TYPE SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_TYPE SMT_NAME '('')'
-          SCOPE_BEGIN
-          statement_list ';'
-          
-        | SMT_NAME SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';'
-
-        | SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-  
-        | SMT_NAME SMT_NAME ';'
-        | ACS_PRIV
-        | ACS_PUBL
-        ;
-
-var_decl: RSV_TYPE SMT_NAME ';'
-        ;
-var_defn: RSV_TYPE SMT_NAME OPR_ASSIGN expression ';'
-        ;
-
-fct_decl: RSV_TYPE SMT_NAME '(' parametr arr_parm ';'
-        | RSV_TYPE SMT_NAME '(' ')' ';'
-        | SMT_NAME SMT_NAME '(' parametr arr_parm ';'
-        | SMT_NAME SMT_NAME '(' ')' ';'
-        ;
-fct_defn: RSV_TYPE SMT_NAME '(' parametr arr_parm 
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_TYPE SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME SMT_NAME '(' ')'
-          SCOPE_BEGIN
-        ;
-arr_parm: parametr arr_parm
-        | ')'
-        ;
-parametr: ',' RSV_TYPE SMT_NAME
-        ;
-
-obj_decl: SMT_NAME SMT_NAME ';'
-        ;
-obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals
-        ;
-obj_vals: ',' attribte obj_vals
-        | '}'
-        ;
-attribte: LIT_CALL
-        | SMT_NAME
-        ;
-
-LIT_CALL: LIT_INTG { $$ = nullptr; }
-        | LIT_FLOT { $$ = nullptr; }
-        | LIT_CHAR { $$ = nullptr; }
-        | LIT_STRG { $$ = nullptr; }
-        | LIT_BOOL { $$ = nullptr; }
-        ;
-
-/*! statement */
-local_declaration : var_decl
-                  | var_defn
-                  | fct_decl
-                  | fct_defn
-                  | obj_decl
-                  | obj_defn
-                  ;
-
-statement_list: local_declaration statement_list
-              | expression ';' statement_list
-              | SCOPE_END { symbols.pop_back(); }
-              ;
-
-/*
-expression: term OPR0 expression {
-              if('+' == $2)
-                $$ = $1 + $3;
-              else
-                $$ = $1 - $3;
-              }
-            | term OPR0 '-' expression {
-                if('+' == $2)
-                  $$ = $1 + -1*$4;
-                else
-                  $$ = $1 - -1*$4;
-              }
-            | term { $$ = $1; }
-            ;
-term: term OPR1 fact {
-              if('*' == $2)
-                $$ = $1 * $3;
-              else
-                $$ = $1 / $3;
-            }
-          | fact { $$ = $1; }
-          ;
-fact : fact OPR2 powr { $$ = std::pow($1, $3); }
-          | powr { $$ = $1; }
-          ;
-powr : '(' expression ')' { $$ = $2; }
-          | LIT_CALL { $$ = $1; }
-          //| SMT_NAME { $$ = 0.0; }
-          ;
-*/
-
-expression: expression_intg { std::string s(std::to_string($1)); $$ = strdup(s.c_str()); }
-          | expression_flot { std::string s(std::to_string($1)); $$ = strdup(s.c_str()); }
-          | expression_char { std::string s(std::to_string($1)); $$ = strdup(s.c_str()); }
-          | expression_strg { $$ = strdup($1); free($1); }
-          | expression_bool { std::string s(std::to_string($1)); $$ = strdup(s.c_str()); }
+expression: expression_intg { printf("result: %d\n", $1); }
+          | expression_flot { printf("result: %f\n", $1); }
+          //| expression_char { printf("result: %d\n", $1); }
+          //| expression_strg { printf("result: %s\n", $1); }
+          //| expression_bool { printf("result: %d\n", $1); }
           ;
 
-/*! int */
-expression_intg : term_intg OPR0 expression_intg {
+expression_intg : expression_intg OPR0 term_intg {
                     if('+' == $2)
                       $$ = $1 + $3;
                     else
                       $$ = $1 - $3;
                   }
-                | term_intg OPR0 '-' expression_intg {
+                | expression_intg OPR0 '-' term_intg {
                     if('+' == $2)
                       $$ = $1 + -1*$4;
                       else
@@ -245,35 +105,30 @@ expression_intg : term_intg OPR0 expression_intg {
 
                 | term_intg { $$ = $1; }
                 ;
-term_intg : term_intg OPR1 fact_intg {
+term_intg : fact_intg OPR1 term_intg {
               if('*' == $2)
                 $$ = $1 * $3;
               else
                 $$ = $1 / $3;
             }
-          | term_intg OPR3 fact_intg { $$ = $1 % $3; }
+          | fact_intg OPR3 term_intg { $$ = $1 % $3; }
           | fact_intg { $$ = $1; }
           ;
-fact_intg : fact_intg OPR2 powr_intg { $$ = std::pow($1, $3); }
+fact_intg : powr_intg OPR2 fact_intg { $$ = std::pow($1, $3); }
           | powr_intg { $$ = $1; }
           ;
 powr_intg : '(' expression_intg ')' { $$ = $2; }
           | LIT_INTG { $$ = $1; }
-          //| SMT_NAME { $$ = 0; }
-          //| SMT_NAME ACS_FILD SMT_NAME { $$ = 0; }
-          //| SMT_NAME '[' LIT_INTG ']' { $$ = 0; }
-          //| SMT_NAME '[' SMT_NAME ']' { $$ = 0; }
-          | PRINTF '(' expression ')' { $$ = printf("%s", $3); fflush(stdout); }
+          | SMT_NAME { $$ = 0; }
           ;
 
-/*! float */
-expression_flot : term_flot OPR0 expression_flot {
+expression_flot : expression_flot OPR0 term_flot {
                     if('+' == $2)
                       $$ = $1 + $3;
                     else
                       $$ = $1 - $3;
                   }
-                | term_flot OPR0 '-' expression_flot {
+                | expression_flot OPR0 '-' term_flot {
                     if('+' == $2)
                       $$ = $1 + -1*$4;
                     else
@@ -281,7 +136,7 @@ expression_flot : term_flot OPR0 expression_flot {
                   }
                 | term_flot { $$ = $1; }
                 ;
-term_flot : term_flot OPR1 fact_flot {
+term_flot : fact_flot OPR1 term_flot {
               if('*' == $2)
                 $$ = $1 * $3;
               else
@@ -289,15 +144,14 @@ term_flot : term_flot OPR1 fact_flot {
             }
           | fact_flot { $$ = $1; }
           ;
-fact_flot : fact_flot OPR2 powr_flot { $$ = std::pow($1, $3); }
+fact_flot : powr_flot OPR2 fact_flot { $$ = std::pow($1, $3); }
           | powr_flot { $$ = $1; }
           ;
 powr_flot : '(' expression_flot ')' { $$ = $2; }
           | LIT_FLOT { $$ = $1; }
-          //| SMT_NAME { $$ = 0.0; }
+          | SMT_NAME { $$ = 0.0; }
           ;
 
-/*! char */
 expression_char : term_char OPR0 expression_char {
                     if('+' == $2)
                       $$ = $1 + $3;
@@ -326,10 +180,7 @@ fact_char : fact_char OPR2 powr_char { $$ = std::pow($1, $3); }
           ;
 powr_char : '(' expression_char ')' { $$ = $2; }
           | LIT_CHAR { $$ = $1; }
-          //| SMT_NAME { $$ = nullptr; }
           ;
-
-/*! string */
 expression_strg : term_strg OPR0 expression_strg {
                     if('+' == $2)
                     {
@@ -341,7 +192,7 @@ expression_strg : term_strg OPR0 expression_strg {
                     {
                       size_t position = 0;
                       std::string text($1), token($3);
-                      while(std::string::npos != 
+                      while(std::string::npos !=
                         (position = text.find(token, position)))
                         text.erase(position, token.length());
                       $$ = strdup(text.c_str());
@@ -354,14 +205,8 @@ expression_strg : term_strg OPR0 expression_strg {
                 ;
 term_strg : '(' expression_strg ')' { $$ = strdup($2); free($2); }
           | LIT_STRG { $$ = strdup($1); free($1); }
-          //| SMT_NAME { $$ = nullptr; }
-          | TYPEOF '(' expression ')' {
-              std::string s = type_of($3);
-              $$ = strdup(s.c_str());
-            }
           ;
 
-/*! bool */
 expression_bool : term_bool OPR4 expression_bool {
                     if('&' == $2)
                       $$ = $1 && $3;
@@ -378,8 +223,7 @@ expression_bool : term_bool OPR4 expression_bool {
                 ;
 term_bool : '(' expression_bool ')' { $$ = $2; }
           | LIT_BOOL { $$ = $1; }
-          //| SMT_NAME { $$ = nullptr; }
-          | expression_intg OPR_RELTON expression_intg {              
+          | expression_intg OPR_RELTON expression_intg {
               if(0 == strcmp($2, "=="))
                 $$ = $1 == $3;
               else if(0 == strcmp($2, "!="))
@@ -439,15 +283,9 @@ term_bool : '(' expression_bool ')' { $$ = $2; }
 
 %%
 
-/*!------------------------------------------------
-/*!------------------------------------------------
-/*! C++ functions */
-
 void yyerror(const char * s){
   count_error++;
   printf("error - line %d: %s.\n", yylineno, s);
-  if(0 == strcmp(s, "syntax error"))
-    printf("the program has %zu errors.\n", count_error);
 }
 
 int main(int argc, char** argv)
@@ -469,3 +307,4 @@ int main(int argc, char** argv)
   yyparse();
   return EXIT_SUCCESS;
 }
+*/

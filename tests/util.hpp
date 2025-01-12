@@ -34,7 +34,7 @@ item_data::item_data(const unsigned char i_t,
     : item_type(i_t), data_type(d_t)
 {
     if (i_t > ITEM_TYPE_OBJ)
-        yyerror("item data initialization - wrong parameter");
+        yyerror("wrong item type");
 }
 
 const unsigned char item_data::get_item_type() const
@@ -76,8 +76,12 @@ std::string default_value_of(const std::string &type)
     return "";
 }
 
+/* for primitive types only
+todo: has to reworked
+ */
 std::string type_of(const std::string &primitive_value)
 {
+    return "string";
     switch (primitive_value.at(0))
     {
     default:
@@ -112,19 +116,19 @@ variable_data::variable_data(const std::string &type)
     : item_data(ITEM_TYPE_VAR, type)
 {
     if (false == is_primitive(type))
-        yyerror("not a primitive type");
-    value = default_value_of(type);
+        yyerror("the argument should be primitive");
+    this->value = default_value_of(type);
 }
 
 variable_data::variable_data(const std::string &type,
-                             const std::string &value)
-    : item_data(ITEM_TYPE_VAR, type)
+                             const std::string &v)
+    : item_data(ITEM_TYPE_VAR, type), value()
 {
     if (false == is_primitive(type))
-        yyerror("not a primitive type");
-    if (type != type_of(value))
+        yyerror("the argument should be primitive");
+    if (type != type_of(v))
         yyerror("incompatible types");
-    this->value = value;
+    this->value = v;
 }
 
 // not verification required - v can only be legitimate
@@ -143,7 +147,7 @@ variable_data ::variable_data(const std::string &type,
 variable_data &variable_data::set_value(const std::string &value)
 {
     if (this->get_data_type() != type_of(value))
-        yyerror("variable data initialization - not compatible types");
+        yyerror("incompatible types");
     this->value = value;
     return *this;
 }
@@ -336,7 +340,7 @@ function_data &function_data::
     if (value->get_data_type() !=
         parameters.at(id)->get_data_type())
     {
-        yyerror("function data setting - type incompatiblity");
+        yyerror("incompatible types");
         return *this;
     }
 
@@ -429,6 +433,7 @@ object_data::object_data(const std::string &type)
     if (is_primitive(type))
         yyerror("primitive type");
     symbol_table *s = type_exists(type);
+
     if (nullptr == s)
         ERR_UNDEF_TYPE;
 
@@ -475,7 +480,7 @@ object_data::object_data(const std::string &type,
 {
     if (type != o.get_data_type())
     {
-        yyerror("type incompatibility");
+        yyerror("incompatible types");
         this->~object_data();
         *this = object_data(type);
     }
@@ -542,7 +547,7 @@ object_data &object_data::
 
     if (value->get_data_type() !=
         attributes.at(id)->get_data_type())
-        yyerror("object data setting - type incompatiblity");
+        yyerror("incompatible types");
 
     if (ITEM_TYPE_VAR == value->get_item_type())
     {
@@ -644,7 +649,9 @@ symbol_table &symbol_table::
     if (ITEM_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
-        variable_data *to_insert = new variable_data(*v_data);
+        variable_data *to_insert =
+            new variable_data(v_data->get_data_type(),
+                              v_data->get_value());
         std::pair<std::string, item_data *>
             i_pair(id, to_insert);
         itm.insert(i_pair);
@@ -821,29 +828,6 @@ bool is_compatible(const char *type, const char *constant_value)
     }
 
     return true;
-}
-
-#include <stdlib.h>
-
-char *function(char *left, char *op, char *right)
-{
-    int result = 0;
-    switch (op[0])
-    {
-    case '+':
-        result = atoi(left) + atoi(right);
-        break;
-    case '*':
-        result = atoi(left) * atoi(right);
-        break;
-
-    default:
-        break;
-    }
-
-    char *pointer = (char *)malloc(10);
-    sprintf(pointer, "%d", result);
-    return pointer;
 }
 
 #endif

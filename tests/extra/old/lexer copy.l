@@ -6,7 +6,7 @@
 %{
 #include <stdlib.h>
 #include <stdio.h>
-#include "YP_parser.tab.hpp"
+#include "parse.tab.hpp"
 
 void yyerror(const char * s);
 bool master_started = false;
@@ -14,7 +14,7 @@ bool master_started = false;
 %}
 
 /* lexical description - regex */
-reserved_type "int"|"float"|"char"|"string"|"bool"
+/* reserved_type "int"|"float"|"char"|"string"|"bool" */
 /* type_array (\[([1-9][0-9]*)\])* */
 
 something_name [a-zA-Z_][a-zA-Z0-9_]*
@@ -29,17 +29,15 @@ comment #.*
 %option noyywrap
 
 %%
-"print" { return PRINTF; }
-"type"  { return TYPEOF; }
-"master()" { master_started = true; return MASTER; }
-
+"Print" { return PRINTF; }
+"Type"  { return TYPEOF; }
+"master()" { if(master_started)
+  yyerror("the master method can only be declared and defined once");
+  master_started = true; }
 
 "class" { return RSV_CLSS; }
 "private:" { return ACS_PRIV; }
 "public:" { return ACS_PUBL; }
-
-{reserved_type} { yylval.information = strdup(yytext);
-  return RSV_TYPE; }
 
 "<-"|"="  { return OPR_ASSIGN; }
 "+"|"-"   { yylval.character = *yytext; return OPR0; }
@@ -50,18 +48,19 @@ comment #.*
 "=="|"!="|"<="|"<"|">="|">" { yylval.information = strdup(yytext);
   return OPR_RELTON; }
 
-{literal_int} { yylval.information = strdup(yytext);
+{literal_int} { yylval.intg_number = atoll(yytext);
   return LIT_INTG; }
-{literal_flt} { yylval.information = strdup(yytext);
+{literal_flt} { yylval.real_number = atof(yytext);
   return LIT_FLOT; }
-{literal_chr} { yylval.information = strdup(yytext);
+{literal_chr} { yylval.intg_number = yytext[1];
   return LIT_CHAR; }
-{literal_str} { yylval.information = strdup(yytext);
+{literal_str} { yytext[strlen(yytext) - 1] = '\0';
+  yylval.information = strdup(yytext + 1);
   return LIT_STRG; }
-{literal_bol} { yylval.information = strdup(yytext);
+{literal_bol} { yylval.bool_number = (bool)strcmp(yytext, "false");
   return LIT_BOOL; }
 
-{something_name} { yylval.information = strdup(yytext); 
+{something_name} { yylval.information = strdup(yytext);
   return SMT_NAME; }
 
 {comment}

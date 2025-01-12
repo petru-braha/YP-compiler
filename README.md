@@ -43,3 +43,4 @@ Test-driven development principles were considered in this project.
 - No casts
 - No inheritence of classes (no protected access specifier)
 - No method overloading
+- no default parameters for functions

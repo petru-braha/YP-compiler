@@ -1,13 +1,8 @@
 ## To do
 
-0. expression
-0. Print Type
-0. access field
+0. expression - add iden ,array support, operator[], access field
 0. control statements
-0. array support, operator[]
-0. assignation for object of object (etc)
-0. constructors
-0. jump implementation
+0. jump implementation, return
 
 <br>
 

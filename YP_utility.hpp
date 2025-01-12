@@ -76,6 +76,9 @@ std::string default_value_of(const std::string &type)
     return "";
 }
 
+/* for primitive types only
+todo: has to reworked
+ */
 std::string type_of(const std::string &primitive_value)
 {
     switch (primitive_value.at(0))
