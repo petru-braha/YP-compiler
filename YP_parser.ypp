@@ -1,38 +1,12 @@
-/* YP_parser.ypp - bottom-up parser, LARL(1) grammar
+/* comments:
+ * YP_parser.ypp - bottom-up parser, LARL(1) grammar
  * (c) authors - Braha Petru Bogdan - <petrubraha@gmail.com>
  *             - Meraru Ioan Lucian - <https://github.com/Zamdacmalfal>
- * building the compiler: ./build
- *
- */
-
-%{
-#include <stdio.h>
-#include <cstring>
-#include <string>
-#include <vector>
-#include "YP_utility.hpp"
-
-extern int yylex();
-void yyerror(const char * s);
-
-extern FILE* yyin;
-extern char* yytext;
-extern int yylineno;
-extern bool method_master_started;
-size_t count_error;
-
-std::string cls_last_name;
-function_data* f_data_global;
-object_data* o_data_global;
-function_data::it fctit_global;
-object_data::it objit_global;
-
-std::vector<symbol_table> symbols;
-#define LAST_SCOPE symbols.size() - 1
-%}
-
-/* comments
+ * run command example: ./YP exs/success/declaration/class/declaration.txt
+ * run command example: ./YP exs/fail/declaration/class/field\ 0.txt
+ 
  *!* compilation should never throw exceptions *!*
+ *!* all data is encoded as string *!*
  
  * states:
  ** declaration
@@ -54,39 +28,75 @@ std::vector<symbol_table> symbols;
     we start with the first one and continue consecutively
  */
 
-//%left boolop
-%left '+' '-' 
+%{
+#include <stdio.h>
+#include <cstring>
+#include <string>
+#include <vector>
+#include "YP_utility.hpp"
+
+extern int yylex();
+void yyerror(const char * s);
+
+extern FILE* yyin;
+extern char* yytext;
+extern int yylineno;
+extern bool master_started;
+size_t count_error;
+
+std::string cls_last_name;
+function_data* f_data_global;
+object_data* o_data_global;
+function_data::it fctit_global;
+object_data::it objit_global;
+
+std::vector<symbol_table> symbols;
+#define LAST_SCOPE symbols.size() - 1
+%}
+
+%left '&' '|'
+%left "==" "!=" "<=" "<" ">=" ">"
+%left '+' '-'
 %left '*' '/' '%'
 %left '(' ')'
 
 %right '='
 %right '^'
 
+%union {
+    char* information;
+    unsigned char character;
+}
+
+%token<information> MASTER TYPEOF PRINTF
+%token RSV_CLSS ACS_PRIV ACS_PUBL ACS_FILD
+
+%token<information> SMT_NAME RSV_TYPE
+%token<information> LIT_INTG LIT_FLOT LIT_CHAR LIT_STRG LIT_BOOL
+%type<information> cst_call
+
+%token<character> OPR_ASSIGN OPR0 OPR1 OPR2 OPR3 OPR4
+%token<information> OPR_RELTN
+
+// %type<information> expression
+// %token R_SEQ_IF R_SEQ_FOR R_SEQ_WHL
+
+%start starting_symbol
+
 /*!------------------------------------------------
 /*!------------------------------------------------
 /*! grammar */
 
-%union {
-    char* token_name;
-}
-
-%type method_master // method_print method_type
-%token R_CLS A_PRV A_PUB /*A_FLD*/
-
-%type<token_name> cst_call
-%token<token_name> SMT_NAME RSV_TYPE
-%token<token_name> LIT_INTG LIT_FLOT LIT_CHAR LIT_STRG LIT_BOOL
-
-// %token R_SEQ_IF R_SEQ_FOR R_SEQ_WHL
-%token OPERATOR_ASSIGN
-// %token OPERATOR_RELTIN
-
-%token<token_name> OPR_INTG OPR_FLOT OPR_CHAR OPR_STRG OPR_BOOL U_OPR_BOOL
-
-%start starting_symbol
-
 %%
-starting_symbol : { symbols.emplace_back(); } global_declaration {
+starting_symbol : { /* TODO add Type and Print */ 
+                    symbols.emplace_back(); } 
+                  global_declaration MASTER {
+                    if(false == master_started)
+                    {
+                      yyerror("no master function found");
+                      count_error++;
+                    }
+
                     if(0 == count_error)
                       printf("the program was compiled correctly.\n");
                     else
@@ -96,7 +106,7 @@ starting_symbol : { symbols.emplace_back(); } global_declaration {
 /*!------------------------------------------------
 /*! class states */
 
-cls_decl: R_CLS SMT_NAME ';' {
+cls_decl: RSV_CLSS SMT_NAME ';' {
             if(size_t(-1) != scope_search($2))
               yyerror("identifier already defined");
             if(LAST_SCOPE)
@@ -105,7 +115,7 @@ cls_decl: R_CLS SMT_NAME ';' {
           }
         | cls_defn;
 
-cls_defn: R_CLS SMT_NAME '{' { // scope_begin => emplaces back
+cls_defn: RSV_CLSS SMT_NAME '{' { // scope_begin => emplaces back
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -123,13 +133,11 @@ cls_defn: R_CLS SMT_NAME '{' { // scope_begin => emplaces back
               cls_last_name = $2;
               type_insert(cls_last_name, symbol_table($2));
             }
-          }
 
-          arr_fild {
-            cls_last_name.clear();
             free($2);
           }
-        ;
+
+          arr_fild { cls_last_name.clear(); };
 
           /*! 3 variable rules */
 arr_fild: RSV_TYPE SMT_NAME ';' {
@@ -152,9 +160,11 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
             }
             
             free($1); free($2);
-          } arr_fild
+          } 
+          
+          arr_fild
 
-        | RSV_TYPE SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
+        | RSV_TYPE SMT_NAME OPR_ASSIGN SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2) || is_type($4);
@@ -186,9 +196,11 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
             }
             
             free($1); free($2); free($4);
-          } arr_fild
+          } 
+          
+          arr_fild
 
-        | RSV_TYPE SMT_NAME OPERATOR_ASSIGN cst_call ';' {
+        | RSV_TYPE SMT_NAME OPR_ASSIGN cst_call ';' {
             bool is_error = false, error_flag = false;
 
             error_flag |= is_error = is_type($2);
@@ -208,7 +220,9 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
             }
 
             free($1); free($2); free($4);
-          } arr_fild
+          } 
+          
+          arr_fild
 
         /*! 5 function rules */
 
@@ -229,10 +243,15 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
               type_exists(cls_last_name)->insert($1, &f_data);
               f_data_global = (function_data*)
                 type_exists(cls_last_name)->get_data($1);
-            }} '(' arr_parm scope_begin statement_list {
+            }
+          } 
+          
+          '(' arr_parm scope_begin statement_list {
             f_data_global = nullptr;
             free($1);
-          } arr_fild
+          } 
+          
+          arr_fild
 
         | RSV_TYPE SMT_NAME {
             bool is_error = false, error_flag = false;
@@ -253,10 +272,16 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
               type_exists(cls_last_name)->insert($2, &f_data);
               f_data_global = (function_data*)
                 type_exists(cls_last_name)->get_data($2);
-            }} '(' parametr arr_parm scope_begin statement_list {
+            }
+          } 
+          
+          '(' parametr arr_parm scope_begin statement_list {
               f_data_global = nullptr;
               free($1); free($2);
-          } arr_fild
+          } 
+          
+          arr_fild
+
         | RSV_TYPE SMT_NAME {
             bool is_error = false, error_flag = false;
 
@@ -274,9 +299,14 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
             {
               function_data f_data($1);
               type_exists(cls_last_name)->insert($2, &f_data);
-            }} '('')' scope_begin statement_list {
+            }
+          } 
+          
+          '('')' scope_begin statement_list {
               free($1); free($2);
-          } arr_fild
+          } 
+          
+          arr_fild
         
         | SMT_NAME SMT_NAME {
             bool is_error = false, error_flag = false;
@@ -302,10 +332,16 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
               type_exists(cls_last_name)->insert($2, &f_data);
               f_data_global = (function_data*)
                 type_exists(cls_last_name)->get_data($2);
-            }} '(' parametr arr_parm scope_begin statement_list {
+            }
+          } 
+          
+          '(' parametr arr_parm scope_begin statement_list {
               f_data_global = nullptr;
               free($1); free($2); 
-          } arr_fild
+          } 
+          
+          arr_fild
+
         | SMT_NAME SMT_NAME {
             bool is_error = false, error_flag = false;
 
@@ -328,9 +364,14 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
             {
               function_data f_data($1);
               type_exists(cls_last_name)->insert($2, &f_data);
-            }} '('')' scope_begin statement_list {
+            }  
+          } 
+          
+          '('')' scope_begin statement_list {
               free($1); free($2); 
-          } arr_fild
+          } 
+          
+          arr_fild
 
         /*! 3 object rules */
         | SMT_NAME SMT_NAME ';' {
@@ -359,9 +400,11 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
             }
 
             free($1); free($2); 
-          } arr_fild
+          } 
+          
+          arr_fild
 
-        | SMT_NAME SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
+        | SMT_NAME SMT_NAME OPR_ASSIGN SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -399,7 +442,9 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
             }
             
             free($1); free($2); free($4);
-            } arr_fild
+            } 
+            
+            arr_fild
         
         | SMT_NAME SMT_NAME {
             bool is_error = false, error_flag = false;
@@ -426,8 +471,9 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
               o_data_global = &o_data;
               type_exists(cls_last_name)->insert($2, &o_data);
             }
-            } OPERATOR_ASSIGN '{' obj_vals ';' arr_fild {
-            
+          } 
+          
+          OPR_ASSIGN '{' obj_vals ';' arr_fild {
             if(o_data_global)
             {
               objit_global = o_data_global->end();
@@ -438,8 +484,8 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
           }
         
         /*! 2 access rules */
-        | A_PRV arr_fild /* TODO: semantics but much later */
-        | A_PUB arr_fild /* TODO: semantics but much later */
+        | ACS_PRIV arr_fild /* TODO: semantics but much later */
+        | ACS_PUBL arr_fild /* TODO: semantics but much later */
         | '}'
 
         /*! 6 error rules */
@@ -447,11 +493,11 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
             yyerror("type treated as an identifier");
             free($1); free($2);
           } arr_fild
-        | RSV_TYPE RSV_TYPE OPERATOR_ASSIGN SMT_NAME ';' {
+        | RSV_TYPE RSV_TYPE OPR_ASSIGN SMT_NAME ';' {
             yyerror("type treated as an identifier");
             free($1); free($2); free($4);
           } arr_fild
-        | RSV_TYPE RSV_TYPE OPERATOR_ASSIGN cst_call ';' {
+        | RSV_TYPE RSV_TYPE OPR_ASSIGN cst_call ';' {
             yyerror("type treated as an identifier");
             free($1); free($2); free($4);
           } arr_fild
@@ -461,13 +507,13 @@ arr_fild: RSV_TYPE SMT_NAME ';' {
             yyerror("type treated as an identifier");
             free($1); free($2);
           } arr_fild
-        | SMT_NAME RSV_TYPE OPERATOR_ASSIGN SMT_NAME ';' {
+        | SMT_NAME RSV_TYPE OPR_ASSIGN SMT_NAME ';' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             yyerror("type treated as an identifier");
             free($1); free($2); free($4);
           } arr_fild
-        | SMT_NAME RSV_TYPE OPERATOR_ASSIGN obj_vals ';' {
+        | SMT_NAME RSV_TYPE OPR_ASSIGN obj_vals ';' {
             if(nullptr == type_exists($1))
               yyerror("undefined type");
             yyerror("type treated as an identifier");
@@ -512,7 +558,7 @@ var_decl: RSV_TYPE SMT_NAME ';' {
         | var_defn
         ;
 
-var_defn: RSV_TYPE SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
+var_defn: RSV_TYPE SMT_NAME OPR_ASSIGN SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2);
@@ -545,7 +591,7 @@ var_defn: RSV_TYPE SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
             free($1); free($2); free($4);
           }
 
-        | RSV_TYPE SMT_NAME OPERATOR_ASSIGN cst_call ';' {
+        | RSV_TYPE SMT_NAME OPR_ASSIGN cst_call ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2);
@@ -765,7 +811,7 @@ obj_decl: SMT_NAME SMT_NAME ';' {
         | obj_defn
         ;
 
-obj_defn: SMT_NAME SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
+obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN SMT_NAME ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -813,7 +859,7 @@ obj_defn: SMT_NAME SMT_NAME OPERATOR_ASSIGN SMT_NAME ';' {
                 symbols.at(LAST_SCOPE).get_data($2);
               objit_global = o_data_global->begin();
             }} 
-            OPERATOR_ASSIGN '{' obj_vals ';' {
+            OPR_ASSIGN '{' obj_vals ';' {
             
             if(o_data_global)
             {
@@ -947,13 +993,6 @@ itm_call: SMT_NAME {
 
             free($1);
           };
-
-fct_call: SMT_NAME '(' arr_argm ')' { free($1); } ;
-        | SMT_NAME '(' ')' { free($1); } ;
-argument: SMT_NAME | cst_call;
-arr_argm: argument ',' arr_argm
-        | argument
-        ;
 */
 
 /*! text constant states */
@@ -974,7 +1013,7 @@ global_declaration: cls_decl global_declaration
 	                | var_decl global_declaration
                   | obj_decl global_declaration
                   | ';' global_declaration
-                  | method_master
+                  |
                   /*todo should allow expressions here too*/
 	                ;
 
@@ -997,18 +1036,16 @@ statement_list: local_declaration statement_list
 /* statements types and parsing technique */
 /*
 
-expression: expression '+' term
-          | expression '-' term
+expression: expression OP0 term
           | term
           ;
-term: term '*' factor
-    | term '/' factor
-    | term '%' factor
+term: term OP1 factor
     | factor
     ;
 factor: '(' expression ')'
-      | LIT_INTG
-      | ID
+      | cst_call
+      | SMT_NAME
+      ;
 expression_parse: expression_int
                 | expression_flt
                 | expression_chr
@@ -1060,9 +1097,9 @@ expression_bol  : SMT_NAME OPR_BOOL expression_bol
 
 /* assignation statement */// here is needed a recursive approach
 /* 
-statement_assg  : SMT_NAME OPERATOR_ASSIGN call_parse ';'
-                | SMT_NAME OPERATOR_ASSIGN method_type ';'
-                | SMT_NAME OPERATOR_ASSIGN method_print ';'
+statement_assg  : SMT_NAME OPR_ASSIGN call_parse ';'
+                | SMT_NAME OPR_ASSIGN method_type ';'
+                | SMT_NAME OPR_ASSIGN method_print ';'
                 ;
 */
 

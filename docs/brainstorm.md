@@ -18,6 +18,7 @@
 
 ## Brainstorming - general ideas
 
+- each test which will be marked as "# works as expected"
 - field declaration is done within the class, but its definition is inside the object
 
 - fields: variables, functions (methods), objects

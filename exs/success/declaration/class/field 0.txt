@@ -37,6 +37,7 @@ class is_true
     bool c = false;
 }
 
+# works as expected
 master()
 {
 

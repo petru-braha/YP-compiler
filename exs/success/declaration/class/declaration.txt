@@ -7,6 +7,7 @@ class number
 
 class number;
 
+# works as expected
 master()
 {
 

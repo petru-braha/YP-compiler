@@ -16,42 +16,64 @@ size_t count_error;
 std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
 %}
-
-// not magic sadly
+/*
+%left '&' '|'
+%left "==" "!=" "<=" "<" ">=" ">"
 %left '+' '-'
 %left '*' '/' '%'
+%left '(' ')'
+
+%right '='
+%right '^'
+*/
 
 %union {
-    char* token_name;
+    char* information;
+    unsigned char character;
+    long long intg_number;
+    double real_number;
 }
 
-%token<token_name> S_NME R_TYP
-%token<token_name> C_INT C_FLT C_CHR C_STR C_BOL
-%token<token_name> OP0 OP1 OP2 OP3
+%token<information> MASTER TYPEOF PRINTF
+%token RSV_CLSS ACS_PRIV ACS_PUBL ACS_FILD
 
-%type<token_name> expression
+%token<information> SMT_NAME RSV_TYPE
+%token<intg_number> LIT_INTG LIT_CHAR LIT_BOOL
+%token<real_number> LIT_FLOT
+%token<real_number> LIT_STRG
+
+%token<character> OPR_ASSIGN OPR0 OPR1 OPR2 OPR3 OPR4
+%token<information> OPR_RELTN
+
+%type<intg_number> expression
+%type<intg_number> term
+%type<intg_number> factor
+
 %start starting_symbol
 
 %%
 
-starting_symbol : expression {
-                    printf("result: %s\n", $1); free($1); 
-                  }
-                ;
-expression  : expression OP1 expression {
-                $$ = function($1, $2, $3);
-                free($1);
-                free($2);
-                free($3);
-              }
-            | expression OP0 expression { 
-                $$ = function($1, $2, $3); 
-                free($1);
-                free($2);
-                free($3);
-              }
-            | C_INT
-            ;
+starting_symbol : expression { printf("result: %d\n", $1); };
+expression: term OPR0 expression {
+              if('+' == $2)
+                $$ = $1 + $3;
+              else
+                $$ = $1 - $3;
+            }
+          | term { $$ = $1; }
+          ;
+term: term OPR1 factor { 
+        if('*' == $2)
+          $$ = $1 * $3;
+        else
+          $$ = $1 / $3; 
+      }
+    | factor { $$ = $1; }
+    ;
+factor: '(' expression ')' { $$ = $2; }
+      | LIT_INTG { $$ = $1; }
+      ;
+
 
 %%
 

@@ -29,49 +29,46 @@ comment #.*
 %option noyywrap
 
 %%
+"Print" { return PRINTF; }
+"Type"  { return TYPEOF; }
 "master()" { if(master_started)
-    yyerror("the master method can only be declared and defined once");
-    master_started = true; }
+  yyerror("the master method can only be declared and defined once");
+  master_started = true; }
 
 
-"private:" { return A_PRV; }
-"public:" { return A_PUB; }
-"class" { return R_CLS; }
+"class" { return RSV_CLSS; }
+"private:" { return ACS_PRIV; }
+"public:" { return ACS_PUBL; }
 
-{reserved_type} { yylval.token_name = strdup(yytext);
-    return RSV_TYPE; }
+{reserved_type} { yylval.information = strdup(yytext);
+  return RSV_TYPE; }
 
-"<-"|"=" { return OPR_ASSIGN; }
-'+'|'-' { yylval.token_name = strdup(yytext);
-    return OPR0; }
-'*'|'/'|'^' { yylval.token_name = strdup(yytext);
-    return OPR1; }
-'%' { yylval.token_name = strdup(yytext);
-    return OPR2; }
-'+'|'-' { yylval.token_name = strdup(yytext);
-    return OP_STRG; }
-"&&"|"||" { yylval.token_name = strdup(yytext);
-    return OPR3; }
-"=="|"!="|"<="|"<"|">="|">" { yylval.token_name = strdup(yytext);
-    return OPR_RELTN; }
+"<-"|"="    { return OPR_ASSIGN; }
+'+'|'-'     { yylval.character = *yytext; return OPR0; }
+'*'|'\/'    { yylval.character = *yytext; return OPR1; }
+'^'         { yylval.character = *yytext; return OPR2; }
+'%'         { yylval.character = *yytext; return OPR3; }
+'&'|'|'     { yylval.character = *yytext; return OPR4; }
+"=="|"!="|"<="|"<"|">="|">" { yylval.information = strdup(yytext);
+  return OPR_RELTN; }
 
-{literal_int} { yylval.token_name = strdup(yytext);
-    return LIT_INTG; }
-{literal_flt} { yylval.token_name = strdup(yytext);
-    return LIT_FLOT; }
-{literal_chr} { yylval.token_name = strdup(yytext);
-    return LIT_CHAR; }
-{literal_str} { yylval.token_name = strdup(yytext);
-    return LIT_STRG; }
-{literal_bol} { yylval.token_name = strdup(yytext);
-    return LIT_BOOL; }
+{literal_int} { yylval.information = strdup(yytext);
+  return LIT_INTG; }
+{literal_flt} { yylval.information = strdup(yytext);
+  return LIT_FLOT; }
+{literal_chr} { yylval.information = strdup(yytext);
+  return LIT_CHAR; }
+{literal_str} { yylval.information = strdup(yytext);
+  return LIT_STRG; }
+{literal_bol} { yylval.information = strdup(yytext);
+  return LIT_BOOL; }
 
-{something_name} { yylval.token_name = strdup(yytext); 
-    return SMT_NAME; }
+{something_name} { yylval.information = strdup(yytext); 
+  return SMT_NAME; }
 
 {comment}
 
 
 [ \t\r] ;
-\n {yylineno++;}
-. {return yytext[0];}
+\n { yylineno++; }
+. { return yytext[0]; }

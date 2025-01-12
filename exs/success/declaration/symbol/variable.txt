@@ -18,7 +18,6 @@ bool ft0;
 bool ft1 = ft0;
 bool ft2 = true;
 
-# works as expected
 master(){
     int nr3;
     int nr4 = nr2;

@@ -10,6 +10,8 @@ class real_number
     float c = 5.0;
 }
 
+char model;
+
 class true_character
 {
     char a = model;
@@ -25,6 +27,7 @@ class is_true
 {
 }
 
+# works as expected
 master()
 {
 
