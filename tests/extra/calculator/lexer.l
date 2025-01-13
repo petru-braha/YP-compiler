@@ -1,12 +1,7 @@
-/* YP_lexer.l - text recognition component
- * (c) authors - Braha Petru Bogdan - <petrubraha@gmail.com>
- *             - Meraru Ioan Lucian - <https://github.com/Zamdacmalfal>
- */
-
 %{
 #include <stdlib.h>
 #include <stdio.h>
-#include "YP_parser.tab.hpp"
+#include "parse.tab.hpp"
 
 void yyerror(const char * s);
 %}
