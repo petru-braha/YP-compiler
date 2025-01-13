@@ -1,15 +1,21 @@
+/* YP_lexer.l - text recognition component
+ * (c) authors - Braha Petru Bogdan - <petrubraha@gmail.com>
+ *             - Meraru Ioan Lucian - <https://github.com/Zamdacmalfal>
+ */
+
 %{
 #include <stdlib.h>
 #include <stdio.h>
 #include "parse.tab.hpp"
 
 void yyerror(const char * s);
+bool master_started = false;
+
 %}
 
 /* lexical description - regex */
-reserved_type "int"|"float"|"char"|"string"|"bool"
-reserved_type_array {reserved_type}(\[([1-9][0-9]*)\])*
-enclosed_type_array {something_name}(\[([1-9][0-9]*)\])*
+/* reserved_type "int"|"float"|"char"|"string"|"bool" */
+/* type_array (\[([1-9][0-9]*)\])* */
 
 something_name [a-zA-Z_][a-zA-Z0-9_]*
 literal_int 0|-[1-9][0-9]*|[1-9][0-9]*
@@ -20,36 +26,35 @@ literal_bol "true"|"false"
 
 comment #.*
 
+/*
+"int "{something_name}    { yylval.information = strdup(yytext + 4); return NME_INTG; }
+"float "{something_name}  { yylval.information = strdup(yytext + 6); return NME_FLOT; }
+"char "{something_name}   { yylval.information = strdup(yytext + 5); return NME_CHAR; }
+"string "{something_name} { yylval.information = strdup(yytext + 7); return NME_STRG; }
+"bool "{something_name}   { yylval.information = strdup(yytext + 5); return NME_BOOL; }
+*/
+
 %option noyywrap
 
 %%
+"Print" { return PRINTF; }
+"Type"  { return TYPEOF; }
+"master()" { if(master_started)
+  yyerror("the master method can only be declared and defined once");
+  master_started = true; }
 
-"print"     { return PRINTF; }
-"type"      { return TYPEOF; }
-"master()"  { return MASTER; }
-"{" { return SCOPE_BEGIN; }
-"}" { return SCOPE_END; }
-
-"class"    { return RSV_CLSS; }
+"class" { return RSV_CLSS; }
 "private:" { return ACS_PRIV; }
-"public:"  { return ACS_PUBL; }
+"public:" { return ACS_PUBL; }
 
-"<-"|"="        { return OPR_ASSIGN; }
-"!"|"-"         { yylval.character = *yytext; return OPRU; }
-"+"|"-"|"&"|"|" { yylval.character = *yytext; return OPR0; }
-"*"|"/"|"%"     { yylval.character = *yytext; return OPR1; }
-"^"             { yylval.character = *yytext; return OPR2; }
+"<-"|"="  { return OPR_ASSIGN; }
+"+"|"-"   { yylval.character = *yytext; return OPR0; }
+"*"|"/"   { yylval.character = *yytext; return OPR1; }
+"^"       { yylval.character = *yytext; return OPR2; }
+"%"       { yylval.character = *yytext; return OPR3; }
+"&"|"|"   { yylval.character = *yytext; return OPR4; }
 "=="|"!="|"<="|"<"|">="|">" { yylval.information = strdup(yytext);
   return OPR_RELTON; }
-
-"break"    { return ACT_BREK; }
-"continue" { return ACT_CONT; }
-"return"   { return ACT_RTRN; }
-
-"if"    { return SEQ_IFIF; }
-"else"  { return SEQ_ELSE; }
-"while" { return SEQ_WHLE; }
-"for"   { return SEQ_FOOR; }
 
 {literal_int} { yylval.intg_number = atoll(yytext);
   return LIT_INTG; }
@@ -63,10 +68,8 @@ comment #.*
 {literal_bol} { yylval.bool_number = (bool)strcmp(yytext, "false");
   return LIT_BOOL; }
 
-{reserved_type}       { yylval.information = strdup(yytext); return RSV_TYPE; }
-{reserved_type_array} { yylval.information = strdup(yytext); return RSV_ARRY; }
-{something_name}      { yylval.information = strdup(yytext); return SMT_NAME; }
-{enclosed_type_array} { yylval.information = strdup(yytext); return DEF_ARRY; }
+{something_name} { yylval.information = strdup(yytext);
+  return SMT_NAME; }
 
 {comment}
 

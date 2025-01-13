@@ -1,24 +1,26 @@
+/* yes: unary, binary operators, literals */
+/* no: identififers => conflicts */
+
 %{
-  #include <stdio.h>
-  #include <cstring>
-  #include <cmath>
-  #include <string>
-  #include <vector>
-  #include "util.hpp"
+#include <stdio.h>
+#include <cstring>
+#include <cmath>
+#include <string>
+#include <vector>
+#include "util.hpp"
 
-  extern int yylex();
-  void yyerror(const char * s);
+extern int yylex();
+void yyerror(const char * s);
 
-  extern FILE* yyin;
-  extern char* yytext;
-  extern int yylineno;
-  size_t count_error;
-  std::vector<symbol_table> symbols;
-  #define LAST_SCOPE symbols.size() - 1
-
-  char* cls_last_name = nullptr;
+extern FILE* yyin;
+extern char* yytext;
+extern int yylineno;
+extern bool method_master_started;
+size_t count_error;
+std::vector<symbol_table> symbols;
+#define LAST_SCOPE symbols.size() - 1
 %}
-
+/*
 %left '&' '|'
 %left "==" "!=" "<=" "<" ">=" ">"
 %left '+' '-'
@@ -27,418 +29,267 @@
 
 %right '='
 %right '^'
+*/
 
 %union {
-  char* information;
-  unsigned char character;
+    char* information;
+    unsigned char character;
     
-  bool bool_number;
-  long long intg_number;
-  double real_number;
+    bool bool_number;
+    long long intg_number;
+    double real_number;
 }
 
-%token SCOPE_BEGIN SCOPE_END
-%token MASTER TYPEOF PRINTF
-
+%token<information> MASTER TYPEOF PRINTF
 %token RSV_CLSS ACS_PRIV ACS_PUBL ACS_FILD
 
-%token<information> SMT_NAME RSV_TYPE RSV_ARRY DEF_ARRY
+%token<information> SMT_NAME RSV_TYPE
+// %token<information> NME_INTG NME_FLOT NME_CHAR NME_STRG NME_BOOL
 %token<intg_number> LIT_INTG LIT_CHAR LIT_BOOL
 %token<real_number> LIT_FLOT
 %token<information> LIT_STRG
-%type<information> LIT_CALL
 
-%token<character> OPR_ASSIGN OPRU OPR0 OPR1 OPR2
+%token<character> OPR_ASSIGN OPR0 OPR1 OPR2 OPR3 OPR4
 %token<information> OPR_RELTON
 
-%type<information> expression
-%type<information> term
-%type<information> fact
-%type<information> powr
+%type<intg_number> expression_intg
+%type<intg_number> term_intg
+%type<intg_number> fact_intg
+%type<intg_number> powr_intg
 
-%token ACT_BREK ACT_CONT ACT_RTRN
-%token SEQ_IFIF SEQ_ELSE SEQ_WHLE SEQ_FOOR
+%type<real_number> expression_flot
+%type<real_number> term_flot
+%type<real_number> fact_flot
+%type<real_number> powr_flot
+
+%type<intg_number> expression_char
+%type<intg_number> term_char
+%type<intg_number> fact_char
+%type<intg_number> powr_char
+
+%type<information> expression_strg
+%type<information> term_strg
+
+%type<bool_number> expression_bool
+%type<bool_number> term_bool
 
 %start starting_symbol
 
 %%
-/*!------------------------------------------------
-/*!------------------------------------------------
-/*! declarations */
 
-starting_symbol : { /** initialize the compiler */
-                    function_data f_data0("int"),
-                      f_data1("string");
-                    
-                    symbol_table s;
-                    s.insert("print", &f_data0);
-                    s.insert("type", &f_data1);
-                    
-                    symbols.emplace_back();
-                    symbols[0] = s;
-                  }
-                  global_declaration
-                  { /** check for errors at the end */
-                    if(0 == count_error)
-                      printf("the program was compiled correctly.\n");
-                    else
-                      printf("the program has %zu errors.\n", count_error);
-                  };
+starting_symbol : /*glb_declaration*/ expression;
 
-global_declaration: MASTER
-                    SCOPE_BEGIN
-                    statement_list
-                  | cls_decl global_declaration
-                  | cls_defn global_declaration
-                  | var_decl global_declaration
-                  | var_defn global_declaration
-                  | fct_decl global_declaration
-                  | fct_defn global_declaration
-                  | obj_decl global_declaration
-                  | obj_defn global_declaration
-                  ;
+/*
+glb_declaration : NME_INTG ';'
+                | NME_FLOT ';'
+                | NME_CHAR ';'
+                | NME_STRG ';'
+                | NME_BOOL ';'
+                ;
+*/
 
-cls_decl: RSV_CLSS SMT_NAME ';'{
-            if(size_t(-1) != scope_search($2))
-              yyerror("identifier already defined");
-            free($2);
-          }
-        ;
+expression : expression_intg { printf("result: %lld\n", $1); }
+                | expression_flot { printf("result: %f\n", $1); }
+                | expression_char { printf("result: %lld\n", $1); }
+                | expression_strg { printf("result: %s\n", $1); }
+                | expression_bool { printf("result: %d\n", $1); }
+                ;
 
-cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN {
-            if(size_t(-1) != scope_search($2))
-              yyerror("identifier already defined");
-            else
-            {
-              cls_last_name = strdup($2);
-              type_insert($2, symbol_table($2));
+/*! int */
+expression_intg : term_intg OPR0 expression_intg {
+              if('+' == $2)
+                $$ = $1 + $3;
+              else
+                $$ = $1 - $3;
+            }
+          | term_intg OPR0 '-' expression_intg {
+              if('+' == $2)
+                $$ = $1 + -1*$4;
+              else
+                $$ = $1 - -1*$4;
             }
 
-            free($2);
-          }
-          cls_fild arr_fild { 
-            free(cls_last_name);
-            cls_last_name = nullptr; 
-          }
-        | RSV_CLSS SMT_NAME SCOPE_BEGIN SCOPE_END {
-          if(size_t(-1) != scope_search($2))
-              yyerror("identifier already defined");
-            else
-              type_insert($2, symbol_table($2));
-            
-            free($2);
-          }
-        ;
-
-arr_fild: cls_fild arr_fild
-        | SCOPE_END
-        ;
-
-/* 20 rules for field
- * 4 rules for variable
- * 8 rules for function
- * 2 rules for constructor
- * 4 rules for object
- * 2 rules for access specifier
- */
-
-cls_fild: /** 4v rules */ 
-          RSV_TYPE SMT_NAME ';' {
-            bool is_error = false, error_flag = false;
-
-            if(error_flag |= is_error = type_exists($2);
-              is_error)
-              yyerror("type treated as an identifier");
-
-            if(error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-              is_error)
-              yyerror("identifier already defined in class");
-            
-            // success
-            if(false == error_flag)
-            {
-              variable_data v_data($1);
-              type_exists(cls_last_name)->insert($2, &v_data);
-            }
-
-            free($1);
-            free($2);
-        }
-        | RSV_ARRY SMT_NAME ';' {
-            bool is_error = false, error_flag = false;
-
-            if(error_flag |= is_error = type_exists($2);
-              is_error)
-              yyerror("type treated as an identifier");
-
-            if(error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-              is_error)
-              yyerror("identifier already defined in class");
-            
-            // success
-            if(false == error_flag)
-            {
-              /*todo array of */
-              //variable_data v_data($1);
-              //type_exists(cls_last_name)->insert($2, &v_data);
-            }
-
-            free($1);
-            free($2);
-        }
-        | RSV_TYPE SMT_NAME OPR_ASSIGN expression ';' {
-            bool is_error = false, error_flag = false;
-
-            if(error_flag |= is_error = type_exists($2);
-              is_error)
-              yyerror("type treated as an identifier");
-
-            if(error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-              is_error)
-              yyerror("identifier already defined in class");
-
-            if(error_flag |= is_error = 
-              type_of($4) != std::string($1);
-              is_error)
-              yyerror("incompatible types");
-            
-            // success
-            if(false == error_flag)
-            {
-              variable_data v_data($1, $4);
-              type_exists(cls_last_name)->insert($2, &v_data);
-            }
-
-            free($1);
-            free($2);
-            free($4);
-        }
-        | RSV_ARRY SMT_NAME OPR_ASSIGN expression ';' {
-            bool is_error = false, error_flag = false;
-
-            if(error_flag |= is_error = type_exists($2);
-              is_error)
-              yyerror("type treated as an identifier");
-
-            if(error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-              is_error)
-              yyerror("identifier already defined in class");
-
-            if(error_flag |= is_error = 
-              type_of($4) != std::string($1);
-              is_error)
-              yyerror("incompatible types");
-            
-            // success
-            if(false == error_flag)
-            {
-              variable_data v_data($1, $4);
-              /*todo vector*/
-              type_exists(cls_last_name)->insert($2, &v_data);
-            }
-
-            free($1);
-            free($2);
-            free($4);
-        }
-        
-          /** 8f rules */
-        | RSV_TYPE SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_ARRY SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_TYPE SMT_NAME '('')'
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_ARRY SMT_NAME '('')'
-          SCOPE_BEGIN
-          statement_list ';'
-          
-        | SMT_NAME SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | DEF_ARRY SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';'
-        | DEF_ARRY SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';'
-
-          /** 2c rules */
-        | SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';' {
-            if(std::string($1) != std::string(cls_last_name))
-              yyerror("constructor should be labeled as class");
-          }
-        | SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-  
-          /** 4o rules */
-        | SMT_NAME SMT_NAME ';'
-        | DEF_ARRY SMT_NAME ';'
-        | SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals
-        | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals
-        
-          /** 2a rules */
-        | ACS_PRIV
-        | ACS_PUBL
-        ;
-
-var_decl: RSV_TYPE SMT_NAME ';'
-        | RSV_ARRY SMT_NAME ';'
-        ;
-var_defn: RSV_TYPE SMT_NAME OPR_ASSIGN expression ';'
-        | RSV_ARRY SMT_NAME OPR_ASSIGN expression ';'
-        ;
-
-fct_decl: RSV_TYPE SMT_NAME '(' parametr arr_parm ';'
-        | RSV_ARRY SMT_NAME '(' parametr arr_parm ';'
-        | RSV_TYPE SMT_NAME '(' ')' ';'
-        | RSV_ARRY SMT_NAME '(' ')' ';'
-        | SMT_NAME SMT_NAME '(' parametr arr_parm ';'
-        | DEF_ARRY SMT_NAME '(' parametr arr_parm ';'
-        | SMT_NAME SMT_NAME '(' ')' ';'
-        | DEF_ARRY SMT_NAME '(' ')' ';'
-        ;
-fct_defn: RSV_TYPE SMT_NAME '(' parametr arr_parm 
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_ARRY SMT_NAME '(' parametr arr_parm 
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_TYPE SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_ARRY SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | DEF_ARRY SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME SMT_NAME '(' ')'
-          SCOPE_BEGIN
-        | DEF_ARRY SMT_NAME '(' ')'
-          SCOPE_BEGIN
-        ;
-arr_parm: parametr arr_parm
-        | ')'
-        ;
-parametr: ',' RSV_TYPE SMT_NAME
-        | ',' RSV_ARRY SMT_NAME
-        | ',' SMT_NAME SMT_NAME
-        | ',' DEF_ARRY SMT_NAME
-        ;
-
-obj_decl: SMT_NAME SMT_NAME ';'
-        | DEF_ARRY SMT_NAME ';'
-        ;
-obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals
-        | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals
-        ;
-obj_vals: ',' attribte obj_vals
-        | '}'
-        ;
-attribte: expression
-        ;
-
-LIT_CALL: LIT_INTG { $$ = nullptr; }
-        | LIT_FLOT { $$ = nullptr; }
-        | LIT_CHAR { $$ = nullptr; }
-        | LIT_STRG { $$ = nullptr; }
-        | LIT_BOOL { $$ = nullptr; }
-        ;
-
-/*!------------------------------------------------
-/*!------------------------------------------------
-/*! statements */
-
-statement_list: SCOPE_END { symbols.pop_back(); }
-              | local_declaration statement_list
-              | expression ';' statement_list
-              | ACT_BREK statement_list
-              | ACT_CONT statement_list
-              | ACT_RTRN statement_list
-              | control statement_list
-              | assignment ';' statement_list
-              ;
-
-local_declaration : var_decl
-                  | var_defn
-                  | fct_decl
-                  | fct_defn
-                  | obj_decl
-                  | obj_defn
-                  ;
-
-expression: term OPR0 expression { $$ = nullptr; }
-          | term OPR0 OPRU expression { $$ = nullptr; }
-          | term OPR_RELTON expression {              
-              if(0 == strcmp($2, "=="))
-                $$ = 0;
-              else if(0 == strcmp($2, "!="))
-                $$ = 0;
-              else if(0 == strcmp($2, "<="))
-                $$ = 0;
-              else if(0 == strcmp($2, "<"))
-                $$ = 0;
-              else if(0 == strcmp($2, ">="))
-                $$ = 0;
-              else if(0 == strcmp($2, ">"))
-                $$ = 0;
-            }
-          | term { $$ = nullptr; }
+          | term_intg { $$ = $1; }
           ;
-term: term OPR1 fact { $$ = nullptr; }
-    | fact { $$ = $1; }
-    ;
-fact: fact OPR2 powr { $$ = nullptr; }
-    | powr { $$ = $1; }
-    ;
-powr: '(' expression ')' { $$ = $2; }
-    | LIT_CALL { $$ = $1; }
-    | SMT_NAME { $$ = 0; }
-    | SMT_NAME ACS_FILD SMT_NAME { $$ = 0; }
-    | SMT_NAME '[' LIT_INTG ']' { $$ = 0; }
-    | SMT_NAME '[' SMT_NAME ']' { $$ = 0; }
-    | PRINTF '(' expression ')' { $$ = 0; printf("%s", $3); fflush(stdout); }
-    | TYPEOF '(' expression ')' {
-        std::string s = type_of($3);
-        $$ = strdup(s.c_str());
+term_intg: term_intg OPR1 fact_intg {
+        if('*' == $2)
+          $$ = $1 * $3;
+        else
+          $$ = $1 / $3;
       }
-    | fct_call {$$ = nullptr; }
+    | term_intg OPR3 fact_intg { $$ = $1 % $3; }
+    | fact_intg { $$ = $1; }
     ;
+fact_intg: fact_intg OPR2 powr_intg { $$ = std::pow($1, $3); }
+      | powr_intg { $$ = $1; }
+      ;
+powr_intg : '(' expression_intg ')' { $$ = $2; }
+      | LIT_INTG { $$ = $1; }
+      ;
 
-fct_call: SMT_NAME '(' expression arr_argm
-        | SMT_NAME '('')'
-        ;
-arr_argm: ',' expression arr_argm
-        | ')'
-        ;
-
-control : SEQ_IFIF '(' expression ')' '{' statement_list '}'
-        | SEQ_IFIF '(' expression ')' '{' statement_list '}' SEQ_ELSE '{' statement_list '}'
-        | SEQ_WHLE '(' expression ')' '{' statement_list '}'
-        | SEQ_FOOR '(' expression ';' expression ';' expression ')' '{' statement_list '}'
-
-assignment: SMT_NAME OPR_ASSIGN assig_term
+/*! float */
+expression_flot : term_flot OPR0 expression_flot {
+              if('+' == $2)
+                $$ = $1 + $3;
+              else
+                $$ = $1 - $3;
+            }
+          | term_flot OPR0 '-' expression_flot {
+              if('+' == $2)
+                $$ = $1 + -1*$4;
+              else
+                $$ = $1 - -1*$4;
+            }
+          | term_flot { $$ = $1; }
           ;
-assig_term: expression
-          | assignment
+term_flot: term_flot OPR1 fact_flot {
+        if('*' == $2)
+          $$ = $1 * $3;
+        else
+          $$ = $1 / $3;
+      }
+    | fact_flot { $$ = $1; }
+    ;
+fact_flot: fact_flot OPR2 powr_flot { $$ = std::pow($1, $3); }
+      | powr_flot { $$ = $1; }
+      ;
+powr_flot : '(' expression_flot ')' { $$ = $2; }
+      | LIT_FLOT { $$ = $1; }
+      ;
+
+/*! char */
+expression_char : term_char OPR0 expression_char {
+              if('+' == $2)
+                $$ = $1 + $3;
+              else
+                $$ = $1 - $3;
+            }
+            | term_char OPR0 '-' expression_char {
+              if('+' == $2)
+                $$ = $1 + -1*$4;
+              else
+                $$ = $1 - -1*$4;
+            }
+          | term_char { $$ = $1; }
           ;
+term_char: term_char OPR1 fact_char {
+        if('*' == $2)
+          $$ = $1 * $3;
+        else
+          $$ = $1 / $3;
+      }
+    | term_char OPR3 fact_char { $$ = $1 % $3; }
+    | fact_char { $$ = $1; }
+    ;
+fact_char: fact_char OPR2 powr_char { $$ = std::pow($1, $3); }
+      | powr_char { $$ = $1; }
+      ;
+powr_char : '(' expression_char ')' { $$ = $2; }
+      | LIT_CHAR { $$ = $1; }
+      ;
+
+/*! string */
+expression_strg : term_strg OPR0 expression_strg {
+                    if('+' == $2)
+                    {
+                      std::string text($1);
+                      text += $3;
+                      $$ = strdup(text.c_str());
+                    }
+                    else
+                    {
+                      size_t position = 0;
+                      std::string text($1), token($3);
+                      while(std::string::npos != 
+                        (position = text.find(token, position)))
+                        text.erase(position, token.length());
+                      $$ = strdup(text.c_str());
+                    }
+
+                    free($1);
+                    free($3);
+                  }
+                | term_strg { $$ = strdup($1); free($1); }
+                ;
+term_strg : '(' expression_strg ')' { $$ = strdup($2); free($2); }
+          | LIT_STRG { $$ = strdup($1); free($1); }
+          ;
+
+/*! bool */
+expression_bool : term_bool OPR4 expression_bool {
+                    if('&' == $2)
+                      $$ = $1 && $3;
+                    else
+                      $$ = $1 || $3;
+                  }
+                | term_bool OPR4 '!' expression_bool {
+                   if('&' == $2)
+                      $$ = $1 && $4;
+                    else
+                      $$ = $1 || $4;
+                  }
+                | term_bool { $$ = $1; }
+                ;
+term_bool : '(' expression_bool ')' { $$ = $2; }
+          | LIT_BOOL { $$ = $1; }
+          | expression_intg OPR_RELTON expression_intg {              
+              if(0 == strcmp($2, "=="))
+                $$ = $1 == $3;
+              else if(0 == strcmp($2, "!="))
+                $$ = $1 != $3;
+              else if(0 == strcmp($2, "<="))
+                $$ = $1 <= $3;
+              else if(0 == strcmp($2, "<"))
+                $$ = $1 < $3;
+              else if(0 == strcmp($2, ">="))
+                $$ = $1 >= $3;
+              else if(0 == strcmp($2, ">"))
+                $$ = $1 > $3;
+            }
+          | expression_flot OPR_RELTON expression_flot {
+              if(0 == strcmp($2, "=="))
+                $$ = $1 == $3;
+              else if(0 == strcmp($2, "!="))
+                $$ = $1 != $3;
+              else if(0 == strcmp($2, "<="))
+                $$ = $1 <= $3;
+              else if(0 == strcmp($2, "<"))
+                $$ = $1 < $3;
+              else if(0 == strcmp($2, ">="))
+                $$ = $1 >= $3;
+              else if(0 == strcmp($2, ">"))
+                $$ = $1 > $3;
+            }
+          | expression_char OPR_RELTON expression_char {
+              if(0 == strcmp($2, "=="))
+                $$ = $1 == $3;
+              else if(0 == strcmp($2, "!="))
+                $$ = $1 != $3;
+              else if(0 == strcmp($2, "<="))
+                $$ = $1 <= $3;
+              else if(0 == strcmp($2, "<"))
+                $$ = $1 < $3;
+              else if(0 == strcmp($2, ">="))
+                $$ = $1 >= $3;
+              else if(0 == strcmp($2, ">"))
+                $$ = $1 > $3;
+            }
+          | expression_strg OPR_RELTON expression_strg {
+              if(0 == strcmp($2, "=="))
+                $$ = $1 == $3;
+              else if(0 == strcmp($2, "!="))
+                $$ = $1 != $3;
+              else if(0 == strcmp($2, "<="))
+                $$ = $1 <= $3;
+              else if(0 == strcmp($2, "<"))
+                $$ = $1 < $3;
+              else if(0 == strcmp($2, ">="))
+                $$ = $1 >= $3;
+              else if(0 == strcmp($2, ">"))
+                $$ = $1 > $3;
+            }
+          ;
+
 %%
 
 /*!------------------------------------------------
@@ -448,8 +299,6 @@ assig_term: expression
 void yyerror(const char * s){
   count_error++;
   printf("error - line %d: %s.\n", yylineno, s);
-  if(0 == strcmp(s, "syntax error"))
-    printf("the program has %zu errors.\n", count_error);
 }
 
 int main(int argc, char** argv)

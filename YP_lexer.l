@@ -60,10 +60,9 @@ comment #.*
   return LIT_INTG; }
 {literal_flt} { yylval.real_number = atof(yytext);
   return LIT_FLOT; }
-{literal_chr} { yylval.intg_number = yytext[1];
+{literal_chr} { yylval.information = strdup(yytext);
   return LIT_CHAR; }
-{literal_str} { yytext[strlen(yytext) - 1] = '\0';
-  yylval.information = strdup(yytext + 1);
+{literal_str} { yylval.information = strdup(yytext);
   return LIT_STRG; }
 {literal_bol} { yylval.bool_number = (bool)strcmp(yytext, "false");
   return LIT_BOOL; }

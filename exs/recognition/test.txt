@@ -1,0 +1,25 @@
+class new_type;
+
+class masina
+{
+
+}
+
+class calorifer
+{
+    int bmw;
+    int[1][6][9] caracatita;
+    
+    calorifer(){};
+    calorifer(float sticla, int geanta){};
+
+    int[45][54] alex(){ return; };
+    int[45][54] alex2(int a, int b, int c){ return; };
+
+    masina gunoi;
+    masina[4][3][7][1] cartof;
+}
+
+master()
+{
+}

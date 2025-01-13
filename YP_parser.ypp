@@ -8,29 +8,22 @@
  *!* compilation should never throw exceptions *!*
  *!* all data is encoded as string *!*
  
- * states:
- ** declaration
- ** definition
- ** call
- * order of state presentation:
- ** class
- ** variable
- ** function
- ** object
- * statements
-
- * class == type
- * the number of started scopes == symbols.size(); 
- * exception: symbol table insertions won't provide error messages
-
- * how error checks are written: 
-    for each terminal/non-terminal we perform checks
-    we start with the first one and continue consecutively
-
- * yes parameters - no  array
- * yes parameters - yes array
- * no  parameters - no  array
- * no  parameters - yes array
+ * rules' summary
+  * declarations
+  ** class(type)
+  ** variable
+  ** function
+  ** object
+  * statements
+  ** expression
+  ** fct_call
+  ** control
+  ** assignment
+ * order of function rules
+  ** yes parameters - no  array
+  ** yes parameters - yes array
+  ** no  parameters - no  array
+  ** no  parameters - yes array
  */
 
 %{
@@ -52,6 +45,7 @@
   #define LAST_SCOPE symbols.size() - 1
 
   char* cls_last_name = nullptr;
+  function_data* f_data_global = nullptr;
 %}
 
 %left '&' '|'
@@ -78,12 +72,14 @@
 %token RSV_CLSS ACS_PRIV ACS_PUBL ACS_FILD
 
 %token<information> SMT_NAME RSV_TYPE RSV_ARRY DEF_ARRY
-%token<intg_number> LIT_INTG LIT_CHAR LIT_BOOL
+%token<intg_number> LIT_INTG
 %token<real_number> LIT_FLOT
-%token<information> LIT_STRG
+%token<information> LIT_CHAR LIT_STRG
+%token<bool_number> LIT_BOOL
 %type<information> LIT_CALL
 
-%token<character> OPR_ASSIGN OPRU OPR0 OPR1 OPR2
+%token OPR_ASSIGN
+%token<character> OPRU OPR0 OPR1 OPR2
 %token<information> OPR_RELTON
 
 %type<information> expression
@@ -109,8 +105,8 @@ starting_symbol : { /** initialize the compiler */
                     s.insert("print", &f_data0);
                     s.insert("type", &f_data1);
                     
-                    symbols.emplace_back();
-                    symbols[0] = s;
+                    // symbols.emplace_back();
+                    // symbols[0] = s;
                   }
                   global_declaration
                   { /** check for errors at the end */
@@ -134,8 +130,8 @@ global_declaration: MASTER
                   ;
 
 cls_decl: RSV_CLSS SMT_NAME ';'{
-            if(size_t(-1) != scope_search($2))
-              yyerror("identifier already defined");
+            /*if(size_t(-1) != scope_search($2))
+              yyerror("identifier already defined");*/
             free($2);
           }
         ;
@@ -156,7 +152,7 @@ cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN {
             cls_last_name = nullptr; 
           }
         | RSV_CLSS SMT_NAME SCOPE_BEGIN SCOPE_END {
-          if(size_t(-1) != scope_search($2))
+            if(size_t(-1) != scope_search($2))
               yyerror("identifier already defined");
             else
               type_insert($2, symbol_table($2));
@@ -178,7 +174,7 @@ arr_fild: cls_fild arr_fild
  */
 
 cls_fild: /** 4v rules */ 
-          RSV_TYPE SMT_NAME ';' {
+/*1*/     RSV_TYPE SMT_NAME ';' {
             bool is_error = false, error_flag = false;
 
             if(error_flag |= is_error = type_exists($2);
@@ -200,7 +196,7 @@ cls_fild: /** 4v rules */
             free($1);
             free($2);
         }
-        | RSV_ARRY SMT_NAME ';' {
+/*2*/   | RSV_ARRY SMT_NAME ';' {
             bool is_error = false, error_flag = false;
 
             if(error_flag |= is_error = type_exists($2);
@@ -215,6 +211,7 @@ cls_fild: /** 4v rules */
             // success
             if(false == error_flag)
             {
+              // check if there exists a null size
               /*todo array of */
               //variable_data v_data($1);
               //type_exists(cls_last_name)->insert($2, &v_data);
@@ -223,7 +220,7 @@ cls_fild: /** 4v rules */
             free($1);
             free($2);
         }
-        | RSV_TYPE SMT_NAME OPR_ASSIGN expression ';' {
+/*3*/   | RSV_TYPE SMT_NAME OPR_ASSIGN expression ';' {
             bool is_error = false, error_flag = false;
 
             if(error_flag |= is_error = type_exists($2);
@@ -251,7 +248,7 @@ cls_fild: /** 4v rules */
             free($2);
             free($4);
         }
-        | RSV_ARRY SMT_NAME OPR_ASSIGN expression ';' {
+/*4*/   | RSV_ARRY SMT_NAME OPR_ASSIGN expression ';' {
             bool is_error = false, error_flag = false;
 
             if(error_flag |= is_error = type_exists($2);
@@ -271,9 +268,9 @@ cls_fild: /** 4v rules */
             // success
             if(false == error_flag)
             {
-              variable_data v_data($1, $4);
+              //variable_data v_data($1, $4);
               /*todo vector*/
-              type_exists(cls_last_name)->insert($2, &v_data);
+              //type_exists(cls_last_name)->insert($2, &v_data);
             }
 
             free($1);
@@ -282,61 +279,447 @@ cls_fild: /** 4v rules */
         }
         
           /** 8f rules */
-        | RSV_TYPE SMT_NAME '(' parametr arr_parm
+/*1*/   | RSV_TYPE SMT_NAME /*{
+            bool is_error = false, error_flag = false;
+
+            if(error_flag |= is_error = type_exists($2);
+              is_error)
+              yyerror("type treated as an identifier");
+
+            if(error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+              is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($2, &f_data);
+              f_data_global = (function_data*)
+                type_exists(cls_last_name)->get_data($2);
+            }
+
+            free($1);
+            free($2);
+          } */
+
+          '(' parametr arr_parm /*{ f_data_global = nullptr; }*/
           SCOPE_BEGIN
-          statement_list ';'
-        | RSV_ARRY SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_TYPE SMT_NAME '('')'
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_ARRY SMT_NAME '('')'
-          SCOPE_BEGIN
-          statement_list ';'
+          statement_list ';' { /*todo ast*/ }
+        
+/*2*/   | RSV_ARRY SMT_NAME /*{
+            bool is_error = false, error_flag = false;
+
+            if(error_flag |= is_error = type_exists($2);
+              is_error)
+              yyerror("type treated as an identifier");
+
+            if(error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+              is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              /*todo array
+              //function_data f_data($1);
+              //type_exists(cls_last_name)->insert($2, &f_data);
+              //f_data_global = (function_data*)
+                //type_exists(cls_last_name)->get_data($2);
+            }
+
+            free($1);
+            free($2);
+          }*/
           
-        | SMT_NAME SMT_NAME '(' parametr arr_parm
+          '(' parametr arr_parm /* { f_data_global = nullptr; } */
           SCOPE_BEGIN
-          statement_list ';'
-        | DEF_ARRY SMT_NAME '(' parametr arr_parm
+          statement_list ';' { /*todo ast*/ }
+/*3*/   | RSV_TYPE SMT_NAME /*{
+            bool is_error = false, error_flag = false;
+
+            if(error_flag |= is_error = type_exists($2);
+              is_error)
+              yyerror("type treated as an identifier");
+
+            if(error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+              is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($2, &f_data);
+            }
+
+            free($1);
+            free($2);
+          }*/
+          
+          '('')'
           SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME SMT_NAME '(' ')'
+          statement_list ';' { /*todo ast*/ }
+
+/*4*/   | RSV_ARRY SMT_NAME /*{
+            bool is_error = false, error_flag = false;
+
+            if(error_flag |= is_error = type_exists($2);
+              is_error)
+              yyerror("type treated as an identifier");
+
+            if(error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+              is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              /*todo array
+              //function_data f_data($1);
+              //type_exists(cls_last_name)->insert($2, &f_data);
+            }
+
+            free($1);
+            free($2);
+          }*/
+
+          '('')'
           SCOPE_BEGIN
-          statement_list ';'
-        | DEF_ARRY SMT_NAME '(' ')'
+          statement_list ';' { /*todo ast*/ }
+          
+/*5*/   | SMT_NAME SMT_NAME /*{
+            bool is_error = false, error_flag = false;
+
+            error_flag |= is_error = 
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($2, &f_data);
+              f_data_global = (function_data*)
+                type_exists(cls_last_name)->get_data($2);
+            }
+
+            free($1);
+            free($2);
+          }*/
+          
+          '(' parametr arr_parm /*{ f_data_global = nullptr; }*/
           SCOPE_BEGIN
-          statement_list ';'
+          statement_list ';' { /*todo ast*/ }
+
+/*6*/   | DEF_ARRY SMT_NAME /*{
+            bool is_error = false, error_flag = false;
+
+            error_flag |= is_error = 
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($2, &f_data);
+              f_data_global = (function_data*)
+                type_exists(cls_last_name)->get_data($2);
+            }
+
+            free($1);
+            free($2);
+          }*/
+          
+          '(' parametr arr_parm /*{ f_data_global = nullptr; }*/
+          SCOPE_BEGIN
+          statement_list ';' { /*todo ast*/ }
+
+/*7*/   | SMT_NAME SMT_NAME /*{
+            bool is_error = false, error_flag = false;
+
+            error_flag |= is_error = 
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($2, &f_data);
+              f_data_global = (function_data*)
+                type_exists(cls_last_name)->get_data($2);
+          }*/
+          
+          '(' ')'
+          SCOPE_BEGIN
+          statement_list ';' { /*todo ast*/ }
+
+/*8*/   | DEF_ARRY SMT_NAME /*{
+            bool is_error = false, error_flag = false;
+
+            error_flag |= is_error = 
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            error_flag |= is_error =
+              type_exists(cls_last_name)->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+
+            // success
+            if(false == error_flag)
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($2, &f_data);
+              f_data_global = (function_data*)
+                type_exists(cls_last_name)->get_data($2);
+          }*/
+          
+          '(' ')'
+          SCOPE_BEGIN
+          statement_list ';' { /*todo ast*/ }
 
           /** 2c rules */
-        | SMT_NAME '(' ')'
+/*1*/   | SMT_NAME /*{
+            if(std::string($1) != std::string(cls_last_name))
+              yyerror("constructor should be labeled as class");
+            else
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($1, &f_data);
+              f_data_global = ...
+            }
+          }*/
+
+          '(' parametr arr_parm /* { f_data_global = nullptr; } */
+          SCOPE_BEGIN
+          statement_list ';' {
+            // symbols.emplace_back();
+            /*todo ast*/
+          }
+/*2*/   | SMT_NAME '(' ')'
           SCOPE_BEGIN
           statement_list ';' {
             if(std::string($1) != std::string(cls_last_name))
               yyerror("constructor should be labeled as class");
+            else
+            {
+              function_data f_data($1);
+              type_exists(cls_last_name)->insert($1, &f_data);
+            }
+
+            // symbols.emplace_back();
+            /*todo ast*/
           }
-        | SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-  
+        
           /** 4o rules */
-        | SMT_NAME SMT_NAME ';'
-        | DEF_ARRY SMT_NAME ';'
-        | SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals
-        | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals
+/*1*/   | SMT_NAME SMT_NAME ';' {
+            bool is_error = false, error_flag = false;
+        
+            error_flag |= is_error =
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+              
+            error_flag |= is_error =
+              type_exists(cls_last_name) &&
+              type_exists(cls_last_name)->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+            
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data($1);
+              type_exists(cls_last_name)->insert($2, &o_data);
+            }
+
+            free($1); free($2); 
+          }
+
+/*2*/   | DEF_ARRY SMT_NAME ';' {
+            bool is_error = false, error_flag = false;
+
+            char * ptr = strchr($1, '[');
+            if(ptr)
+              *ptr = '\0';
+            error_flag |= is_error =
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+              
+            error_flag |= is_error =
+              type_exists(cls_last_name) &&
+              type_exists(cls_last_name)->get_data($2);
+            if(is_error)
+              yyerror("identifier already defined in class");
+            
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data($1);
+              type_exists(cls_last_name)->insert($2, &o_data);
+            }
+
+            free($1); free($2); 
+          }
+
+/*3*/   | SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals /* type compat check */
+/*4*/   | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals /* type compat check */
         
           /** 2a rules */
-        | ACS_PRIV
-        | ACS_PUBL
+        | ACS_PRIV {}
+        | ACS_PUBL {}
         ;
 
-var_decl: RSV_TYPE SMT_NAME ';'
-        | RSV_ARRY SMT_NAME ';'
+/* 4v rules */
+var_decl: RSV_TYPE SMT_NAME ';' {
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+              
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+            
+            // success
+            if(false == error_flag)
+            {
+              variable_data v_data($1);
+              symbols[LAST_SCOPE].insert($2, &v_data);
+            }
+
+            free($1); free($2); 
+          }
+        | RSV_ARRY SMT_NAME ';' {
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+              
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+            
+            // success
+            if(false == error_flag)
+            {
+              variable_data v_data($1);
+              symbols[LAST_SCOPE].insert($2, &v_data);
+            }
+
+            free($1); free($2); 
+          }
         ;
-var_defn: RSV_TYPE SMT_NAME OPR_ASSIGN expression ';'
-        | RSV_ARRY SMT_NAME OPR_ASSIGN expression ';'
+var_defn: RSV_TYPE SMT_NAME OPR_ASSIGN expression ';' {
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+              
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+
+            error_flag |= is_error = (nullptr == $4) ||
+                ($4 && std::string($1) == type_of($4));
+            if(is_error)
+              yyerror("incompatible types");
+           
+            // success
+            if(false == error_flag)
+            {
+              variable_data v_data($1);
+              symbols[LAST_SCOPE].insert($2, &v_data);
+            }
+
+            free($1); free($2); 
+          }
+        | RSV_ARRY SMT_NAME OPR_ASSIGN expression ';' {
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+              
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+
+            error_flag |= is_error = (nullptr == $4) ||
+                ($4 && std::string($1) == type_of($4));
+            if(is_error)
+              yyerror("incompatible types");
+            
+            // success
+            if(false == error_flag)
+            {
+              variable_data v_data($1);
+              symbols[LAST_SCOPE].insert($2, &v_data);
+            }
+
+            free($1); free($2); 
+          }
         ;
 
+/* 8f rules */
 fct_decl: RSV_TYPE SMT_NAME '(' parametr arr_parm ';'
         | RSV_ARRY SMT_NAME '(' parametr arr_parm ';'
         | RSV_TYPE SMT_NAME '(' ')' ';'
@@ -346,6 +729,7 @@ fct_decl: RSV_TYPE SMT_NAME '(' parametr arr_parm ';'
         | SMT_NAME SMT_NAME '(' ')' ';'
         | DEF_ARRY SMT_NAME '(' ')' ';'
         ;
+/* 8f rules */
 fct_defn: RSV_TYPE SMT_NAME '(' parametr arr_parm 
           SCOPE_BEGIN
           statement_list ';'
@@ -369,20 +753,141 @@ fct_defn: RSV_TYPE SMT_NAME '(' parametr arr_parm
         | DEF_ARRY SMT_NAME '(' ')'
           SCOPE_BEGIN
         ;
-arr_parm: parametr arr_parm
+arr_parm: ',' parametr arr_parm
         | ')'
         ;
-parametr: ',' RSV_TYPE SMT_NAME
-        | ',' RSV_ARRY SMT_NAME
-        | ',' SMT_NAME SMT_NAME
-        | ',' DEF_ARRY SMT_NAME
+parametr: RSV_TYPE SMT_NAME
+        | RSV_ARRY SMT_NAME
+        | SMT_NAME SMT_NAME
+        | DEF_ARRY SMT_NAME
         ;
 
-obj_decl: SMT_NAME SMT_NAME ';'
-        | DEF_ARRY SMT_NAME ';'
+/* 4o rules */
+obj_decl: SMT_NAME SMT_NAME ';' {
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error =
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+              
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data($1);
+              symbols[LAST_SCOPE].insert($2, &o_data);
+            }
+
+            free($1); free($2);
+          }
+        | DEF_ARRY SMT_NAME ';' {
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error =
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+            
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+              
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data($1);
+              symbols[LAST_SCOPE].insert($2, &o_data);
+            }
+
+            free($1); free($2);
+          }
         ;
-obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals
-        | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals
+obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals /*{
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error =
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+            
+            item_data* argument = nullptr;
+            size_t scope = scope_search($4);
+            if(size_t(-1) != scope)
+              argument = symbols.at(scope).get_data($4);
+
+            error_flag |= is_error = (nullptr == argument) ||
+                (argument && std::string($2) == std::string($4));
+            if(is_error)
+              yyerror("undefined argument");
+
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data($1, *(object_data*)argument);
+              symbols[LAST_SCOPE].insert($2, &o_data);
+            }
+              
+            free($1); free($2); free($4);
+          }*/
+        | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals /*{
+            bool is_error = false, error_flag = false;
+            
+            error_flag |= is_error =
+              nullptr == type_exists($1);
+            if(is_error)
+              yyerror("undefined type");
+            
+            error_flag |= is_error = is_type($2);
+            if(is_error)
+              yyerror("type treated as an identifier");
+
+            error_flag |= is_error =
+              size_t(-1) != scope_search($2);
+            if(is_error)
+              yyerror("identifier already defined");
+            
+            item_data* argument = nullptr;
+            size_t scope = scope_search($4);
+            if(size_t(-1) != scope)
+              argument = symbols.at(scope).get_data($4);
+
+            error_flag |= is_error = (nullptr == argument) ||
+                (argument && std::string($2) == std::string($4));
+            if(is_error)
+              yyerror("undefined argument");
+
+            // success
+            if(false == error_flag)
+            {
+              object_data o_data($1, *(object_data*)argument);
+              symbols[LAST_SCOPE].insert($2, &o_data);
+            }
+              
+            free($1); free($2); free($4);
+          }*/
         ;
 obj_vals: ',' attribte obj_vals
         | '}'
@@ -390,18 +895,11 @@ obj_vals: ',' attribte obj_vals
 attribte: expression
         ;
 
-LIT_CALL: LIT_INTG { $$ = nullptr; }
-        | LIT_FLOT { $$ = nullptr; }
-        | LIT_CHAR { $$ = nullptr; }
-        | LIT_STRG { $$ = nullptr; }
-        | LIT_BOOL { $$ = nullptr; }
-        ;
-
 /*!------------------------------------------------
 /*!------------------------------------------------
 /*! statements */
 
-statement_list: SCOPE_END { symbols.pop_back(); }
+statement_list: SCOPE_END
               | local_declaration statement_list
               | expression ';' statement_list
               | assignment ';' statement_list
@@ -419,32 +917,275 @@ local_declaration : var_decl
                   | obj_defn
                   ;
 
-expression: term OPR0 expression { $$ = nullptr; }
-          | term OPR0 OPRU expression { $$ = nullptr; }
-          | term OPR_RELTON expression {              
+expression: term OPR0 expression {
+              std::string type_first(type_of($1));
+              std::string type_secnd(type_of($3));
+              if(type_first != type_secnd)
+                yyerror("bad");
+
+              std::string s;
+              if('+' == $2 || '-' == $2)
+              {
+                if(std::string("bool") == type_first)
+                  yyerror("bad");
+
+                if(std::string("int") == type_first)
+                {
+                  long long var0 = atoll($1);
+                  long long var1 = atoll($3);
+                  long long result = '+' == $2 ? var0 + var1 : var0 - var1;
+                  s = std::to_string(result);
+                }
+                else if(std::string("float") == type_first)
+                {
+                  double var0 = atof($1);
+                  double var1 = atof($3);
+                  double result = '+' == $2 ? var0 + var1 : var0 - var1;
+                  s = std::to_string(result);
+                }
+                else if(std::string("char") == type_first)
+                {
+                  long long result = '+' == $2 ? $1[1] + $3[1] : $1[1] - $3[1];
+                  s = std::to_string(result);
+                }
+                else if(std::string("string") == type_first)
+                {
+                  if('+' == $2)
+                  {
+                    s = std::string($1);
+                    s += $3;
+                  }
+                  else
+                  {
+                    size_t position = 0;
+                    s = std::string($1);
+                    std::string token($3);
+                    while(std::string::npos != 
+                      (position = s.find(token, position)))
+                      s.erase(position, token.length());
+                  }
+                }                
+              }
+              else
+              {
+                if(std::string("bool") != type_first)
+                  yyerror("bad");
+
+                if('&' == $2)
+                {
+                  if(std::string("false") == std::string($1) ||
+                  std::string("false") == std::string($3))
+                    s = std::string("false");
+                  else
+                    s = std::string("true");
+                }
+                else
+                {
+                  if(std::string("true") == std::string($1) ||
+                  std::string("true") == std::string($3))
+                    s = std::string("true");
+                  else
+                    s = std::string("false");
+                }
+              }
+              $$ = strdup(s.c_str());
+          }
+          | term OPR_RELTON expression {
+              std::string type_first(type_of($1));
+              std::string type_secnd(type_of($3));
+              if(type_first != type_secnd)
+                yyerror("bad");
+              
+              std::string value0($1), value1($3);
               if(0 == strcmp($2, "=="))
-                $$ = 0;
+                $$ = value0 == value1 ? strdup("true") : strdup("false");
               else if(0 == strcmp($2, "!="))
-                $$ = 0;
+                $$ = value0 == value1 ? strdup("false") : strdup("true");
               else if(0 == strcmp($2, "<="))
-                $$ = 0;
+                $$ = value0 <= value1 ? strdup("true") : strdup("false");
               else if(0 == strcmp($2, "<"))
-                $$ = 0;
+                $$ = value0 < value1 ? strdup("true") : strdup("false");
               else if(0 == strcmp($2, ">="))
-                $$ = 0;
+                $$ = value0 >= value1 ? strdup("true") : strdup("false");
               else if(0 == strcmp($2, ">"))
-                $$ = 0;
+                $$ = value0 > value1 ? strdup("true") : strdup("false");
+              
+              free($1);
+              free($3);
             }
-          | term { $$ = nullptr; }
+          | term { $$ = strdup($1); free($1); }
           ;
-term: term OPR1 fact { $$ = nullptr; }
-    | fact { $$ = $1; }
+term: term OPR1 fact {
+        std::string type_first(type_of($1));
+        std::string type_secnd(type_of($3));
+        if(type_first != type_secnd)
+          yyerror("bad");
+        
+        if('*' == $2 || '/' == $2)
+        {
+          if(std::string("string") == type_first ||
+            std::string("bool") == type_first)
+            yyerror("bad");
+          
+          if(std::string("int") == type_first)
+          {
+            long long var0 = atoll($1);
+            long long var1 = atoll($3);
+            long long result = '*' == $2 ? var0 * var1 : var0 / var1;
+            std::string s = std::to_string(result);
+            $$ = strdup(s.c_str());
+          }
+          else if(std::string("float") == type_first)
+          {
+            double var0 = atof($1);
+            double var1 = atof($3);
+            double result = '*' == $2 ? var0 * var1 : var0 / var1;
+            std::string s = std::to_string(result);
+            $$ = strdup(s.c_str());
+          }
+          else if(std::string("char") == type_first)
+          {
+            long long result = '*' == $2 ? $1[1] * $3[1] : $1[1] / $3[1];
+            std::string s = std::to_string(result);
+            $$ = strdup(s.c_str()); 
+          }
+        }
+        else if('%' == $2)
+        {
+          if(std::string("string") == type_first ||
+            std::string("bool") == type_first ||
+            std::string("float") == type_first)
+            yyerror("bad");
+          
+          if(std::string("int") == type_first)
+          {
+            long long var0 = atoll($1);
+            long long var1 = atoll($3);
+            long long result = var0 % var1;
+            std::string s = std::to_string(result);
+            $$ = strdup(s.c_str());
+          }
+          else if(std::string("char") == type_first)
+          {
+            long long result = $1[1] % $3[1];
+            std::string s = std::to_string(result);
+            $$ = strdup(s.c_str());
+          }
+        }
+
+        free($1);
+        free($3);
+      }
+    | fact { $$ = strdup($1); free($1); }
     ;
-fact: fact OPR2 powr { $$ = nullptr; }
-    | powr { $$ = $1; }
+fact: fact OPR2 powr {
+        std::string type_first(type_of($1));
+        if(std::string("string") == type_first ||
+          std::string("bool") == type_first ||
+          std::string("char") == type_first)
+          yyerror("bad");
+
+        std::string type_secnd(type_of($3));
+        if(type_first != type_secnd)
+          yyerror("bad");
+        
+        if(std::string("int") == type_first)
+        {
+          long long var0 = atoll($1);
+          long long var1 = atoll($3);
+          long long result = std::pow(var0, var1);
+          std::string s = std::to_string(result);
+          $$ = strdup(s.c_str());
+        }
+        else if(std::string("float") == type_first)
+        {
+          double var0 = atof($1);
+          double var1 = atof($3);
+          double result = std::pow(var0, var1);
+          std::string s = std::to_string(result);
+          $$ = strdup(s.c_str());
+        }
+          
+        free($1);
+        free($3);
+      }
+    | powr { $$ = strdup($1); free($1); }
     ;
-powr: '(' expression ')' { $$ = $2; }
-    | LIT_CALL { $$ = $1; }
+powr: '(' expression ')' { $$ = strdup($2); free($2); }
+    | LIT_CALL { $$ = strdup($1); free($1); }
+    | OPRU '(' expression ')' {
+        std::string type(type_of($3));
+
+        std::string s;
+        if('-' == $1)
+        {
+          if(std::string("bool") == type ||
+            std::string("string") == type)
+            yyerror("bad");
+            
+          if(std::string("int") == type)
+          {
+            long long result = 0 - atoll($3);
+            s = std::to_string(result);
+          }
+          else if(std::string("float") == type)
+          {
+            double result = 0.0 - atof($3);
+            s = std::to_string(result);
+          }
+          else if(std::string("char") == type)
+          {
+            long long result = 0 - $3[1];
+            s = std::to_string(result);
+          }
+        }
+        else
+        {
+          if(std::string("bool") != type)
+            yyerror("bad");
+          std::string("true") == std::string($3) ? s = "false" : s = "true";
+        }
+
+        $$ = strdup(s.c_str());
+        free($3);
+      }
+    | OPRU LIT_CALL {
+        std::string type(type_of($2));
+
+        std::string s;
+        if('-' == $1)
+        {
+          if(std::string("bool") == type ||
+            std::string("string") == type)
+            yyerror("bad");
+            
+          if(std::string("int") == type)
+          {
+            long long result = 0 - atoll($2);
+            s = std::to_string(result);
+          }
+          else if(std::string("float") == type)
+          {
+            double result = 0.0 - atof($2);
+            s = std::to_string(result);
+          }
+          else if(std::string("char") == type)
+          {
+            long long result = 0 - $2[1];
+            s = std::to_string(result);
+          }
+        }
+        else
+        {
+          if(std::string("bool") != type)
+            yyerror("bad");
+          std::string("true") == std::string($2) ? s = "false" : s = "true";
+        }
+
+        $$ = strdup(s.c_str());
+        free($2);
+      }
+    /*todo */
     | SMT_NAME { $$ = 0; }
     | SMT_NAME ACS_FILD SMT_NAME { $$ = 0; }
     | SMT_NAME '[' LIT_INTG ']' { $$ = 0; }
@@ -456,6 +1197,13 @@ powr: '(' expression ')' { $$ = $2; }
       }
     | fct_call {$$ = nullptr; }
     ;
+
+LIT_CALL: LIT_INTG { std::string s = std::to_string($1); $$ = strdup(s.c_str()); }
+        | LIT_FLOT { std::string s = std::to_string($1); $$ = strdup(s.c_str()); }
+        | LIT_CHAR { $$ = strdup($1); free($1); }
+        | LIT_STRG { $$ = strdup($1); free($1); }
+        | LIT_BOOL { $$ = false == $1 ? strdup("false") : strdup("true"); }
+        ;
 
 fct_call: SMT_NAME '(' expression arr_argm
         | SMT_NAME '('')'

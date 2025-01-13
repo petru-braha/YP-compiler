@@ -1,7 +1,11 @@
 ## To do
 
-0. semantic, ast
-0. allow declarations of already defined symbols?
+0. maybe now: semantic
+0. not today: ast
+0. not today: don't pop back
+
+<br>
+
 0. complete the syntax documentation from the guidline
 0. better names: abbreviation capslock?
 0. restrict access to type_table
@@ -9,6 +13,10 @@
 
 ## Brainstorming - general ideas
 
+- expression can only be primitive and not array
+- RSV_ARRY DEF_ARRY are correct sized by lexer
+- error checking for a rule: for each element starting from left-most one
+- exception: symbol table insertions won't provide error messages
 - initializing an array of object - initialize every object the same
 - each test which will be marked as "# works as expected"
 - field declaration is done within the class, but its definition is inside the object
