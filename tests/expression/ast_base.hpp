@@ -1,13 +1,13 @@
 #ifndef __0ASTNODE0__
 #define __0ASTNODE0__
 
-#include "util.hpp"
+#include "arithmetic.hpp"
 
 class ast_node
 {
 public:
   virtual ~ast_node() = default;
-  virtual const char *evaluate() = 0;
+  virtual char *evaluate() = 0;
 };
 
 /* its type is predefined
@@ -16,22 +16,26 @@ public:
  */
 class ast_variable final : public ast_node
 {
-  std::string value;
+  char *value;
 
 public:
-  ast_variable(const char *const v) : value(v)
-  {
-    if (nullptr == v)
-      yyerror("ast_variable() failed - received nullptr");
-  }
+  ~ast_variable() = default;
+  ast_variable(const char *const v);
 
-  const char *evaluate() override
-  {
-    return value.c_str();
-  }
+  char *evaluate() override;
 };
 
-std::string plus(const char *, const *)
+ast_variable::ast_variable(const char *const v)
+    : value(strdup(v))
+{
+  if (nullptr == v)
+    yyerror("ast_variable() failed - received nullptr");
+}
+
+char *ast_variable::evaluate()
+{
+  return value;
+}
 
 /* its type is predefined
  * and determined by its children nodes
@@ -45,71 +49,58 @@ class ast_operation final : public ast_node
   std::string operation;
 
 public:
-  ast_operation(ast_node *const o0,
-                const char *const op,
-                ast_node *const o1)
-      : left_child(o0), operation(op), rght_child(o1)
-  {
-    if (nullptr == op)
-    {
-      yyerror("ast_operation() failed - received nullptr");
-      return;
-    }
+  ~ast_operation();
+  ast_operation(ast_node *const,
+                const char *const,
+                ast_node *const);
 
-    // unary operator
-    if (1 == operation.size() &&
-        ('!' == op[0] || '-' == op[0]))
-    {
-      if (nullptr != o0)
-        yyerror("unary operators expect one argument");
-      return;
-    }
-
-    // binary operator
-    if (nullptr == o0 || nullptr == o1)
-      yyerror("binary operators expect two arguments");
-  }
-
-  const char *evaluate() override
-  {
-    switch (operation.at(0))
-    {
-
-    // check if left_child is nullptr
-    case '!':
-      break;
-    case '-':
-      break;
-
-    case '+':
-      return left_child->evaluate(), rght_child->evaluate();
-      break;
-    case '&':
-      break;
-    case '|':
-      break;
-
-    case '*':
-      break;
-    case '/':
-      break;
-    case '%':
-      break;
-
-    case '^':
-
-    // check for the second character
-    case '=':
-    case '<':
-    case '>':
-
-    // error
-    default:
-      break;
-    }
-  }
+  char *evaluate() override;
 };
 
-// maybe implement a recursive deconstructor
+// recursive deconstructor
+ast_operation::~ast_operation()
+{
+  delete left_child;
+  delete rght_child;
+}
+
+ast_operation::ast_operation(ast_node *const o0,
+                             const char *const op,
+                             ast_node *const o1)
+    : left_child(o0), operation(op), rght_child(o1)
+{
+  if (nullptr == o0 || nullptr == op || nullptr == o1)
+    yyerror("ast_operation() failed - received nullptr");
+}
+
+char *ast_operation::evaluate()
+{
+  char *result = nullptr;
+  char *v0 = left_child->evaluate();
+  char *v1 = rght_child->evaluate();
+
+  if ("+" == operation)
+    result = add_vals(v0, v1);
+  else if ("-" == operation)
+    result = sub_vals(v0, v1);
+  else if ("&" == operation)
+    result = and_vals(v0, v1);
+  else if ("|" == operation)
+    result = or__vals(v0, v1);
+  else if ("*" == operation)
+    result = mul_vals(v0, v1);
+  else if ("/" == operation)
+    result = div_vals(v0, v1);
+  else if ("%" == operation)
+    result = mod_vals(v0, v1);
+  else if ("^" == operation)
+    result = pow_vals(v0, v1);
+  else
+    result = cmp_vals(v0, operation.c_str(), v1);
+
+  free((void *)v0);
+  free((void *)v1);
+  return result;
+}
 
 #endif
