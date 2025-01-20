@@ -10,11 +10,12 @@
  * listed after the operator precedence
  */
 
-// todo char conversion + ', string ""
+// todo: 1. add char 2. char conversion(from ascii to 'a')
 
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <cmath>
 #include <string>
 
 constexpr size_t BO_COUNT_DIGIT = 6;
@@ -33,12 +34,9 @@ char *mul_vals(const char *const, const char *const);
 char *div_vals(const char *const, const char *const);
 char *mod_vals(const char *const, const char *const);
 char *pow_vals(const char *const, const char *const);
-char *eq__vals(const char *const, const char *const);
-char *neq_vals(const char *const, const char *const);
-char *loe_vals(const char *const, const char *const);
-char *les_vals(const char *const, const char *const);
-char *goe_vals(const char *const, const char *const);
-char *grt_vals(const char *const, const char *const);
+char *cmp_vals(const char *const, const char *const);
+
+//------------------------------------------------
 
 char *negation(const char *const v0)
 {
@@ -48,7 +46,8 @@ char *negation(const char *const v0)
     return nullptr;
   }
 
-  if (std::string("bool") != type_of(v0))
+  std::string type = type_of(v0);
+  if (strcmp(type.c_str(), "bool"))
   {
     yyerror("negation() failed - wrong type");
     return nullptr;
@@ -73,8 +72,8 @@ char *chg_sign(const char *const v0)
   }
 
   std::string type = type_of(v0);
-  if (0 == strcmp("bool", type.c_str()) ||
-      0 == strcmp("string", type.c_str()))
+  if (strcmp("int", type.c_str()) &&
+      strcmp("float", type.c_str()))
   {
     yyerror("chg_sign() failed - wrong type");
     return nullptr;
@@ -88,6 +87,8 @@ char *chg_sign(const char *const v0)
   result[0] = '-';
   return strcpy(result + 1, v0);
 }
+
+//------------------------------------------------
 
 char *add_vals(const char *const v0, const char *const v1)
 {
@@ -171,11 +172,13 @@ char *sub_vals(const char *const v0, const char *const v1)
     while (std::string::npos !=
            (position = text.find(token, position)))
       text.erase(position, token.length());
-    result = text;
+    ((result += "\"") += text) += "\"";
   }
 
   return strdup(result.c_str());
 }
+
+//------------------------------------------------
 
 char *and_vals(const char *const v0, const char *const v1)
 {
@@ -235,6 +238,8 @@ char *or__vals(const char *const v0, const char *const v1)
   return strdup("false");
 }
 
+//------------------------------------------------
+
 char *mul_vals(const char *const v0, const char *const v1)
 {
   if (nullptr == v0 || nullptr == v1)
@@ -265,19 +270,157 @@ char *mul_vals(const char *const v0, const char *const v1)
   else if (0 == strcmp(frst_type.c_str(), "float"))
     result = std::to_string(atof(v0) * atof(v1));
   else if (0 == strcmp(frst_type.c_str(), "char"))
-    result = std::to_string(atoll(v0) % UCHAR_MAX *
-                            atoll(v1) % UCHAR_MAX);
+    result = std::to_string(
+        (atoll(v0) % UCHAR_MAX * atoll(v1) % UCHAR_MAX) %
+        UCHAR_MAX);
   return strdup(result.c_str());
 }
 
-char *div_vals(const char *const v0, const char *const v1);
-char *mod_vals(const char *const v0, const char *const v1);
-char *pow_vals(const char *const v0, const char *const v1);
-char *eq__vals(const char *const v0, const char *const v1);
-char *neq_vals(const char *const v0, const char *const v1);
-char *loe_vals(const char *const v0, const char *const v1);
-char *les_vals(const char *const v0, const char *const v1);
-char *goe_vals(const char *const v0, const char *const v1);
-char *grt_vals(const char *const v0, const char *const v1);
+char *div_vals(const char *const v0, const char *const v1)
+{
+  if (nullptr == v0 || nullptr == v1)
+  {
+    yyerror("div_vals() failed - received nullptr");
+    return nullptr;
+  }
+
+  std::string frst_type = type_of(v0);
+  std::string scnd_type = type_of(v1);
+  if (frst_type != scnd_type)
+  {
+    yyerror("div_vals() failed - type missmatch");
+    return nullptr;
+  }
+
+  if (0 == strcmp("bool", frst_type.c_str()) ||
+      0 == strcmp("string", frst_type.c_str()))
+  {
+    yyerror("div_vals() failed - wrong type");
+    return nullptr;
+  }
+
+  // success
+  std::string result;
+  if (0 == strcmp(frst_type.c_str(), "int"))
+    result = std::to_string(atoll(v0) / atoll(v1));
+  else if (0 == strcmp(frst_type.c_str(), "float"))
+    result = std::to_string(atof(v0) / atof(v1));
+  else if (0 == strcmp(frst_type.c_str(), "char"))
+    result = std::to_string(
+        (atoll(v0) % UCHAR_MAX / atoll(v1) % UCHAR_MAX) %
+        UCHAR_MAX);
+  return strdup(result.c_str());
+}
+
+//------------------------------------------------
+
+char *mod_vals(const char *const v0, const char *const v1)
+{
+  if (nullptr == v0 || nullptr == v1)
+  {
+    yyerror("mod_vals() failed - received nullptr");
+    return nullptr;
+  }
+
+  std::string frst_type = type_of(v0);
+  std::string scnd_type = type_of(v1);
+  if (frst_type != scnd_type)
+  {
+    yyerror("mod_vals() failed - type missmatch");
+    return nullptr;
+  }
+
+  // no float
+  if (strcmp("int", frst_type.c_str()) &&
+      strcmp("char", frst_type.c_str()))
+  {
+    yyerror("mod_vals() failed - wrong type");
+    return nullptr;
+  }
+
+  // success
+  std::string result;
+  if (0 == strcmp(frst_type.c_str(), "int"))
+    result = std::to_string(atoll(v0) / atoll(v1));
+  else if (0 == strcmp(frst_type.c_str(), "float"))
+    result = std::to_string(atof(v0) / atof(v1));
+  else if (0 == strcmp(frst_type.c_str(), "char"))
+    result = std::to_string(
+        (atoll(v0) % UCHAR_MAX / atoll(v1) % UCHAR_MAX) %
+        UCHAR_MAX);
+  return strdup(result.c_str());
+}
+
+char *pow_vals(const char *const v0, const char *const v1)
+{
+  if (nullptr == v0 || nullptr == v1)
+  {
+    yyerror("pow_vals() failed - received nullptr");
+    return nullptr;
+  }
+
+  std::string frst_type = type_of(v0);
+  std::string scnd_type = type_of(v1);
+  if (frst_type != scnd_type)
+  {
+    yyerror("pow_vals() failed - type missmatch");
+    return nullptr;
+  }
+
+  if (0 == strcmp("bool", frst_type.c_str()) ||
+      0 == strcmp("string", frst_type.c_str()))
+  {
+    yyerror("pow_vals() failed - wrong type");
+    return nullptr;
+  }
+
+  // success
+  std::string result;
+  if (0 == strcmp(frst_type.c_str(), "int"))
+    result = std::to_string(
+        (long long)std::pow(atoll(v0), atoll(v1)));
+  else if (0 == strcmp(frst_type.c_str(), "float"))
+    result = std::to_string(
+        std::pow(atof(v0), atof(v1)));
+  /*else if (0 == strcmp(frst_type.c_str(), "char"))
+    result = std::to_string(
+        std::pow(atoll(v0) % UCHAR_MAX, atoll(v1) % UCHAR_MAX));
+  */
+  return strdup(result.c_str());
+}
+
+char *cmp_vals(const char *const v0, const char *const op,
+               const char *const v1)
+{
+  if (nullptr == v0 || nullptr == v1)
+  {
+    yyerror("cmp_vals() failed - received nullptr");
+    return nullptr;
+  }
+
+  std::string frst_type = type_of(v0);
+  std::string scnd_type = type_of(v1);
+  if (frst_type != scnd_type)
+  {
+    yyerror("cmp_vals() failed - type missmatch");
+    return nullptr;
+  }
+
+  std::string value0(v0), value1(v1);
+  if (0 == strcmp(op, "=="))
+    return value0 == value1 ? strdup("true") : strdup("false");
+  else if (0 == strcmp(op, "!="))
+    return value0 != value1 ? strdup("true") : strdup("false");
+  else if (0 == strcmp(op, "<="))
+    return value0 <= value1 ? strdup("true") : strdup("false");
+  else if (0 == strcmp(op, "<"))
+    return value0 < value1 ? strdup("true") : strdup("false");
+  else if (0 == strcmp(op, ">="))
+    return value0 >= value1 ? strdup("true") : strdup("false");
+  else if (0 == strcmp(op, ">"))
+    return value0 > value1 ? strdup("true") : strdup("false");
+
+  return strdup("false");
+}
 
 #endif
