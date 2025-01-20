@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "util.hpp"
+#include "arithmetic.hpp"
 
 extern int yylex();
 void yyerror(const char * s);
@@ -59,77 +60,28 @@ std::vector<symbol_table> symbols;
 starting_symbol : expression { printf("result: %s\n", $1); if(std::string($1) == std::string("69")) printf("nice\n"); } ;
 
 expression: term OPR0 expression {
-              std::string type_first(type_of($1));
-              std::string type_secnd(type_of($3));
-              if(type_first != type_secnd)
-                yyerror("bad");
-
-              std::string s;
-              if('+' == $2 || '-' == $2)
+            printf("derivation: %s %s\n", $1, $3);
+              switch($2)
               {
-                if(std::string("bool") == type_first)
-                  yyerror("bad");
-
-                if(std::string("int") == type_first)
-                {
-                  long long var0 = atoll($1);
-                  long long var1 = atoll($3);
-                  long long result = '+' == $2 ? var0 + var1 : var0 - var1;
-                  s = std::to_string(result);
-                }
-                else if(std::string("float") == type_first)
-                {
-                  double var0 = atof($1);
-                  double var1 = atof($3);
-                  double result = '+' == $2 ? var0 + var1 : var0 - var1;
-                  s = std::to_string(result);
-                }
-                else if(std::string("char") == type_first)
-                {
-                  long long result = '+' == $2 ? $1[1] + $3[1] : $1[1] - $3[1];
-                  s = std::to_string(result);
-                }
-                else if(std::string("string") == type_first)
-                {
-                  if('+' == $2)
-                  {
-                    s = std::string($1);
-                    s += $3;
-                  }
-                  else
-                  {
-                    size_t position = 0;
-                    s = std::string($1);
-                    std::string token($3);
-                    while(std::string::npos != 
-                      (position = s.find(token, position)))
-                      s.erase(position, token.length());
-                  }
-                }                
+                case '+':
+                  $$ = add_vals($1, $3);
+                  break;
+                case '-':
+                  $$ = sub_vals($1, $3);
+                  break;
+                case '&':
+                  $$ = and_vals($1, $3);
+                  break;
+                case '|':
+                  $$ = or__vals($1, $3);
+                  break;
+                default:
+                  $$ = nullptr;
+                  break;
               }
-              else
-              {
-                if(std::string("bool") != type_first)
-                  yyerror("bad");
 
-                if('&' == $2)
-                {
-                  if(std::string("false") == std::string($1) ||
-                  std::string("false") == std::string($3))
-                    s = std::string("false");
-                  else
-                    s = std::string("true");
-                }
-                else
-                {
-                  if(std::string("true") == std::string($1) ||
-                  std::string("true") == std::string($3))
-                    s = std::string("true");
-                  else
-                    s = std::string("false");
-                }
-              }
-              $$ = strdup(s.c_str());
+            free($1);
+            free($3);
           }
           | term OPR_RELTON expression {
               std::string type_first(type_of($1));
@@ -254,43 +206,7 @@ fact: fact OPR2 powr {
     ;
 powr: '(' expression ')' { $$ = strdup($2); free($2); }
     | LIT_CALL { $$ = strdup($1); free($1); }
-    | OPRU '(' expression ')' {
-        std::string type(type_of($3));
-
-        std::string s;
-        if('-' == $1)
-        {
-          if(std::string("bool") == type ||
-            std::string("string") == type)
-            yyerror("bad");
-            
-          if(std::string("int") == type)
-          {
-            long long result = 0 - atoll($3);
-            s = std::to_string(result);
-          }
-          else if(std::string("float") == type)
-          {
-            double result = 0.0 - atof($3);
-            s = std::to_string(result);
-          }
-          else if(std::string("char") == type)
-          {
-            long long result = 0 - $3[1];
-            s = std::to_string(result);
-          }
-        }
-        else
-        {
-          if(std::string("bool") != type)
-            yyerror("bad");
-          std::string("true") == std::string($3) ? s = "false" : s = "true";
-        }
-
-        $$ = strdup(s.c_str());
-        free($3);
-      }
-    | OPRU LIT_CALL {
+    | OPRU expression ')' {
         std::string type(type_of($2));
 
         std::string s;

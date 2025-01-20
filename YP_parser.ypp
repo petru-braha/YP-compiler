@@ -279,7 +279,7 @@ cls_fild: /** 4v rules */
         }
         
           /** 8f rules */
-/*1*/   | RSV_TYPE SMT_NAME /*{
+/*1*/   | RSV_TYPE SMT_NAME {
             bool is_error = false, error_flag = false;
 
             if(error_flag |= is_error = type_exists($2);
@@ -302,10 +302,10 @@ cls_fild: /** 4v rules */
 
             free($1);
             free($2);
-          } */
+          }
 
           '(' parametr arr_parm /*{ f_data_global = nullptr; }*/
-          SCOPE_BEGIN
+          SCOPE_BEGIN { symbols.emplace_back(); }
           statement_list ';' { /*todo ast*/ }
         
 /*2*/   | RSV_ARRY SMT_NAME /*{

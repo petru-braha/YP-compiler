@@ -18,7 +18,7 @@ comment #.*
 %option noyywrap
 
 %%
-"!"|"-"         { yylval.character = *yytext; return OPRU; }
+"!("|"-("       { yylval.character = *yytext; return OPRU; }
 "+"|"-"|"&"|"|" { yylval.character = *yytext; return OPR0; }
 "*"|"/"|"%"     { yylval.character = *yytext; return OPR1; }
 "^"             { yylval.character = *yytext; return OPR2; }
