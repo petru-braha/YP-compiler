@@ -13,6 +13,15 @@
 
 ## Brainstorming - general ideas
 
+- four classes of data types:
+    - RSV_TYPE - reserved type (the only one that supports arithmetic operators)
+    - RSV_ARRY - an array of reserved type
+    - SMT_NAME - user-defined type
+    - DEF_ARRY - an array of user-defined type
+
+- expression - arithmetic
+- statement -
+
 - '-' unary operator for int only
 - '!' unary operator for bool only
 - expression can only be primitive and not array

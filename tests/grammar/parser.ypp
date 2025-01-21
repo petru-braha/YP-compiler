@@ -27,7 +27,7 @@
 {
   class ast_node;
   class ast_variable;
-  class ast_operation;
+  class ast_operator;
 }
 %union {
   char* information;
@@ -157,8 +157,8 @@ cls_fild: /** 4v rules */
           /** 4o rules */
 /*1*/   | SMT_NAME SMT_NAME ';'
 /*2*/   | DEF_ARRY SMT_NAME ';'
-/*3*/   | SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals
-/*4*/   | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals
+/*3*/   | SMT_NAME SMT_NAME OPR_ASSIGN SCOPE_BEGIN attribte obj_vals
+/*4*/   | DEF_ARRY SMT_NAME OPR_ASSIGN SCOPE_BEGIN attribte obj_vals
         
           /** 2a rules */
         | ACS_PRIV
@@ -166,56 +166,56 @@ cls_fild: /** 4v rules */
         ;
 
 /* 4v rules */
-var_decl: RSV_TYPE SMT_NAME ';'
-        | RSV_ARRY SMT_NAME ';'
+var_decl: RSV_TYPE SMT_NAME
+        | RSV_ARRY SMT_NAME
         ;
-var_defn: RSV_TYPE SMT_NAME OPR_ASSIGN expression ';'
-        | RSV_ARRY SMT_NAME OPR_ASSIGN expression ';'
+var_defn: RSV_TYPE SMT_NAME OPR_ASSIGN expression
+        | RSV_ARRY SMT_NAME OPR_ASSIGN expression
         ;
 
 /* 8f rules */
-fct_decl: RSV_TYPE SMT_NAME '(' parametr arr_parm ';'
-        | RSV_ARRY SMT_NAME '(' parametr arr_parm ';'
-        | RSV_TYPE SMT_NAME '(' ')' ';'
-        | RSV_ARRY SMT_NAME '(' ')' ';'
-        | SMT_NAME SMT_NAME '(' parametr arr_parm ';'
-        | DEF_ARRY SMT_NAME '(' parametr arr_parm ';'
-        | SMT_NAME SMT_NAME '(' ')' ';'
-        | DEF_ARRY SMT_NAME '(' ')' ';'
+fct_decl: RSV_TYPE SMT_NAME '(' parametr arr_parm
+        | RSV_ARRY SMT_NAME '(' parametr arr_parm
+        | RSV_TYPE SMT_NAME '(' ')'
+        | RSV_ARRY SMT_NAME '(' ')'
+        | SMT_NAME SMT_NAME '(' parametr arr_parm
+        | DEF_ARRY SMT_NAME '(' parametr arr_parm
+        | SMT_NAME SMT_NAME '(' ')'
+        | DEF_ARRY SMT_NAME '(' ')'
         ;
 
 /* 8f rules */
 fct_defn: RSV_TYPE SMT_NAME '(' parametr arr_parm 
           SCOPE_BEGIN
-          statement_list ';'
+          statement_list
 
         | RSV_ARRY SMT_NAME '(' parametr arr_parm 
           SCOPE_BEGIN
-          statement_list ';'
+          statement_list
 
         | RSV_TYPE SMT_NAME '(' ')'
           SCOPE_BEGIN
-          statement_list ';'
+          statement_list
 
         | RSV_ARRY SMT_NAME '(' ')'
           SCOPE_BEGIN
-          statement_list ';'
+          statement_list
 
         | SMT_NAME SMT_NAME '(' parametr arr_parm
           SCOPE_BEGIN
-          statement_list ';'
+          statement_list
 
         | DEF_ARRY SMT_NAME '(' parametr arr_parm
           SCOPE_BEGIN
-          statement_list ';'
+          statement_list
 
         | SMT_NAME SMT_NAME '(' ')'
           SCOPE_BEGIN
-          statement_list ';'
+          statement_list
 
         | DEF_ARRY SMT_NAME '(' ')'
           SCOPE_BEGIN
-          statement_list ';'
+          statement_list
         ;
 
 arr_parm: ',' parametr arr_parm
@@ -229,11 +229,11 @@ parametr: RSV_TYPE SMT_NAME
         ;
 
 /* 4o rules */
-obj_decl: SMT_NAME SMT_NAME ';'
-        | DEF_ARRY SMT_NAME ';'
+obj_decl: SMT_NAME SMT_NAME
+        | DEF_ARRY SMT_NAME
         ;
-obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals
-        | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals
+obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN SCOPE_BEGIN attribte obj_vals
+        | DEF_ARRY SMT_NAME OPR_ASSIGN SCOPE_BEGIN attribte obj_vals
         ;
 obj_vals: ',' attribte obj_vals
         | '}'
@@ -246,14 +246,16 @@ attribte: expression
 /*! statements */
 
 statement_list: SCOPE_END
-              | local_declaration statement_list
-              | expression ';' statement_list
-              | assignment ';' statement_list
-              | ACT_BREK ';' statement_list
-              | ACT_CONT ';' statement_list
-              | ACT_RTRN ';' statement_list
-              | control statement_list
+              | statement statement_list
               ;
+
+statement : local_declaration ';'
+          | expression ';'
+          | assignment ';'
+          | ACT_BREK ';'
+          | ACT_CONT ';'
+          | ACT_RTRN expression ';'
+          | control
 
 local_declaration : var_decl
                   | var_defn
@@ -295,10 +297,10 @@ arr_argm: ',' expression arr_argm
         | ')'
         ;
 
-control : SEQ_IFIF '(' expression ')' '{' statement_list '}'
-        | SEQ_IFIF '(' expression ')' '{' statement_list '}' SEQ_ELSE '{' statement_list '}'
-        | SEQ_WHLE '(' expression ')' '{' statement_list '}'
-        | SEQ_FOOR '(' expression ';' expression ';' expression ')' '{' statement_list '}'
+control : SEQ_IFIF '(' expression ')' SCOPE_BEGIN statement_list
+        | SEQ_IFIF '(' expression ')' SCOPE_BEGIN statement_list SEQ_ELSE SCOPE_BEGIN statement_list
+        | SEQ_WHLE '(' expression ')' SCOPE_BEGIN statement_list
+        | SEQ_FOOR '(' expression ';' expression ';' expression ')' SCOPE_BEGIN statement_list
 
 assignment: SMT_NAME OPR_ASSIGN assig_term
           ;
