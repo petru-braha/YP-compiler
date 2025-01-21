@@ -18,6 +18,13 @@
 #include <cmath>
 #include <string>
 
+constexpr char EE_CHR = 'a';
+constexpr char NE_CHR = 'b';
+constexpr char LE_CHR = 'c';
+constexpr char LS_CHR = 'd';
+constexpr char GE_CHR = 'e';
+constexpr char GS_CHR = 'f';
+
 constexpr size_t BO_COUNT_DIGIT = 6;
 constexpr size_t LL_COUNT_DIGIT = 20;
 
@@ -389,7 +396,7 @@ char *pow_vals(const char *const v0, const char *const v1)
   return strdup(result.c_str());
 }
 
-char *cmp_vals(const char *const v0, const char *const op,
+char *cmp_vals(const char *const v0, const char op,
                const char *const v1)
 {
   if (nullptr == v0 || nullptr == v1)
@@ -407,17 +414,17 @@ char *cmp_vals(const char *const v0, const char *const op,
   }
 
   std::string value0(v0), value1(v1);
-  if (0 == strcmp(op, "=="))
+  if (EE_CHR == op)
     return value0 == value1 ? strdup("true") : strdup("false");
-  else if (0 == strcmp(op, "!="))
+  else if (NE_CHR == op)
     return value0 != value1 ? strdup("true") : strdup("false");
-  else if (0 == strcmp(op, "<="))
+  else if (LE_CHR == op)
     return value0 <= value1 ? strdup("true") : strdup("false");
-  else if (0 == strcmp(op, "<"))
+  else if (LS_CHR == op)
     return value0 < value1 ? strdup("true") : strdup("false");
-  else if (0 == strcmp(op, ">="))
+  else if (GE_CHR == op)
     return value0 >= value1 ? strdup("true") : strdup("false");
-  else if (0 == strcmp(op, ">"))
+  else if (GS_CHR == op)
     return value0 > value1 ? strdup("true") : strdup("false");
 
   return strdup("false");

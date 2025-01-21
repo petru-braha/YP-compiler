@@ -1,23 +1,20 @@
 %{
-#include <stdio.h>
-#include <cstring>
-#include <cmath>
-#include <string>
-#include <vector>
-#include "util.hpp"
-#include "arithmetic.hpp"
-#include "ast_base.hpp"
+  #include <stdio.h>
+  #include <cstring>
+  #include <cmath>
+  #include <string>
+  #include <vector>
+  #include "util.hpp"
+  #include "arithmetic.hpp"
+  #include "ast_base.hpp"
 
-int yylex();
-void yyerror(const char * s);
+  int yylex();
+  void yyerror(const char * s);
 
-extern FILE* yyin;
-extern char* yytext;
-extern int yylineno;
-size_t count_error;
-
-std::vector<symbol_table> symbols;
-#define LAST_SCOPE symbols.size() - 1
+  extern FILE* yyin;
+  extern char* yytext;
+  extern int yylineno;
+  size_t count_error;
 %}
 
 %left '&' '|'
@@ -36,134 +33,79 @@ std::vector<symbol_table> symbols;
   class ast_operation;
 }
 %union {
-    char* information;
-    char character;
-    
-    bool bool_number;
-    long long intg_number;
-    double real_number;
-    
-    ast_node* node; 
+  char* information;
+  char character;
+  ast_node* node;
 }
-
-%token<intg_number> LIT_INTG
-%token<real_number> LIT_FLOT
-%token<information> LIT_CHAR LIT_STRG
-%token<bool_number> LIT_BOOL
-%type<information> LIT_CALL
 
 // %token OPR_ASSIGN
 %token<character> OPRU OPR0 OPR1 OPR2
-%token<information> OPR_RELTON
+%token<character> OPR_RELTON
 
-%type<information> expression
-%type<information> term
-%type<information> fact
-%type<information> powr
+%token<information> LIT_INTG
+%token<information> LIT_FLOT
+%token<information> LIT_CHAR LIT_STRG
+%token<information> LIT_BOOL
+%type<node> LIT_CALL
 
-%type<node> e
+%type<node> expression
+%type<node> term
+%type<node> fact
+%type<node> powr
 
 %start starting_symbol
 
 %%
 
 starting_symbol : 'a'
-                //| expression { printf("result: %s\n", $1); }
-                | e { 
-                    char* output = ((ast_operation*)($1))->evaluate();
-                    printf("result: %s\n", output);
-                    free(output);
+                | expression { 
+                    char* evaluation = $1->evaluate();
+                    printf("result: %s\n", evaluation);
+                    free(evaluation);
                     delete $1;
                   }
                 ;
 
-e : LIT_INTG OPR0 LIT_INTG {
-      std::string s0 = std::to_string($1);
-      std::string s1 = std::to_string($3);
-      ast_variable* n0 = new ast_variable(s0.c_str());
-      ast_variable* n1 = new ast_variable(s1.c_str());
-      $$ = new ast_operation(n0, &$2, n1); 
-    }
-  ;
-
 expression: expression OPR0 term {
-              switch($2)
-              {
-                case '+':
-                  $$ = add_vals($1, $3);
-                  break;
-                case '-':
-                  $$ = sub_vals($1, $3);
-                  break;
-                case '&':
-                  $$ = and_vals($1, $3);
-                  break;
-                case '|':
-                  $$ = or__vals($1, $3);
-                  break;
-                default:
-                  $$ = nullptr;
-                  break;
-              }
-
-            free($1);
-            free($3);
-          }
-          | expression OPR_RELTON term {
-              $$ = cmp_vals($1, $2, $3);
-              free($1);
-              free($3);
+              $$ = new ast_operation($1, $2, $3);
             }
-          | term { $$ = strdup($1); free($1); }
+          | expression OPR_RELTON term {
+              $$ = new ast_operation($1, $2, $3);
+            }
+          | term {
+              $$ = $1; 
+            }
           ;
 term: fact OPR1 term {
-        switch($2)
-        {
-          case '*':
-            $$ = mul_vals($1, $3);
-            break;
-          case '/':
-            $$ = div_vals($1, $3);
-            break;
-          case '%':
-            $$ = mod_vals($1, $3);
-            break;
-          default:
-            $$ = nullptr;
-            break;
-        }
-        
-        free($1);
-        free($3);
+        $$ = new ast_operation($1, $2, $3);
       }
-    | fact { $$ = strdup($1); free($1); }
+    | fact {
+        $$ = $1;
+      }
     ;
 fact: fact OPR2 powr {
-        $$ = pow_vals($1, $3);
-          
-        free($1);
-        free($3);
+        $$ = new ast_operation($1, $2, $3);
       }
-    | powr { $$ = strdup($1); free($1); }
+    | powr {
+        $$ = $1;
+      }
     ;
-powr: '(' expression ')' { $$ = strdup($2); free($2); }
-    | LIT_CALL { $$ = strdup($1); free($1); }
+powr: '(' expression ')' { 
+        $$ = $2;
+      }
+    | LIT_CALL {
+        $$ = $1;
+      }
     | OPRU expression ')' {
-
-        if('!' == $1)
-          $$ = negation($2);
-        else
-          $$ = chg_sign($2);
-
-        free($2);
+        /*todo later*/
       }
     ;
   
-LIT_CALL: LIT_INTG { std::string s = std::to_string($1); $$ = strdup(s.c_str()); }
-        | LIT_FLOT { std::string s = std::to_string($1); $$ = strdup(s.c_str()); }
-        | LIT_CHAR { $$ = strdup($1); free($1); }
-        | LIT_STRG { $$ = strdup($1); free($1); }
-        | LIT_BOOL { $$ = false == $1 ? strdup("false") : strdup("true"); }
+LIT_CALL: LIT_INTG { $$ = new ast_variable($1); free($1); }
+        | LIT_FLOT { $$ = new ast_variable($1); free($1); }
+        | LIT_CHAR { $$ = new ast_variable($1); free($1); }
+        | LIT_STRG { $$ = new ast_variable($1); free($1); }
+        | LIT_BOOL { $$ = new ast_variable($1); free($1); }
         ;
 %%
 

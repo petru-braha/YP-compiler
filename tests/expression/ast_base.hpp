@@ -46,12 +46,11 @@ class ast_operation final : public ast_node
 {
   ast_node *left_child;
   ast_node *rght_child;
-  std::string operation;
+  const char operation;
 
 public:
   ~ast_operation();
-  ast_operation(ast_node *const,
-                const char *const,
+  ast_operation(ast_node *const, const char,
                 ast_node *const);
 
   char *evaluate() override;
@@ -64,12 +63,11 @@ ast_operation::~ast_operation()
   delete rght_child;
 }
 
-ast_operation::ast_operation(ast_node *const o0,
-                             const char *const op,
+ast_operation::ast_operation(ast_node *const o0, const char op,
                              ast_node *const o1)
-    : left_child(o0), operation(op), rght_child(o1)
+    : left_child(o0), rght_child(o1), operation(op)
 {
-  if (nullptr == o0 || nullptr == op || nullptr == o1)
+  if (nullptr == o0 || nullptr == o1)
     yyerror("ast_operation() failed - received nullptr");
 }
 
@@ -79,24 +77,24 @@ char *ast_operation::evaluate()
   char *v0 = left_child->evaluate();
   char *v1 = rght_child->evaluate();
 
-  if ("+" == operation)
+  if ('+' == operation)
     result = add_vals(v0, v1);
-  else if ("-" == operation)
+  else if ('-' == operation)
     result = sub_vals(v0, v1);
-  else if ("&" == operation)
+  else if ('&' == operation)
     result = and_vals(v0, v1);
-  else if ("|" == operation)
+  else if ('|' == operation)
     result = or__vals(v0, v1);
-  else if ("*" == operation)
+  else if ('*' == operation)
     result = mul_vals(v0, v1);
-  else if ("/" == operation)
+  else if ('/' == operation)
     result = div_vals(v0, v1);
-  else if ("%" == operation)
+  else if ('%' == operation)
     result = mod_vals(v0, v1);
-  else if ("^" == operation)
+  else if ('^' == operation)
     result = pow_vals(v0, v1);
   else
-    result = cmp_vals(v0, operation.c_str(), v1);
+    result = cmp_vals(v0, operation, v1);
 
   free((void *)v0);
   free((void *)v1);

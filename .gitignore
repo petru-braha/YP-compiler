@@ -1,7 +1,16 @@
+# workspace
+
 .vscode/
 .DS_Store
 docs/gpt.md
-a.out
-run.out
+
+# binaries
+
+**/*tab.c
+**/*tab.h
+**/*tab.cpp
+**/*tab.hpp
+**/*.lex.c
+**/*.lex.cc
+**/*.out
 YP
-tests/run.out
