@@ -1,0 +1,13 @@
+class new_type
+{
+    int[1] v0;
+    float[5][5][5] v1;
+    char[99999999] v2;
+    string[10][10] v3;
+    bool[10510918601716918193] v4;
+}
+
+# works as expected
+master()
+{
+}

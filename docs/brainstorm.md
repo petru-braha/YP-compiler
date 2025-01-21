@@ -1,6 +1,7 @@
 ## To do
 
 0. char
+0. ast for all statements
 0. semantics and scopes
 
 <br>
@@ -8,7 +9,7 @@
 0. complete the syntax documentation from the guidline
 0. better names: abbreviation capslock?
 0. restrict access to type_table
-0. multi line comment
+0. the end of compilation creates a binary file which will evaluate the ast
 
 ## Brainstorming - general ideas
 

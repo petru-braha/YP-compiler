@@ -1,0 +1,13 @@
+class new_type
+{
+    int v0;
+    float v1;
+    char v2;
+    string v3;
+    bool v4;
+}
+
+# works as expected
+master()
+{
+}

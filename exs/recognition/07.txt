@@ -1,0 +1,13 @@
+class new_type
+{
+    int[500] v0 = 1 + 5 / 2;
+    float[5] v1 = 1.0 - 2.5 + 3.14;
+    char[10] v2 = 'a';
+    string v3 = "text" + (" word" - "d");
+    bool v4 = !(true | (1 == 45 & false));
+}
+
+# works as expected
+master()
+{
+}
