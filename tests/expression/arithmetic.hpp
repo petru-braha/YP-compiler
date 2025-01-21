@@ -17,13 +17,7 @@
 #include <limits.h>
 #include <cmath>
 #include <string>
-
-constexpr char EE_CHR = 'a';
-constexpr char NE_CHR = 'b';
-constexpr char LE_CHR = 'c';
-constexpr char LS_CHR = 'd';
-constexpr char GE_CHR = 'e';
-constexpr char GS_CHR = 'f';
+#include "alphabet.hpp"
 
 constexpr size_t BO_COUNT_DIGIT = 6;
 constexpr size_t LL_COUNT_DIGIT = 20;
@@ -37,6 +31,7 @@ char *add_vals(const char *const, const char *const);
 char *sub_vals(const char *const, const char *const);
 char *and_vals(const char *const, const char *const);
 char *or__vals(const char *const, const char *const);
+char *xor_vals(const char *const, const char *const);
 char *mul_vals(const char *const, const char *const);
 char *div_vals(const char *const, const char *const);
 char *mod_vals(const char *const, const char *const);
@@ -241,6 +236,34 @@ char *or__vals(const char *const v0, const char *const v1)
   // success
   if (0 == strcmp(v0, "true") ||
       0 == strcmp(v1, "true"))
+    return strdup("true");
+  return strdup("false");
+}
+
+char *xor_vals(const char *const v0, const char *const v1)
+{
+  if (nullptr == v0 || nullptr == v1)
+  {
+    yyerror("xor_vals() failed - received nullptr");
+    return nullptr;
+  }
+
+  std::string frst_type = type_of(v0);
+  std::string scnd_type = type_of(v1);
+  if (frst_type != scnd_type)
+  {
+    yyerror("xor_vals() failed - type missmatch");
+    return nullptr;
+  }
+
+  if (strcmp("bool", frst_type.c_str()))
+  {
+    yyerror("xor_vals() failed - wrong type");
+    return nullptr;
+  }
+
+  // success
+  if (strcmp(v0, v1))
     return strdup("true");
   return strdup("false");
 }

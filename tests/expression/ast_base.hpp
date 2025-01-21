@@ -85,6 +85,8 @@ char *ast_operation::evaluate()
     result = and_vals(v0, v1);
   else if ('|' == operation)
     result = or__vals(v0, v1);
+  else if (XOR_CHR == operation)
+    result = xor_vals(v0, v1);
   else if ('*' == operation)
     result = mul_vals(v0, v1);
   else if ('/' == operation)

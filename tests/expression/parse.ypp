@@ -15,6 +15,7 @@
   extern char* yytext;
   extern int yylineno;
   size_t count_error;
+  bool expression_flot;
 %}
 
 %left '&' '|'
@@ -38,15 +39,11 @@
   ast_node* node;
 }
 
+%token<information> LITERAL
+
 // %token OPR_ASSIGN
 %token<character> OPRU OPR0 OPR1 OPR2
 %token<character> OPR_RELTON
-
-%token<information> LIT_INTG
-%token<information> LIT_FLOT
-%token<information> LIT_CHAR LIT_STRG
-%token<information> LIT_BOOL
-%type<node> LIT_CALL
 
 %type<node> expression
 %type<node> term
@@ -63,6 +60,7 @@ starting_symbol : 'a'
                     printf("result: %s\n", evaluation);
                     free(evaluation);
                     delete $1;
+                    expression_flot = false;
                   }
                 ;
 
@@ -93,20 +91,28 @@ fact: fact OPR2 powr {
 powr: '(' expression ')' { 
         $$ = $2;
       }
-    | LIT_CALL {
-        $$ = $1;
+    | LITERAL {
+        expression_flot =
+          std::string("float") == type_of($1) ? true : false;
+        $$ = new ast_variable($1); 
+        free($1);
       }
     | OPRU expression ')' {
-        /*todo later*/
+        if('-' == $1)
+        {
+          char hardcoded[4] = "0.0";
+          if(false == expression_flot)
+            hardcoded[1] = '\0';
+          ast_variable* n0 = new ast_variable(hardcoded);
+          $$ = new ast_operation(n0, $1, $2);
+        }
+        else
+        {
+          ast_variable* n0 = new ast_variable("true");
+          $$ = new ast_operation(n0, XOR_CHR, $2);
+        }
       }
     ;
-  
-LIT_CALL: LIT_INTG { $$ = new ast_variable($1); free($1); }
-        | LIT_FLOT { $$ = new ast_variable($1); free($1); }
-        | LIT_CHAR { $$ = new ast_variable($1); free($1); }
-        | LIT_STRG { $$ = new ast_variable($1); free($1); }
-        | LIT_BOOL { $$ = new ast_variable($1); free($1); }
-        ;
 %%
 
 /*!------------------------------------------------

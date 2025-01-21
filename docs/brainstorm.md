@@ -1,8 +1,7 @@
 ## To do
 
-0. maybe now: semantic
-0. not today: ast
-0. not today: don't pop back
+0. char
+0. semantics and scopes
 
 <br>
 
@@ -13,6 +12,8 @@
 
 ## Brainstorming - general ideas
 
+- '-' unary operator for int only
+- '!' unary operator for bool only
 - expression can only be primitive and not array
 - RSV_ARRY DEF_ARRY are correct sized by lexer
 - error checking for a rule: for each element starting from left-most one
