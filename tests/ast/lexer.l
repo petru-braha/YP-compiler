@@ -19,6 +19,9 @@ comment #.*
 %option noyywrap
 
 %%
+"{" { return SCOPE_BEGIN; }
+"}" { return SCOPE_END; }
+
 "+"|"-"|"&"|"|" { yylval.character = *yytext; return OPR0; }
 "⊕"            { yylval.character = XOR_CHR; return OPR0; }
 "=="            { yylval.character = EE_CHR; return OPR0; }
@@ -35,6 +38,15 @@ comment #.*
 {literal_intg}|{literal_flot}|{literal_char}|{literal_strg}|{literal_bool} {
   yylval.information = strdup(yytext);
   return LITERAL; }
+
+"break"    { return ACT_BREK; }
+"continue" { return ACT_CONT; }
+"return"   { return ACT_RTRN; }
+
+"if"    { return SEQ_IFIF; }
+"else"  { return SEQ_ELSE; }
+"while" { return SEQ_WHLE; }
+"for"   { return SEQ_FOOR; }
 
 {comment}
 

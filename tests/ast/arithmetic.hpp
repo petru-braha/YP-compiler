@@ -27,6 +27,7 @@ std::string type_of(const std::string &primitive_value);
 
 char *negation(const char *const);
 char *chg_sign(const char *const);
+char *cmp_vals(const char *const, const char *const);
 char *add_vals(const char *const, const char *const);
 char *sub_vals(const char *const, const char *const);
 char *and_vals(const char *const, const char *const);
@@ -36,7 +37,7 @@ char *mul_vals(const char *const, const char *const);
 char *div_vals(const char *const, const char *const);
 char *mod_vals(const char *const, const char *const);
 char *pow_vals(const char *const, const char *const);
-char *cmp_vals(const char *const, const char *const);
+char *asg_vals(char *, const char *const);
 
 //------------------------------------------------
 
@@ -88,6 +89,42 @@ char *chg_sign(const char *const v0)
 
   result[0] = '-';
   return strcpy(result + 1, v0);
+}
+
+//------------------------------------------------
+
+char *cmp_vals(const char *const v0, const char op,
+               const char *const v1)
+{
+  if (nullptr == v0 || nullptr == v1)
+  {
+    yyerror("cmp_vals() failed - received nullptr");
+    return nullptr;
+  }
+
+  std::string frst_type = type_of(v0);
+  std::string scnd_type = type_of(v1);
+  if (frst_type != scnd_type)
+  {
+    yyerror("cmp_vals() failed - type missmatch");
+    return nullptr;
+  }
+
+  std::string value0(v0), value1(v1);
+  if (EE_CHR == op)
+    return value0 == value1 ? strdup("true") : strdup("false");
+  else if (NE_CHR == op)
+    return value0 != value1 ? strdup("true") : strdup("false");
+  else if (LE_CHR == op)
+    return value0 <= value1 ? strdup("true") : strdup("false");
+  else if (LS_CHR == op)
+    return value0 < value1 ? strdup("true") : strdup("false");
+  else if (GE_CHR == op)
+    return value0 >= value1 ? strdup("true") : strdup("false");
+  else if (GS_CHR == op)
+    return value0 > value1 ? strdup("true") : strdup("false");
+
+  return strdup("false");
 }
 
 //------------------------------------------------
@@ -419,12 +456,11 @@ char *pow_vals(const char *const v0, const char *const v1)
   return strdup(result.c_str());
 }
 
-char *cmp_vals(const char *const v0, const char op,
-               const char *const v1)
+char *asg_vals(char *v0, const char *const v1)
 {
   if (nullptr == v0 || nullptr == v1)
   {
-    yyerror("cmp_vals() failed - received nullptr");
+    yyerror("asg_vals() failed - received nullptr");
     return nullptr;
   }
 
@@ -432,25 +468,13 @@ char *cmp_vals(const char *const v0, const char op,
   std::string scnd_type = type_of(v1);
   if (frst_type != scnd_type)
   {
-    yyerror("cmp_vals() failed - type missmatch");
+    yyerror("asg_vals() failed - type missmatch");
     return nullptr;
   }
 
-  std::string value0(v0), value1(v1);
-  if (EE_CHR == op)
-    return value0 == value1 ? strdup("true") : strdup("false");
-  else if (NE_CHR == op)
-    return value0 != value1 ? strdup("true") : strdup("false");
-  else if (LE_CHR == op)
-    return value0 <= value1 ? strdup("true") : strdup("false");
-  else if (LS_CHR == op)
-    return value0 < value1 ? strdup("true") : strdup("false");
-  else if (GE_CHR == op)
-    return value0 >= value1 ? strdup("true") : strdup("false");
-  else if (GS_CHR == op)
-    return value0 > value1 ? strdup("true") : strdup("false");
-
-  return strdup("false");
+  free(v0);
+  v0 = strdup(v1);
+  return strdup(v1);
 }
 
 #endif

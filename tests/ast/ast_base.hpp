@@ -5,7 +5,6 @@
 #include "arithmetic.hpp"
 
 class item_data;
-class ast_expression;
 
 class ast_statement
 {
@@ -13,59 +12,6 @@ public:
   virtual ~ast_statement() = default;
   virtual char *evaluate() const = 0;
 };
-
-class ast_scope : public ast_statement
-{
-  std::vector<ast_statement *> statemets;
-
-public:
-  ~ast_scope();
-  ast_scope();
-
-  ast_scope &add(const ast_statement *const);
-  char *evaluate() const override;
-};
-
-class ast_ifelse : public ast_statement
-{
-  ast_expression *judge;
-  ast_scope *sucss_case;
-  ast_scope *failr_case;
-
-public:
-  ~ast_ifelse();
-  ast_ifelse();
-
-  char *evaluate() const override;
-};
-
-class ast_while : public ast_statement
-{
-  ast_expression *judge;
-  ast_scope *sucss_case;
-
-public:
-  ~ast_while();
-  ast_while();
-
-  char *evaluate() const override;
-};
-
-class ast_for : public ast_statement
-{
-  ast_expression *initl;
-  ast_expression *judge;
-  ast_expression *incrm;
-  ast_scope *sucss_case;
-
-public:
-  ~ast_for();
-  ast_for();
-
-  char *evaluate() const override;
-};
-
-//------------------------------------------------
 
 class ast_expression : public ast_statement
 {
@@ -106,8 +52,8 @@ char *ast_variable::evaluate() const
  */
 class ast_operator final : public ast_expression
 {
-  ast_expression *left_child;
-  ast_expression *rght_child;
+  const ast_expression *const left_child;
+  const ast_expression *const rght_child;
   const char operation;
 
 public:
@@ -166,15 +112,167 @@ char *ast_operator::evaluate() const
   else if ('^' == operation)
     result = pow_vals(v0, v1);
   else if (ASG_CHR == operation)
-  {
-    // todo
-  }
+    result = asg_vals(v0, v1);
   else
     result = cmp_vals(v0, operation, v1);
 
   free((void *)v0);
   free((void *)v1);
   return result;
+}
+
+//------------------------------------------------
+
+// todo should add const?
+class ast_scope : public ast_statement
+{
+  std::vector<ast_statement *> statemets;
+
+public:
+  ~ast_scope();
+  ast_scope(const std::vector<ast_statement *> &);
+
+  char *evaluate() const override;
+};
+
+ast_scope::~ast_scope()
+{
+  for (size_t i = 0; i < statemets.size(); i++)
+    delete statemets[i];
+}
+
+ast_scope::ast_scope(const std::vector<ast_statement *> &s)
+    : statemets(s)
+{
+  for (size_t i = 0; i < statemets.size(); i++)
+    if (nullptr == statemets[i])
+    {
+      yyerror("ast_scope() failed - received nullptr");
+      return;
+    }
+}
+
+char *ast_scope::evaluate() const
+{
+  for (size_t i = 0; i < statemets.size(); i++)
+    statemets[i]->evaluate();
+  return nullptr;
+}
+
+class ast_ifelse : public ast_statement
+{
+  const ast_expression *const judge;
+  const ast_scope *const sucss_case;
+  const ast_scope *const failr_case;
+
+public:
+  ~ast_ifelse();
+  ast_ifelse(const ast_expression *const,
+             const ast_scope *const,
+             const ast_scope *const);
+
+  char *evaluate() const override;
+};
+
+ast_ifelse::~ast_ifelse()
+{
+  delete judge;
+  delete sucss_case;
+  delete failr_case;
+}
+
+ast_ifelse::ast_ifelse(const ast_expression *const j,
+                       const ast_scope *const s,
+                       const ast_scope *const f)
+    : judge(j), sucss_case(s), failr_case(f)
+{
+  if (nullptr == judge || nullptr == sucss_case)
+    yyerror("ast_ifelse() failed - received nullptr");
+}
+
+char *ast_ifelse::evaluate() const
+{
+  if (0 == strcmp("true", judge->evaluate()))
+    return sucss_case->evaluate();
+  return failr_case->evaluate();
+}
+
+class ast_while : public ast_statement
+{
+  const ast_expression *const judge;
+  const ast_scope *const sucss_case;
+
+public:
+  ~ast_while();
+  ast_while(const ast_expression *const,
+            const ast_scope *const);
+
+  char *evaluate() const override;
+};
+
+ast_while::~ast_while()
+{
+  delete judge;
+  delete sucss_case;
+}
+
+ast_while::ast_while(const ast_expression *const j,
+                     const ast_scope *const s)
+    : judge(j), sucss_case(s)
+{
+  if (nullptr == judge || nullptr == sucss_case)
+    yyerror("ast_while() failed - received nullptr");
+}
+
+char *ast_while::evaluate() const
+{
+  while (0 == strcmp("true", judge->evaluate()))
+    sucss_case->evaluate();
+  return nullptr;
+}
+
+class ast_for : public ast_statement
+{
+  const ast_expression *const initl;
+  const ast_expression *const judge;
+  const ast_expression *const incrm;
+  const ast_scope *const sucss_case;
+
+public:
+  ~ast_for();
+  ast_for(const ast_expression *const,
+          const ast_expression *const,
+          const ast_expression *const,
+          const ast_scope *const);
+
+  char *evaluate() const override;
+};
+
+ast_for::~ast_for()
+{
+  delete initl;
+  delete judge;
+  delete incrm;
+  delete sucss_case;
+}
+
+ast_for::ast_for(const ast_expression *const iti,
+                 const ast_expression *const jdj,
+                 const ast_expression *const inc,
+                 const ast_scope *const s)
+    : initl(iti), judge(jdj), incrm(inc), sucss_case(s)
+{
+  if (nullptr == judge || nullptr == sucss_case)
+    yyerror("ast_for() failed - received nullptr");
+}
+
+char *ast_for::evaluate() const
+{
+  for (initl ? initl->evaluate() : 0;
+       judge ? judge->evaluate() : 0;
+       incrm ? incrm->evaluate() : 0)
+    sucss_case->evaluate();
+  return nullptr;
 }
 
 #endif

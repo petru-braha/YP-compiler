@@ -28,6 +28,7 @@
 
 %code requires
 {
+  class ast_statement;
   class ast_expression;
   class ast_variable;
   class ast_operator;
@@ -38,9 +39,15 @@
   ast_expression* node;
 }
 
+%token SCOPE_BEGIN SCOPE_END
+%token ACT_BREK ACT_CONT ACT_RTRN
+%token SEQ_IFIF SEQ_ELSE SEQ_WHLE SEQ_FOOR
+
 %token<information> LITERAL
 %token<character> OPR0 OPR1 OPR2 OPR3 OPRU
 
+//%type<node> stat
+//%type<node> ctrl
 %type<node> expr
 %type<node> term
 %type<node> fact
@@ -50,15 +57,34 @@
 %start starting_symbol
 
 %%
+starting_symbol : scope;
 
-starting_symbol : 'a'
-                | expr {
-                    char* evaluation = $1->evaluate();
-                    printf("result: %s\n", evaluation);
-                    free(evaluation);
-                    delete $1;
-                  }
-                ;
+scope : SCOPE_BEGIN statement_list SCOPE_END
+      | SCOPE_BEGIN SCOPE_END
+
+statement_list: stat
+              | ctrl
+              | statement_list stat { $1->insert($2); $$ = $1;}
+              | statement_list ctrl { $1->insert($2); $$ = $1;}
+              ;
+
+stat: ';'
+    | expr ';' {
+        char* evaluation = $1->evaluate();
+        printf("result: %s\n", evaluation);
+        free(evaluation);
+        delete $1;
+      }
+    | ACT_BREK ';'
+    | ACT_CONT ';'
+    | ACT_RTRN expr ';'
+    ;
+
+ctrl: SEQ_IFIF '(' expr ')' scope
+    | SEQ_IFIF '(' expr ')' scope SEQ_ELSE scope
+    | SEQ_WHLE '(' expr ')' scope
+    | SEQ_FOOR '(' expr ';' expr ';' expr ')' scope
+    ;
 
 expr: expr OPR0 term { $$ = new ast_operator($1, $2, $3); }
     | term { $$ = $1; }
@@ -78,6 +104,7 @@ unit: '(' expr ')' { $$ = $2; }
       }
     | OPRU expr ')' { $$ = new ast_operator(nullptr, $1, $2); }
     ;
+
 %%
 
 /*!------------------------------------------------
