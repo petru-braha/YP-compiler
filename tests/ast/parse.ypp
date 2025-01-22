@@ -7,7 +7,6 @@
   #include "util.hpp"
   #include "arithmetic.hpp"
   #include "ast_base.hpp"
-  #include "ast_sttm.hpp"
 
   int yylex();
   void yyerror(const char * s);
@@ -16,7 +15,6 @@
   extern char* yytext;
   extern int yylineno;
   size_t count_error;
-  bool expression_flot;
 %}
 
 %left '&' '|'
@@ -30,89 +28,55 @@
 
 %code requires
 {
-  class ast_node;
+  class ast_expression;
   class ast_variable;
   class ast_operator;
 }
 %union {
   char* information;
   char character;
-  ast_node* node;
+  ast_expression* node;
 }
 
 %token<information> LITERAL
+%token<character> OPR0 OPR1 OPR2 OPR3 OPRU
 
-// %token OPR_ASSIGN
-%token<character> OPRU OPR0 OPR1 OPR2
-%token<character> OPR_RELTON
-
-%type<node> expression
+%type<node> expr
 %type<node> term
 %type<node> fact
 %type<node> powr
+%type<node> unit
 
 %start starting_symbol
 
 %%
 
 starting_symbol : 'a'
-                | expression { 
+                | expr {
                     char* evaluation = $1->evaluate();
                     printf("result: %s\n", evaluation);
                     free(evaluation);
                     delete $1;
-                    expression_flot = false;
                   }
                 ;
 
-expression: expression OPR0 term {
-              $$ = new ast_operator($1, $2, $3);
-            }
-          | expression OPR_RELTON term {
-              $$ = new ast_operator($1, $2, $3);
-            }
-          | term {
-              $$ = $1; 
-            }
-          ;
-term: fact OPR1 term {
-        $$ = new ast_operator($1, $2, $3);
-      }
-    | fact {
-        $$ = $1;
-      }
+expr: expr OPR0 term { $$ = new ast_operator($1, $2, $3); }
+    | term { $$ = $1; }
     ;
-fact: fact OPR2 powr {
-        $$ = new ast_operator($1, $2, $3);
-      }
-    | powr {
-        $$ = $1;
-      }
+term: fact OPR1 term { $$ = new ast_operator($1, $2, $3); }
+    | fact { $$ = $1; }
     ;
-powr: '(' expression ')' { 
-        $$ = $2;
-      }
+fact: fact OPR2 powr { $$ = new ast_operator($1, $2, $3); }
+    | powr { $$ = $1; }
+    ;
+powr: powr OPR3 unit { $$ = new ast_operator($1, $2, $3); }
+    | unit { $$ = $1; }
+unit: '(' expr ')' { $$ = $2; }
     | LITERAL {
-        expression_flot =
-          std::string("float") == type_of($1) ? true : false;
         $$ = new ast_variable($1); 
         free($1);
       }
-    | OPRU expression ')' {
-        if('-' == $1)
-        {
-          char hardcoded[4] = "0.0";
-          if(false == expression_flot)
-            hardcoded[1] = '\0';
-          ast_variable* n0 = new ast_variable(hardcoded);
-          $$ = new ast_operator(n0, $1, $2);
-        }
-        else
-        {
-          ast_variable* n0 = new ast_variable("true");
-          $$ = new ast_operator(n0, XOR_CHR, $2);
-        }
-      }
+    | OPRU expr ')' { $$ = new ast_operator(nullptr, $1, $2); }
     ;
 %%
 

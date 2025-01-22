@@ -13,6 +13,9 @@
 
 ## Brainstorming - general ideas
 
+- before: a scope = a symbol table
+- after: a scope = an ast node with a symbol table
+
 - four classes of data types:
     - RSV_TYPE - reserved type (the only one that supports arithmetic operators)
     - RSV_ARRY - an array of reserved type

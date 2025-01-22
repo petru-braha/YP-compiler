@@ -1,6 +1,7 @@
 #ifndef __0ALPHA0__
 #define __0ALPHA0__
 
+constexpr char ASG_CHR = 'h';
 constexpr char XOR_CHR = 'g';
 
 constexpr char EE_CHR = 'a';
