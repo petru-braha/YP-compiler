@@ -15,6 +15,8 @@ public:
 
 class ast_expression : public ast_statement
 {
+public:
+  virtual ~ast_expression() = default;
 };
 
 /* its type is predefined
@@ -26,11 +28,16 @@ class ast_variable final : public ast_expression
   char *value;
 
 public:
-  ~ast_variable() = default;
+  ~ast_variable();
   ast_variable(const char *const v);
 
   char *evaluate() const override;
 };
+
+ast_variable::~ast_variable()
+{
+  delete value;  
+}
 
 ast_variable::ast_variable(const char *const v)
     : value(strdup(v))
@@ -116,8 +123,7 @@ char *ast_operator::evaluate() const
   else
     result = cmp_vals(v0, operation, v1);
 
-  free((void *)v0);
-  free((void *)v1);
+  //todo free?
   return result;
 }
 
@@ -130,7 +136,7 @@ class ast_scope : public ast_statement
 
 public:
   ~ast_scope();
-  ast_scope(const std::vector<ast_statement *> &);
+  ast_scope(const std::vector<ast_statement *> *const);
 
   char *evaluate() const override;
 };
@@ -141,9 +147,11 @@ ast_scope::~ast_scope()
     delete statemets[i];
 }
 
-ast_scope::ast_scope(const std::vector<ast_statement *> &s)
-    : statemets(s)
+ast_scope::ast_scope(const std::vector<ast_statement *> *const s)
 {
+  if (nullptr == s)
+    return;
+
   for (size_t i = 0; i < statemets.size(); i++)
     if (nullptr == statemets[i])
     {
@@ -154,6 +162,7 @@ ast_scope::ast_scope(const std::vector<ast_statement *> &s)
 
 char *ast_scope::evaluate() const
 {
+  printf("%d\n", statemets.size());
   for (size_t i = 0; i < statemets.size(); i++)
     statemets[i]->evaluate();
   return nullptr;
@@ -162,14 +171,14 @@ char *ast_scope::evaluate() const
 class ast_ifelse : public ast_statement
 {
   const ast_expression *const judge;
-  const ast_scope *const sucss_case;
-  const ast_scope *const failr_case;
+  const ast_statement *const sucss_case;
+  const ast_statement *const failr_case;
 
 public:
   ~ast_ifelse();
   ast_ifelse(const ast_expression *const,
-             const ast_scope *const,
-             const ast_scope *const);
+             const ast_statement *const,
+             const ast_statement *const);
 
   char *evaluate() const override;
 };
@@ -182,8 +191,8 @@ ast_ifelse::~ast_ifelse()
 }
 
 ast_ifelse::ast_ifelse(const ast_expression *const j,
-                       const ast_scope *const s,
-                       const ast_scope *const f)
+                       const ast_statement *const s,
+                       const ast_statement *const f)
     : judge(j), sucss_case(s), failr_case(f)
 {
   if (nullptr == judge || nullptr == sucss_case)
@@ -200,12 +209,12 @@ char *ast_ifelse::evaluate() const
 class ast_while : public ast_statement
 {
   const ast_expression *const judge;
-  const ast_scope *const sucss_case;
+  const ast_statement *const sucss_case;
 
 public:
   ~ast_while();
   ast_while(const ast_expression *const,
-            const ast_scope *const);
+            const ast_statement *const);
 
   char *evaluate() const override;
 };
@@ -217,7 +226,7 @@ ast_while::~ast_while()
 }
 
 ast_while::ast_while(const ast_expression *const j,
-                     const ast_scope *const s)
+                     const ast_statement *const s)
     : judge(j), sucss_case(s)
 {
   if (nullptr == judge || nullptr == sucss_case)
@@ -236,14 +245,14 @@ class ast_for : public ast_statement
   const ast_expression *const initl;
   const ast_expression *const judge;
   const ast_expression *const incrm;
-  const ast_scope *const sucss_case;
+  const ast_statement *const sucss_case;
 
 public:
   ~ast_for();
   ast_for(const ast_expression *const,
           const ast_expression *const,
           const ast_expression *const,
-          const ast_scope *const);
+          const ast_statement *const);
 
   char *evaluate() const override;
 };
@@ -259,7 +268,7 @@ ast_for::~ast_for()
 ast_for::ast_for(const ast_expression *const iti,
                  const ast_expression *const jdj,
                  const ast_expression *const inc,
-                 const ast_scope *const s)
+                 const ast_statement *const s)
     : initl(iti), judge(jdj), incrm(inc), sucss_case(s)
 {
   if (nullptr == judge || nullptr == sucss_case)
@@ -271,7 +280,10 @@ char *ast_for::evaluate() const
   for (initl ? initl->evaluate() : 0;
        judge ? judge->evaluate() : 0;
        incrm ? incrm->evaluate() : 0)
+  {
     sucss_case->evaluate();
+    printf("iteration\n");
+  }
   return nullptr;
 }
 
