@@ -57,29 +57,29 @@
 %start starting_symbol
 
 %%
-starting_symbol : scope { printf("inainte\n"); $1->evaluate(); printf("dupa\n"); delete $1; };
+starting_symbol : scope {
+                    $1->evaluate();
+                    delete $1;
+                  }
+                ;
 
 scope : SCOPE_BEGIN statement_list SCOPE_END { $$ = new ast_scope($2); }
       | SCOPE_BEGIN SCOPE_END { $$ = new ast_scope(nullptr); }
 
 statement_list: stat { 
                   $$ = new std::vector<ast_statement*>;
-                  char* evaluation = $1->evaluate();
-          
                   $$->emplace_back($1);
-                  printf("%s size : %d\n", evaluation, $$->size());
-
                 }
               | statement_list stat {
-                  $$->insert($$->begin(), $2);
-                  printf("size : %d\n", $$->size());
+                  $1->emplace_back($2);
+                  $$ = $1;
                 }
               ;
 
 stat: expr ';' {
         $$ = $1;
         char* evaluation = $1->evaluate();
-        printf("result: %s\n", evaluation);
+        printf("result 1: %s\n", evaluation);
         free(evaluation);
       }
     | ACT_BREK ';' { $$ = nullptr; }

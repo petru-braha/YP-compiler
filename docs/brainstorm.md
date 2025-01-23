@@ -1,7 +1,7 @@
 ## To do
 
 0. char
-0. ast for all statements
+0. ast for all statements (i really don t like about my implementation that crashes are likely to happen at each line of code... change this please)
 0. semantics and scopes
 
 <br>
