@@ -3,6 +3,11 @@
 
 #include <vector>
 #include "arithmetic.hpp"
+#include "src/variable_data.hpp"
+#include "src/function_data.hpp"
+#include "src/object_data.hpp"
+#include "src/symbol_table.hpp"
+#include "src/type_table.hpp"
 
 constexpr char VAR_STAT_TYPE = 100;
 constexpr char OPR_STAT_TYPE = 101;

@@ -4,7 +4,8 @@
   #include <cmath>
   #include <string>
   #include <vector>
-  #include "src/node.hpp"
+  #include "arithmetic.hpp"
+  #include "ast_base.hpp"
 
   int yylex();
   void yyerror(const char * s);
@@ -13,6 +14,13 @@
   extern char* yytext;
   extern int yylineno;
   size_t count_error;
+
+  std::vector<symbol_table> symbols;
+  #define LAST_SCOPE symbols.size() - 1
+  
+  size_t scope_search(const std::string &);
+  bool is_type(const std::string &);
+  bool is_compatible(const char *, const char *);
 %}
 
 %left '&' '|'
@@ -56,6 +64,9 @@
 
 %%
 starting_symbol : scope {
+                    symbol_table s;
+                    type_insert("lala", s);
+                    object_data o_data("lala");
                     $1->evaluate();
                     delete $1;
                   }
@@ -124,6 +135,71 @@ unit: '(' expr ')' { $$ = $2; }
 void yyerror(const char * s){
   count_error++;
   printf("error - line %d: %s.\n", yylineno, s);
+}
+
+//! please remember that queries don't print errors
+
+
+/* goes through every scope
+ * could add extra time complexity
+ */
+size_t scope_search(const std::string &id)
+{
+    return -1;
+    for (size_t scope = LAST_SCOPE;; scope--)
+    {
+        if (symbols[scope].get_data(id))
+            return scope;
+        if (0 == scope)
+            break;
+    }
+
+    return -1;
+}
+
+bool is_type(const std::string &id)
+{
+    return type_exists(id) || is_primitive(id);
+}
+
+/* a constant value can only be primitive */
+bool is_compatible(const char *type, const char *constant_value)
+{
+    switch (constant_value[0])
+    {
+    default: // int
+        if (nullptr == strchr(constant_value, '.'))
+        {
+            if (strcmp(type, DATA_TYPE_INT))
+                return false;
+        }
+
+        // float
+        if (strcmp(type, DATA_TYPE_FLT))
+            return false;
+        break;
+
+    case '\'': // char
+        if (strcmp(type, DATA_TYPE_CHR))
+            return false;
+        break;
+
+    case 't': // bool
+        if (strcmp(type, DATA_TYPE_BOL))
+            return false;
+        break;
+    case 'f': // bool
+        if (strcmp(type, DATA_TYPE_BOL))
+            return false;
+        break;
+
+    case '\"': // string
+        if (strcmp(type, DATA_TYPE_STR))
+            return false;
+        break;
+    }
+
+    return true;
 }
 
 int main(int argc, char** argv)

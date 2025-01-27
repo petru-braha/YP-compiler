@@ -1,8 +1,7 @@
 ## To do
 
+0. ast
 0. char
-0. ast for all statements (i really don t like about my implementation that crashes are likely to happen at each line of code... change this please)
-0. semantics and scopes
 
 <br>
 
@@ -12,6 +11,9 @@
 0. the end of compilation creates a binary file which will evaluate the ast
 
 ## Brainstorming - general ideas
+
+- ast for declaration too
+- pass nullptr value for non-existant identifiers
 
 - before: a scope = a symbol table
 - after: a scope = an ast node with a symbol table
@@ -234,3 +236,25 @@ for(auto i : container) == for(auto i = begin(); i != end(); i++)
 i == iterator
 *i == std::pair<std::string, item_data*>
 (*i).second == 
+
+## file structure
+
+src/class/dev/yyerror.hpp
+src/class/dev/alphabet.hpp
+src/class/dev/constants.hpp // later
+src/class/dev/item_data.hpp
+
+src/class/variable_data.hpp
+src/class/function_data.hpp
+src/class/object_data.hpp
+src/class/symbol_table.hpp
+src/class/type_table.hpp
+
+src/arithmetic.hpp
+src/data.hpp
+src/node.hpp
+
+build.sh
+lexer.l
+parse.ypp
+YP
