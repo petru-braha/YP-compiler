@@ -14,6 +14,9 @@ literal_char \'[^\']\'
 literal_strg \"[^\"]+\"
 literal_bool "true"|"false"
 
+reserved_type "int"|"float"|"char"|"string"|"bool"
+something_name [a-zA-Z_][a-zA-Z0-9_]*
+
 comment #.*
 
 %option noyywrap
@@ -23,7 +26,7 @@ comment #.*
 "}" { return SCOPE_END; }
 
 "+"|"-"|"&"|"|" { yylval.character = *yytext; return OPR0; }
-"⊕"            { yylval.character = XOR_CHR; return OPR0; }
+"⊕"|"XOR"      { yylval.character = XOR_CHR; return OPR0; }
 "=="            { yylval.character = EE_CHR; return OPR0; }
 "!="            { yylval.character = NE_CHR; return OPR0; }
 "<="            { yylval.character = LE_CHR; return OPR0; }
@@ -47,6 +50,10 @@ comment #.*
 "else"  { return SEQ_ELSE; }
 "while" { return SEQ_WHLE; }
 "for"   { return SEQ_FOOR; }
+
+{reserved_type}       { yylval.information = strdup(yytext); return RSV_TYPE; }
+{something_name}      { yylval.information = strdup(yytext); return SMT_NAME; }
+
 
 {comment}
 

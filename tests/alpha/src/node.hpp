@@ -6,12 +6,16 @@
 #include "arithmetic.hpp"
 #include "data.hpp"
 
+std::vector<symbol_table> symbols;
+#define LAST_SCOPE symbols.size() - 1
+
 constexpr char VAR_STAT_TYPE = 100;
 constexpr char OPR_STAT_TYPE = 101;
 constexpr char SCP_STAT_TYPE = 102;
 constexpr char IFE_STAT_TYPE = 103;
 constexpr char WHL_STAT_TYPE = 104;
 constexpr char FOR_STAT_TYPE = 105;
+constexpr char DEF_STAT_TYPE = 106;
 
 class ast_statement
 {
@@ -29,7 +33,7 @@ public:
 
 /* its type is predefined
  * leaf nodes
- * store a value
+ * store a value of a reserved type
  */
 class ast_variable final : public ast_expression
 {
@@ -38,6 +42,7 @@ class ast_variable final : public ast_expression
 public:
   ~ast_variable();
   ast_variable(const char *const v);
+  ast_variable(const item_data *const);
 
   const char get_type() const override;
   char *evaluate() const override;
@@ -53,6 +58,18 @@ ast_variable::ast_variable(const char *const v)
 {
   if (nullptr == v)
     yyerror("ast_variable() failed - received nullptr");
+}
+
+ast_variable::ast_variable(const item_data *const data)
+{
+  if (nullptr == data)
+    yyerror("ast_variable() failed - undefined identifier");
+
+  if (ITEM_TYPE_VAR != data->get_item_type())
+    yyerror("ast_variable() failed - wrong type");
+
+  //todo check if array
+  value = strdup(((variable_data*)data)->get_value().c_str());
 }
 
 const char ast_variable::get_type() const
@@ -377,30 +394,49 @@ char *ast_for::evaluate() const
   return nullptr;
 }
 
-/*
-class item_data;
-
 class ast_def : public ast_statement
 {
-  item_data *definition;
-
 public:
   ~ast_def() = default;
-  ast_def(const char *const, const char *const);
-  ast_def(double);
+  ast_def(const char *const,
+          const char *const,
+          const char *const);
   ast_def();
 
   const char get_type() const override;
   char *evaluate() const override;
 };
 
-// todo ast_scope has to push a new symbol_table
-ast_def::ast_def(const char *const id,
-                 const char *const data_type)
+/* variable constructor */
+ast_def::ast_def(const char *const data_type,
+                 const char *const id,
+                 const char *const value = nullptr)
 {
-  // create item_data*
-  // symbols[LAST_SCOPE].insert()
+  if (nullptr == data_type || nullptr == id)
+    yyerror("ast_def() failed - received nullptr");
+  if (false == is_primitive(data_type))
+    yyerror("ast_def() failed - wrong type");
+  if (scope_search(id))
+    yyerror("ast_def() failed - identifier already defined");
+
+  item_data *definition = nullptr;
+  if (value)
+    definition = new variable_data(data_type, value);
+  else
+    definition = new variable_data(data_type);
+  symbols[LAST_SCOPE].insert(id, definition);
 }
-*/
+
+const char ast_def::get_type() const
+{
+  return DEF_STAT_TYPE;
+}
+
+char *ast_def::evaluate() const
+{
+  return nullptr;
+}
+
+// todo ast_assign
 
 #endif

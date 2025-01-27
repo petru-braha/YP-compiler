@@ -24,7 +24,7 @@ master(){
     int nr5 = nr3;
     int nr6 = 6;
 
-    string te_fut_in_gat;
+    string why;
 
 
     bool ft4 = ft1;

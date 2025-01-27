@@ -1,9 +1,6 @@
 %{
   #include <stdio.h>
-  #include <cstring>
-  #include <cmath>
   #include <string>
-  #include <vector>
   #include "src/node.hpp"
 
   int yylex();
@@ -46,23 +43,26 @@
 
 %token<information> LITERAL
 %token<character> OPR0 OPR1 OPR2 OPR3 OPRU
+%token<information> SMT_NAME RSV_TYPE
 
 %type<s_node> scope
 %type<subtree> statement_list
-%type<s_node> stat ctrl
+%type<s_node> stat ctrl decl
 %type<e_node> expr term fact powr unit
 
 %start starting_symbol
 
 %%
 starting_symbol : scope {
+                    symbols.emplace_back();
                     $1->evaluate();
                     delete $1;
                   }
                 ;
 
-scope : SCOPE_BEGIN statement_list SCOPE_END { $$ = new ast_scope($2); }
-      | SCOPE_BEGIN SCOPE_END { $$ = new ast_scope(nullptr); }
+scope : SCOPE_BEGIN { symbols.emplace_back(); } statement_list SCOPE_END { $$ = new ast_scope($3); symbols.pop_back(); }
+      | SCOPE_BEGIN { symbols.emplace_back(); } SCOPE_END { $$ = new ast_scope(nullptr); symbols.pop_back(); }
+    ;
 
 statement_list: stat { 
                   $$ = new std::vector<ast_statement*>;
@@ -84,17 +84,28 @@ stat: expr ';' {
     | ACT_CONT ';' { $$ = nullptr; }
     | ACT_RTRN expr ';' { $$ = nullptr; }
     | ctrl { $$ = $1; }
+    | decl { $$ = $1; }
+    | scope { $$ = $1; }
     ;
 
 ctrl: SEQ_IFIF '(' expr ')' scope { $$ = new ast_ifelse($3, $5, nullptr); }
     | SEQ_IFIF '(' expr ')' scope SEQ_ELSE scope { $$ = new ast_ifelse($3, $5, $7); }
     | SEQ_WHLE '(' expr ')' scope { $$ = new ast_while($3, $5); }
-    | SEQ_FOOR '(' expr ';' expr ';' expr ')' scope { $$ = new ast_for($3, $5, $7, $9);
-
-        //char* evaluation = $3->evaluate();
-        //printf("%s\n", evaluation);
-      }
+    | SEQ_FOOR '(' expr ';' expr ';' expr ')' scope { $$ = new ast_for($3, $5, $7, $9); }
     ;
+
+
+decl: RSV_TYPE SMT_NAME ';' { $$ = new ast_def($1, $2, nullptr); }
+    | RSV_TYPE SMT_NAME OPR3 expr ';' { $$ = new ast_def($1, $2, $4->evaluate()); }
+    ;
+
+/*local_declaration : var_decl
+                  | var_defn
+                  | fct_decl
+                  | fct_defn
+                  | obj_decl
+                  | obj_defn
+                  ;*/
 
 expr: expr OPR0 term { $$ = new ast_operator($1, $2, $3); }
     | term { $$ = $1; }
@@ -113,6 +124,8 @@ unit: '(' expr ')' { $$ = $2; }
         free($1);
       }
     | OPRU expr ')' { $$ = new ast_operator(nullptr, $1, $2); }
+    | SMT_NAME {
+        $$ = new ast_variable(scope_search($1)); }
     ;
 
 %%
@@ -124,6 +137,70 @@ unit: '(' expr ')' { $$ = $2; }
 void yyerror(const char * s){
   count_error++;
   printf("error - line %d: %s.\n", yylineno, s);
+  exit(EXIT_FAILURE);
+}
+
+/* goes through every scope
+ * could add extra time complexity
+ */
+item_data* scope_search(const std::string &id)
+{
+  if(0 == symbols.size())
+    return nullptr;
+
+  for (size_t scope = LAST_SCOPE;; scope--)
+  {
+    item_data* data = symbols[scope].get_data(id);
+    if(data)
+      return data;
+    if (0 == scope)
+      break;
+  }
+
+  return nullptr;
+}
+
+bool is_type(const std::string &id)
+{
+  return type_exists(id) || is_primitive(id);
+}
+
+/* a constant value can only be primitive */
+bool is_compatible(const char *type, const char *constant_value)
+{
+  switch (constant_value[0])
+  {
+  default: // int
+    if (nullptr == strchr(constant_value, '.'))
+      if (strcmp(type, DATA_TYPE_INT))
+        return false;
+
+    // float
+    if (strcmp(type, DATA_TYPE_FLT))
+      return false;
+    break;
+
+  case '\'': // char
+    if (strcmp(type, DATA_TYPE_CHR))
+      return false;
+    break;
+
+  case 't': // bool
+    if (strcmp(type, DATA_TYPE_BOL))
+      return false;
+    break;
+  case 'f': // bool
+    if (strcmp(type, DATA_TYPE_BOL))
+      return false;
+    break;
+
+  case '\"': // string
+    if (strcmp(type, DATA_TYPE_STR))
+      return false;
+    break;
+  }
+
+  return true;
 }
 
 int main(int argc, char** argv)

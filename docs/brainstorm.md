@@ -2,16 +2,18 @@
 
 0. ast
 0. char
+0. assignation a = 5 + 4; // a will be 5... we need to ensure right association of assignation operand
 
 <br>
 
 0. complete the syntax documentation from the guidline
 0. better names: abbreviation capslock?
 0. restrict access to type_table
-0. the end of compilation creates a binary file which will evaluate the ast
 
-## Brainstorming - general ideas
+## General ideas
 
+- ids from scopes have priority before ids from the class definition
+- for now no global declarations after master()
 - ast for declaration too
 - pass nullptr value for non-existant identifiers
 
@@ -24,8 +26,8 @@
     - SMT_NAME - user-defined type
     - DEF_ARRY - an array of user-defined type
 
-- expression - arithmetic
-- statement -
+- expression - RSV_TYPE
+- statement - any type
 
 - '-' unary operator for int only
 - '!' unary operator for bool only
@@ -44,6 +46,8 @@
     - does not take any arguments
     - the program begins by calling master
     - master() doesn't return any value
+
+## Containers
 
 - Four possible data storage types:
     - class(type)
@@ -115,7 +119,7 @@
     - variable - value
     - object - synopsis of its symbols
 
-### guideline
+## Guideline
 
 - mapping of the type to:
     - string - 3 - 5 bytes for the already defined types but for class the number of bytes is user dependent
@@ -170,24 +174,22 @@
 - store type, values as std::string for each variable name
 - synopsis for a function is an array of objects/variables
 
-### standard methods
+## Methods
 
 int a = 5;
 string name = Type(a); 
 
-- master
+- master()
 - Type
     - argument: name_of_something
     - return type: string
-- Print
+- Print()
     - purpose: prints on terminal
-    - argument: name_of_something | constant
+    - argument: variable_data
     - return: number of bytes written
     - return type: int
 
 - every time i call a function it is an assignation of its variable + code jumps; we can view it as a struct in C
-
-## Order of error checking
 
 ### for declaration
 
@@ -198,63 +200,77 @@ string name = Type(a);
 * scope_search(argument)
 * class_search(argument)
 
-## Questions:
+## Files
 
-- friend class std::unordered_map<std::string, variable_data> does not work
-- global syntax can't be declared after grammar
-- auto error messages for constructors and insertions (specific methods) - who should take care of the error cases? utility or parser? it is confusing when errors are defined in both places. short answer in both places, the distinction is made wihtin the type of method: modifiable/interogative
-- ids from scopes have priority before ids from the class definition
+level 3:
+- src/class/dev/yyerror.hpp
+- src/class/dev/alphabet.hpp
+- src/class/dev/item_data.hpp
 
-- what happens if error occurs? should we stop the execution?
+level 2:
+- src/class/variable_data.hpp
+- src/class/function_data.hpp
+- src/class/object_data.hpp
+- src/class/symbol_table.hpp
+- src/class/type_table.hpp
 
+level 1:
+- src/arithmetic.hpp
+- src/data.hpp
+- src/node.hpp
 
-- ++ constructors
-class cacat
-{
+level 0:
+- build.sh
+- lexer.l
+- parse.ypp
+- YP
 
-}
+- level 0 - grammar
+    - summary(abstraction) of the compiler
+    - readable code for new viewrs
+    - types: const char*
+- level 1 - implementation (intermediary code translation - ast)
+    - types: std::vector, std::string (usage of high-level containers)
+- level 2 - classes to easy manipulate the stack program
+- level 3 - constants
 
-class apa
-{
-    int filed0;
-    int field1;
-    cacat object_apa;
+## Errors
 
-public:
-    apa() { field0 = 0; prinf("mata"); }
-    apa(int, int, int) {}
-}
+- query VS procedure (interogative/modifiable)
+    - queries won't produce any error message compared to procedures
+    - follow-up: procedures should be implemented at level 1
 
+- if error occurs - compilation is delayed as much as possible
+- the compiler should not throw or crash! (no errors)
 
-apa object(1, 1, 2);
-printf("tactu");
+## Operators
+| class | operator | allowed types |
+|:-----:|:--------:|:--------------|
+| OPR0 | "+" | int float char string |
+| OPR0 | "-" | int float char string |
+| OPR0 | "&" | bool |
+| OPR0 | "\|"| bool |
+| OPR0 | "⊕"| bool |
+| OPR0 | "=="| int float char string bool |
+| OPR0 | "!="| int float char string bool |
+| OPR0 | "<="| int float char string |
+| OPR0 | "<" | int float char string |
+| OPR0 | ">="| int float char string |
+| OPR0 | ">" | int float char string |
+| OPR0 | "*" | int float char |
+| OPR0 | "/" | int float char |
+| OPR0 | "%" | int char |
+| OPR0 | "^" | int float char |
 
+"=" | any
+"!" | bool
+"-" | int float
 
-for(int i = 0 ; i < 10 ; i ++;)
-for(auto i : container) == for(auto i = begin(); i != end(); i++)
+// check precedence of last 3
 
-i == iterator
-*i == std::pair<std::string, item_data*>
-(*i).second == 
+## Future development
 
-## file structure
-
-src/class/dev/yyerror.hpp
-src/class/dev/alphabet.hpp
-src/class/dev/constants.hpp // later
-src/class/dev/item_data.hpp
-
-src/class/variable_data.hpp
-src/class/function_data.hpp
-src/class/object_data.hpp
-src/class/symbol_table.hpp
-src/class/type_table.hpp
-
-src/arithmetic.hpp
-src/data.hpp
-src/node.hpp
-
-build.sh
-lexer.l
-parse.ypp
-YP
+- wide up the count of types allowed for the operators
+- for() just one instruction or none
+- global declaration after master
+- the end of compilation creates a binary file which evaluates the ast at run time
