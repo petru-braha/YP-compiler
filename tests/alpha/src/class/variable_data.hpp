@@ -24,7 +24,7 @@ class function_data;
 class object_data;
 class symbol_table;
 
-class variable_data final : public item_data
+class variable_data : public item_data
 {
     std::string value;
 

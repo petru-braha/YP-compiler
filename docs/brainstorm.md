@@ -1,7 +1,8 @@
 ## To do
 
-0. ast
-0. char
+0. array support
+0. ast - function call, assignement
+0. char - operations? '\n'
 0. assignation a = 5 + 4; // a will be 5... we need to ensure right association of assignation operand
 
 <br>
@@ -268,8 +269,16 @@ level 0:
 
 // check precedence of last 3
 
+## Sugar syntax
+
+- int a, b = 5, doua_zeci = 20;
+- 1.000 - int | 1,0 - float
+-
+
+
 ## Future development
 
+- a lot of sugar syntax
 - wide up the count of types allowed for the operators
 - for() just one instruction or none
 - global declaration after master

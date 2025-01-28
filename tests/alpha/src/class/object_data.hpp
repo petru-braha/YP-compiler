@@ -1,7 +1,7 @@
 #ifndef __0OBJECTDATA0__
 #define __0OBJECTDATA0__
 
-#include <vector>
+#include <unordered_map>
 #include "dev/item_data.hpp"
 
 class function_data;
@@ -14,7 +14,7 @@ class symbol_table;
  * the pointer order should be directed by the class
  * iterator methods are required for initialization
  */
-class object_data final : public item_data
+class object_data : public item_data
 {
     std::unordered_map<std::string, item_data *> attributes;
 

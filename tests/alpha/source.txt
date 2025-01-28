@@ -8,5 +8,9 @@
     string dada = "ivioiribieisici iuiriait" - "i" + "i ";  
   }
 
-  dada + "dada" + " " + "a " + "lala";
-}                
+  #dada + "dada" + " " + "a " + "lala";
+
+  int value = 5;
+  int tatar = value ^ 4;
+  tatar + value;
+}
