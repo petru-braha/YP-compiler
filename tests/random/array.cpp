@@ -3,42 +3,49 @@
 
 constexpr size_t LEVEL0 = 0;
 constexpr size_t LEVEL1 = 1;
-constexpr size_t LEVEL2 = 2;
-constexpr size_t LEVEL3 = 3;
+constexpr size_t LEVELMAX = 5;
+// 7 seconds for 100
+// 268435452 kills compilation and INT_MAX won't compile
 
 void remove_level(std::string &data_type)
 {
   size_t index0 = data_type.find('[');
   if (std::string::npos == index0)
     return;
+
   size_t index1 = data_type.find(']', index0);
   if (std::string::npos == index1)
   {
     std::cout << "bad";
     return;
   }
+
   std::string::const_iterator it0, it1;
   it0 = data_type.begin() + index0;
   it1 = it0 + (index1 - index0 + 1);
   data_type.erase(it0, it1);
 }
 
+//! help classes
 class item_data
 {
 public:
+  virtual ~item_data() = default;
+
   virtual const std::string &get_data_type() const = 0;
 };
 
 class variable_data : public item_data
 {
 public:
+  virtual ~variable_data() = default;
   int a;
 };
 
-template <const size_t>
+template <size_t>
 class variable_array_data;
 
-// base case
+//! base case
 template <>
 class variable_array_data<0> : public variable_data
 {
@@ -46,7 +53,6 @@ class variable_array_data<0> : public variable_data
 
 public:
   variable_array_data(std::string complete_data_type,
-                      const size_t,
                       const size_t,
                       const std::vector<size_t> &)
       : data_type(complete_data_type)
@@ -56,7 +62,7 @@ public:
   const std::string &get_data_type() const override { return data_type; }
 };
 
-// inductive case
+//! inductive case
 template <const size_t deep_level>
 class variable_array_data : public item_data
 {
@@ -65,9 +71,8 @@ class variable_array_data : public item_data
   std::vector<instance> m_array;
 
 public:
-  ~variable_array_data() = default;
+  virtual ~variable_array_data() = default;
   variable_array_data(std::string,
-                      const size_t,
                       const size_t,
                       const std::vector<size_t> &);
   // construct also with value
@@ -81,32 +86,33 @@ template <size_t deep_level>
 variable_array_data<deep_level>::
     variable_array_data(
         std::string complete_data_type,
-        const size_t size,
         const size_t index_level,
         const std::vector<
             size_t> &level_data)
     : data_type(complete_data_type)
 {
-  std::cout << deep_level;
-  remove_level(complete_data_type);
 
-  if (1 == deep_level)
+  std::cout << deep_level;
+  size_t size = level_data.at(index_level);
+  m_array.reserve(size);
+  remove_level(complete_data_type);
+  
+  if (LEVEL1 == deep_level)
   {
     for (size_t i = 0; i < size; i++)
       m_array.emplace_back(
-          complete_data_type, 0, 0, level_data);
+          complete_data_type, 0, level_data);
     return;
   }
 
   for (size_t i = 0; i < size; i++)
     m_array.emplace_back(
         complete_data_type,
-        level_data.at(index_level + 1),
         index_level + 1,
         level_data);
 }
 
-template <const size_t deep_level>
+template <size_t deep_level>
 item_data *
 variable_array_data<deep_level>::operator[](const size_t index)
 {
@@ -129,15 +135,62 @@ variable_array_data<deep_level>::
   return &m_array.at(index);
 }
 
-item_data *init_array(const size_t deep_level);
+//! main
+namespace dynamic_array
+{
+  template <size_t index>
+  item_data *array_for_index(
+      const std::string &data_type,
+      const std::vector<size_t> &level_data)
+  {
+    return new variable_array_data<index>(
+        data_type, 0,
+        level_data);
+  }
 
+  template <size_t... indexes>
+  auto init_array(
+      const std::string &data_type,
+      const std::vector<size_t> &level_data,
+      size_t i, std::index_sequence<indexes...>)
+  {
+    using function = item_data *(*)(const std::string &,
+                                    const std::vector<size_t> &);
+    constexpr function f[] = { array_for_index<indexes>...};
+    return f[i];
+  }
+}
+
+item_data *init_array(const std::string &data_type,
+                      const std::vector<size_t> &level_data)
+{
+  if(level_data.size() >= LEVELMAX)
+    std::cout << "bad\n";
+    
+  auto ptr = dynamic_array::init_array(
+    data_type, level_data,
+    level_data.size(),
+    std::make_index_sequence<LEVELMAX>());
+  
+  return ptr(data_type, level_data);
+}
+
+// idea: https://stackoverflow.com/questions/68839163/
+//todo make this class available for any type
 int main()
 {
-  std::string my_type = "int[5][6][7]";
+  std::string my_type = "int[2][3][4][5]";
   std::vector<size_t> level_data;
+  level_data.emplace_back(2);
+  level_data.emplace_back(3);
+  level_data.emplace_back(4);
   level_data.emplace_back(5);
-  level_data.emplace_back(6);
-  level_data.emplace_back(7);
+
+  item_data *arr = init_array(my_type, level_data);
+  std::cout << "\n";
+  delete arr;
+
+  /*
   const size_t deep_level = level_data.size();
 
   if (deep_level == LEVEL3)
@@ -151,4 +204,6 @@ int main()
     item_data *internal_array = dada[0];
     std::cout << internal_array->get_data_type() << "\n";
   }
+  */
+  return EXIT_SUCCESS;
 }
