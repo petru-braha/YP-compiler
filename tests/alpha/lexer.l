@@ -26,7 +26,7 @@ comment #.*
 "}" { return SCOPE_END; }
 
 "+"|"-"|"&"|"|" { yylval.character = *yytext; return OPR0; }
-"⊕"|"XOR"       { yylval.character = XOR_CHR; return OPR0; }
+"⊕"|"XOR"      { yylval.character = XOR_CHR; return OPR0; }
 "=="            { yylval.character = EE_CHR; return OPR0; }
 "!="            { yylval.character = NE_CHR; return OPR0; }
 "<="            { yylval.character = LE_CHR; return OPR0; }

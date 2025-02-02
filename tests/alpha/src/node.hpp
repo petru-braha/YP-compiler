@@ -11,11 +11,12 @@ std::vector<symbol_table> symbols;
 
 constexpr char VAR_STAT_TYPE = 100;
 constexpr char OPR_STAT_TYPE = 101;
-constexpr char SCP_STAT_TYPE = 102;
-constexpr char IFE_STAT_TYPE = 103;
-constexpr char WHL_STAT_TYPE = 104;
-constexpr char FOR_STAT_TYPE = 105;
-constexpr char DEF_STAT_TYPE = 106;
+constexpr char ASG_STAT_TYPE = 102;
+constexpr char SCP_STAT_TYPE = 103;
+constexpr char IFE_STAT_TYPE = 104;
+constexpr char WHL_STAT_TYPE = 105;
+constexpr char FOR_STAT_TYPE = 106;
+constexpr char DEF_STAT_TYPE = 107;
 
 class ast_statement
 {
@@ -68,8 +69,8 @@ ast_variable::ast_variable(const item_data *const data)
   if (ITEM_TYPE_VAR != data->get_item_type())
     yyerror("ast_variable() failed - wrong type");
 
-  //todo check if array
-  value = strdup(((variable_data*)data)->get_value().c_str());
+  // todo check if array
+  value = strdup(((variable_data *)data)->get_value().c_str());
 }
 
 const char ast_variable::get_type() const
@@ -88,19 +89,19 @@ char *ast_variable::evaluate() const
  * store an operation
  * assignation
  */
-class ast_operator final : public ast_expression
+class ast_operator : public ast_expression
 {
   const ast_expression *const left_child;
   const ast_expression *const rght_child;
   const char operation;
 
 public:
-  ~ast_operator();
+  virtual ~ast_operator();
   ast_operator(ast_expression *const, const char,
                ast_expression *const);
 
   const char get_type() const override;
-  char *evaluate() const override;
+  virtual char *evaluate() const override;
 };
 
 // recursive deconstructor
@@ -115,6 +116,8 @@ ast_operator::ast_operator(ast_expression *const o0,
                            ast_expression *const o1)
     : left_child(o0), rght_child(o1), operation(op)
 {
+  if(ASG_CHR == op)
+    yyerror("ast_operator() failed - use ast_assign() instead");
   if ((nullptr == o0 && '!' != op && '-' != op) ||
       nullptr == o1)
     yyerror("ast_operator() failed - received nullptr");
@@ -137,7 +140,7 @@ char *ast_operator::evaluate() const
   else if ('-' == operation && nullptr == v0)
     result = chg_sign(v1);
 
-  // binary
+  // binary - no assignation
   else if ('+' == operation)
     result = add_vals(v0, v1);
   else if ('-' == operation)
@@ -156,8 +159,6 @@ char *ast_operator::evaluate() const
     result = mod_vals(v0, v1);
   else if ('^' == operation)
     result = pow_vals(v0, v1);
-  else if (ASG_CHR == operation)
-    result = asg_vals(v0, v1);
   else
     result = cmp_vals(v0, operation, v1);
 
@@ -166,6 +167,47 @@ char *ast_operator::evaluate() const
   if (v1 && OPR_STAT_TYPE == rght_child->get_type())
     free(v1);
   return result;
+}
+
+// here left_child is always will always be evaluated last
+class ast_assign : public ast_expression
+{
+  const ast_variable *const left_child;
+  const ast_expression *const rght_child;
+
+public:
+  virtual ~ast_assign();
+  ast_assign(ast_variable *const,
+             ast_expression *const);
+
+  const char get_type() const override;
+  virtual char *evaluate() const override;
+};
+
+ast_assign::~ast_assign()
+{
+  delete rght_child;
+  delete left_child;
+}
+
+ast_assign::ast_assign(
+    ast_variable *const v0, ast_expression *const v1)
+    : left_child(v0), rght_child(v1)
+{
+  if(nullptr == v0 || nullptr == v1)
+    yyerror("ast_assign() failed - received nullptr");
+}
+
+const char ast_assign::get_type() const
+{
+  return ASG_STAT_TYPE;
+}
+
+char *ast_assign::evaluate() const
+{
+  char* v1 = rght_child->evaluate();
+  char* v0 = left_child->evaluate();
+  return asg_vals(v0, v1);
 }
 
 //------------------------------------------------

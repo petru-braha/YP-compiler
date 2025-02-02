@@ -48,7 +48,7 @@
 %type<s_node> scope
 %type<subtree> statement_list
 %type<s_node> stat ctrl decl
-%type<e_node> expr term fact powr unit
+%type<e_node> expr term fact unit asgn
 
 %start starting_symbol
 
@@ -74,10 +74,10 @@ statement_list: stat {
                 }
               ;
 
-stat: expr ';' {
+stat: asgn ';' {
         $$ = $1;
         char* evaluation = $1->evaluate();
-        printf("result 1: %s\n", evaluation);
+        printf("result: %s\n", evaluation);
         free(evaluation);
       }
     | ACT_BREK ';' { $$ = nullptr; }
@@ -107,17 +107,22 @@ decl: RSV_TYPE SMT_NAME ';' { $$ = new ast_def($1, $2, nullptr); }
                   | obj_defn
                   ;*/
 
+asgn: expr { $$ = $1; }
+    | SMT_NAME OPR3 asgn {
+        ast_variable* value = new ast_variable(scope_search($1));
+        $$ = new ast_assign(value, $3); 
+      }
+    ;
+
 expr: expr OPR0 term { $$ = new ast_operator($1, $2, $3); }
     | term { $$ = $1; }
     ;
 term: fact OPR1 term { $$ = new ast_operator($1, $2, $3); }
     | fact { $$ = $1; }
     ;
-fact: fact OPR2 powr { $$ = new ast_operator($1, $2, $3); }
-    | powr { $$ = $1; }
-    ;
-powr: powr OPR3 unit { $$ = new ast_operator($1, $2, $3); }
+fact: fact OPR2 unit { $$ = new ast_operator($1, $2, $3); }
     | unit { $$ = $1; }
+    ;
 unit: '(' expr ')' { $$ = $2; }
     | LITERAL {
         $$ = new ast_variable($1); 
@@ -126,6 +131,10 @@ unit: '(' expr ')' { $$ = $2; }
     | OPRU expr ')' { $$ = new ast_operator(nullptr, $1, $2); }
     | SMT_NAME {
         $$ = new ast_variable(scope_search($1)); }
+    | '(' SMT_NAME OPR3 asgn ')' { 
+        ast_variable* value = new ast_variable(scope_search($2));
+        $$ = new ast_assign(value, $4);
+      }
     ;
 
 %%

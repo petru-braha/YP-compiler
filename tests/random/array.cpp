@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <array>
 
 constexpr size_t LEVEL0 = 0;
 constexpr size_t LEVEL1 = 1;
@@ -96,7 +97,7 @@ variable_array_data<deep_level>::
   size_t size = level_data.at(index_level);
   m_array.reserve(size);
   remove_level(complete_data_type);
-  
+
   if (LEVEL1 == deep_level)
   {
     for (size_t i = 0; i < size; i++)
@@ -156,27 +157,29 @@ namespace dynamic_array
   {
     using function = item_data *(*)(const std::string &,
                                     const std::vector<size_t> &);
-    constexpr function f[] = { array_for_index<indexes>...};
-    return f[i];
+    constexpr function f[] = {array_for_index<indexes>...};
+    return f[i](data_type, level_data);
   }
 }
 
 item_data *init_array(const std::string &data_type,
                       const std::vector<size_t> &level_data)
 {
-  if(level_data.size() >= LEVELMAX)
+  if (level_data.size() >= LEVELMAX)
     std::cout << "bad\n";
-    
-  auto ptr = dynamic_array::init_array(
-    data_type, level_data,
-    level_data.size(),
-    std::make_index_sequence<LEVELMAX>());
-  
-  return ptr(data_type, level_data);
+
+  return dynamic_array::init_array(
+      data_type, level_data,
+      level_data.size(),
+      std::make_index_sequence<LEVELMAX>());
 }
 
+// todo return the correct pointer type
+// todo make this class available for any type
+// todo reduce compilation time
+
+// using std::array instead of std::vector makes compilation inneficient
 // idea: https://stackoverflow.com/questions/68839163/
-//todo make this class available for any type
 int main()
 {
   std::string my_type = "int[2][3][4][5]";
@@ -187,23 +190,13 @@ int main()
   level_data.emplace_back(5);
 
   item_data *arr = init_array(my_type, level_data);
-  std::cout << "\n";
+
+  std::cout << "\n"
+            << arr->get_data_type() << "\n";
+
+  // item_data *internal_array = arr[0];
+  // std::cout << internal_array->get_data_type() << "\n";
+
   delete arr;
-
-  /*
-  const size_t deep_level = level_data.size();
-
-  if (deep_level == LEVEL3)
-  {
-    variable_array_data<LEVEL3>
-        dada(my_type, level_data.at(0), 0, level_data);
-
-    std::cout << "\n"
-              << dada.get_data_type() << "\n";
-
-    item_data *internal_array = dada[0];
-    std::cout << internal_array->get_data_type() << "\n";
-  }
-  */
   return EXIT_SUCCESS;
 }
