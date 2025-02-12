@@ -7,6 +7,8 @@
 
 ## General ideas
 
+- note to self: doing left recursion is alright: the base case is firstly evaluated (similar to right recursion)
+
 - memory allocation -> parser
 - memory deallocation -> ast, classes
 - a scope either returs or breaks
@@ -279,6 +281,9 @@ level 0:
         - symbolcall
         - methodcall
         - vanillacall
+        - indexing
+        - fielding
+        - fieldcall
     
     - typecall
     - definition

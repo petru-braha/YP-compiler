@@ -1,7 +1,21 @@
 %{
   #include <stdio.h>
   #include <string>
-  #include "src/node.hpp"
+  
+  #include "src/class/primitive_data.hpp"
+  #include "src/class/function_data.hpp"
+  #include "src/class/object_data.hpp"
+  #include "src/class/array_data.hpp"
+  #include "src/class/class_data.hpp"
+
+  #include "src/class/symbol_table.hpp"
+  #include "src/class/type_table.hpp"
+  
+  #include "src/ast_expression.hpp"
+  #include "src/ast_definition.hpp"
+  #include "src/ast_action.hpp"
+  #include "src/ast_scope.hpp"
+  #include "src/ast_control.hpp"
 
   int yylex();
   void yyerror(const char * s);
@@ -59,10 +73,26 @@ starting_symbol : scope {
                     $1->evaluate();
                     delete $1;
                   }
+                | mata
                 ;
 
-scope : SCOPE_BEGIN { symbols.emplace_back(); } statement_list SCOPE_END { $$ = new ast_scope($3); symbols.pop_back(); }
-      | SCOPE_BEGIN { symbols.emplace_back(); } SCOPE_END { $$ = new ast_scope(nullptr); symbols.pop_back(); }
+mata: mata lala { printf("y"); }
+    | lala { printf("t"); }
+    ;
+lala: 'j'
+    ;
+
+scope : SCOPE_BEGIN { symbols.emplace_back(); } 
+          statement_list
+          SCOPE_END { 
+            $$ = new ast_scope($3); 
+            symbols.pop_back();
+          }
+      | SCOPE_BEGIN { symbols.emplace_back(); }
+          SCOPE_END {
+            $$ = new ast_scope(nullptr);
+            symbols.pop_back();
+          }
     ;
 
 statement_list: stat { 

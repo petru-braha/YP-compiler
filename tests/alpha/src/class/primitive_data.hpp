@@ -4,39 +4,43 @@
 #include <string>
 #include <string.h>
 #include "dev/item_data.hpp"
+#include "dev/yyerror.hpp"
 
-constexpr char *DATA_TYPE_INTG = "int";
-constexpr char *DATA_TYPE_FLOT = "float";
-constexpr char *DATA_TYPE_CHAR = "char";
-constexpr char *DATA_TYPE_STRG = "string";
-constexpr char *DATA_TYPE_BOOL = "bool";
-constexpr char *RESERVED_TYPES[] =
-    {DATA_TYPE_INTG, DATA_TYPE_FLOT,
-     DATA_TYPE_CHAR, DATA_TYPE_STRG,
-     DATA_TYPE_BOOL};
+const char INTG_DATA_TYPE[] = "int";
+const char FLOT_DATA_TYPE[] = "float";
+const char CHAR_DATA_TYPE[] = "char";
+const char STRG_DATA_TYPE[] = "string";
+const char BOOL_DATA_TYPE[] = "bool";
+const char *RESERVED_TYPES[] =
+    {INTG_DATA_TYPE, FLOT_DATA_TYPE,
+     CHAR_DATA_TYPE, STRG_DATA_TYPE,
+     BOOL_DATA_TYPE};
 constexpr char COUNT_RESERVED_TYPES = 5;
 
 bool is_primitive(const std::string &);
 std::string default_value_of(const std::string &);
 std::string type_of(const std::string &);
 
-class primitive_data : public item_data
+class primitive_data : public mutable_data
 {
+  const std::string data_type;
   std::string value;
 
 public:
-  ~primitive_data() = default;
+  virtual ~primitive_data() override = default;
   primitive_data(const std::string &);
   primitive_data(const std::string &, const std::string &);
   primitive_data(const std::string &, const primitive_data &);
 
+  primitive_data &operator=(const primitive_data &);
   primitive_data &set_value(const std::string &);
-  virtual item_data *operator[](const size_t);
 
+  virtual const char get_item_type() const override;
+  virtual const std::string &get_data_type() const override;
   const std::string &get_value() const;
-  virtual const char get_item_type() const;
-  virtual const std::string &get_data_type() const;
 };
+
+//------------------------------------------------
 
 bool is_primitive(const std::string &type)
 {
@@ -49,15 +53,15 @@ bool is_primitive(const std::string &type)
 // should be used only for primitive types
 std::string default_value_of(const std::string &type)
 {
-  if (std::string(DATA_TYPE_INTG) == type)
+  if (std::string(INTG_DATA_TYPE) == type)
     return "0";
-  if (std::string(DATA_TYPE_FLOT) == type)
+  if (std::string(FLOT_DATA_TYPE) == type)
     return "0.0";
-  if (std::string(DATA_TYPE_CHAR) == type)
+  if (std::string(CHAR_DATA_TYPE) == type)
     return "\'0\'";
-  if (std::string(DATA_TYPE_STRG) == type)
+  if (std::string(STRG_DATA_TYPE) == type)
     return "\"\"";
-  if (std::string(DATA_TYPE_BOOL) == type)
+  if (std::string(BOOL_DATA_TYPE) == type)
     return "false";
 
   // not primitive
@@ -70,29 +74,32 @@ std::string type_of(const std::string &primitive_value)
   {
   default:
     if (primitive_value.find('.') == std::string::npos)
-      return DATA_TYPE_INTG;
-    return DATA_TYPE_FLOT;
+      return INTG_DATA_TYPE;
+    return FLOT_DATA_TYPE;
   case '\'':
-    return DATA_TYPE_CHAR;
+    return CHAR_DATA_TYPE;
   case '\"':
-    return DATA_TYPE_STRG;
+    return STRG_DATA_TYPE;
   case 't':
-    return DATA_TYPE_BOOL;
+    return BOOL_DATA_TYPE;
   case 'f':
-    return DATA_TYPE_BOOL;
+    return BOOL_DATA_TYPE;
   }
 }
 
+//------------------------------------------------
+
 primitive_data::primitive_data(const std::string &type)
+    : data_type(type)
 {
   if (false == is_primitive(type))
     yyerror("the argument should be primitive");
   this->value = default_value_of(type);
 }
 
-primitive_data::primitive_data(const std::string &type,
-                               const std::string &v)
-    : item_data(ITEM_TYPE_VAR, type), value()
+primitive_data::primitive_data(
+    const std::string &type, const std::string &v)
+    : data_type(type)
 {
   if (false == is_primitive(type))
     yyerror("the argument should be primitive");
@@ -102,10 +109,9 @@ primitive_data::primitive_data(const std::string &type,
 }
 
 // not verification required - v can only be legitimate
-primitive_data ::primitive_data(const std::string &type,
-                                const primitive_data &v)
-    : item_data(ITEM_TYPE_VAR, type),
-      value(v.get_value())
+primitive_data ::primitive_data(
+    const std::string &type, const primitive_data &v)
+    : data_type(type), value(v.get_value())
 {
   if (type != v.get_data_type())
   {
@@ -114,12 +120,34 @@ primitive_data ::primitive_data(const std::string &type,
   }
 }
 
+primitive_data &primitive_data::operator=(const primitive_data &p)
+{
+  if (data_type != p.data_type)
+  {
+    yyerror("primitive assignation failed - type missmatch");
+    return *this;
+  }
+
+  value = p.value;
+  return *this;
+}
+
 primitive_data &primitive_data::set_value(const std::string &value)
 {
   if (this->get_data_type() != type_of(value))
     yyerror("incompatible types");
   this->value = value;
   return *this;
+}
+
+const char primitive_data::get_item_type() const
+{
+  return PRMT_ITEM_TYPE;
+}
+
+const std::string &primitive_data::get_data_type() const
+{
+  return data_type;
 }
 
 const std::string &primitive_data::get_value() const

@@ -15,8 +15,9 @@
 #include <limits.h>
 #include <cmath>
 #include <string>
-#include "class/dev/alphabet.hpp"
-#include "data.hpp"
+#include "yyerror.hpp"
+#include "function.hpp"
+#include "ast_alphabet.hpp"
 
 constexpr size_t BO_COUNT_DIGIT = 6;
 constexpr size_t LL_COUNT_DIGIT = 20;

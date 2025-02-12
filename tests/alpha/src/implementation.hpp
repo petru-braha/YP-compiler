@@ -117,7 +117,7 @@ const char *get_buffer(ast_expression *const node)
 {
   if (nullptr == node)
   {
-    yyerror("get_buffer() failed - received nullptr");
+    yyerror("get_buffer() failed - not primitive type");
     return nullptr;
   }
 

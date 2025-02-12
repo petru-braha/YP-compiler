@@ -2,7 +2,7 @@
   #include <stdlib.h>
   #include <stdio.h>
   #include "parse.tab.hpp"
-  #include "src/class/dev/alphabet.hpp"
+  #include "src/class/dev/ast_alphabet.hpp"
 
   void yyerror(const char * s);
 %}

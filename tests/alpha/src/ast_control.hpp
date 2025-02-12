@@ -105,7 +105,7 @@ void *ast_while::evaluate()
       continue;
   }
 
-  return data;
+  return sucss_case;
 }
 
 const char ast_while::get_stat_type() const
@@ -115,16 +115,16 @@ const char ast_while::get_stat_type() const
 
 class ast_for : public ast_statement
 {
-  ast_statement *const initl;
+  ast_expression *const initl;
   ast_expression *const judge;
-  ast_statement *const incrm;
+  ast_expression *const incrm;
   ast_statement *const sucss_case;
 
 public:
   virtual ~ast_for() override;
-  ast_for(ast_statement *const,
+  ast_for(ast_expression *const,
           ast_expression *const,
-          ast_statement *const,
+          ast_expression *const,
           ast_statement *const);
 
   virtual void *evaluate() override;
@@ -140,9 +140,9 @@ ast_for::~ast_for()
   delete sucss_case;
 }
 
-ast_for::ast_for(ast_statement *const iti,
+ast_for::ast_for(ast_expression *const iti,
                  ast_expression *const jdj,
-                 ast_statement *const inc,
+                 ast_expression *const inc,
                  ast_statement *const s)
     : initl(iti), judge(jdj), incrm(inc), sucss_case(s)
 {
@@ -153,21 +153,19 @@ ast_for::ast_for(ast_statement *const iti,
 
 void *ast_for::evaluate()
 {
-  initl->evaluate();
-  const char *buffer = get_buffer(judge);
-  void *data = nullptr;
+  const char *buffer = get_buffer(initl);
   while (0 == strcmp(buffer = get_buffer(judge), "true"))
   {
-    data = sucss_case->evaluate();
-    if (ACT_BREAK == *(char *)data)
+    sucss_case->evaluate();
+    if (ACT_BREAK == *buffer)
       break;
-    else if (ACT_CONTINUE == *(char *)data)
+    else if (ACT_CONTINUE == *buffer)
       continue;
 
     incrm->evaluate();
   }
 
-  return data;
+  return sucss_case;
 }
 
 const char ast_for::get_stat_type() const
