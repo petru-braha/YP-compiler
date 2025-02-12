@@ -32,7 +32,6 @@
   #include <cmath>
   #include <string>
   #include <vector>
-  #include "YP_utility.hpp"
 
   extern int yylex();
   void yyerror(const char * s);
@@ -41,11 +40,9 @@
   extern char* yytext;
   extern int yylineno;
   size_t count_error;
+
   std::vector<symbol_table> symbols;
   #define LAST_SCOPE symbols.size() - 1
-
-  char* cls_last_name = nullptr;
-  function_data* f_data_global = nullptr;
 %}
 
 %left '&' '|'
@@ -57,38 +54,38 @@
 %right '='
 %right '^'
 
+%code requires
+{
+  #include <vector>
+  class ast_statement;
+  class ast_expression;
+}
 %union {
   char* information;
-  unsigned char character;
-    
-  bool bool_number;
-  long long intg_number;
-  double real_number;
+  char character;
+
+  ast_statement* s_node;
+  ast_expression* e_node;
+  std::vector<ast_statement*>* subast;
 }
 
 %token SCOPE_BEGIN SCOPE_END
-%token MASTER TYPEOF PRINTF
+%token TYPEOF PRINTF MASTER
 
 %token RSV_CLSS ACS_PRIV ACS_PUBL ACS_FILD
-
-%token<information> SMT_NAME RSV_TYPE RSV_ARRY DEF_ARRY
-%token<intg_number> LIT_INTG
-%token<real_number> LIT_FLOT
-%token<information> LIT_CHAR LIT_STRG
-%token<bool_number> LIT_BOOL
-%type<information> LIT_CALL
-
-%token OPR_ASSIGN
-%token<character> OPRU OPR0 OPR1 OPR2
-%token<information> OPR_RELTON
-
-%type<information> expression
-%type<information> term
-%type<information> fact
-%type<information> powr
+%token<character> OPR0 OPR1 OPR2 OPR3 OPRU
+%token<information> LITERAL
 
 %token ACT_BREK ACT_CONT ACT_RTRN
 %token SEQ_IFIF SEQ_ELSE SEQ_WHLE SEQ_FOOR
+
+%token<information> RSV_TYPE RSV_ARRY SMT_NAME DEF_ARRY
+
+%type<s_node> scope
+%type<subast> statement_list
+%type<s_node> stat ctrl decl
+%type<e_node> expr term fact unit asgn
+
 
 %start starting_symbol
 
@@ -220,7 +217,7 @@ cls_fild: /** 4v rules */
             free($1);
             free($2);
         }
-/*3*/   | RSV_TYPE SMT_NAME OPR_ASSIGN expression ';' {
+/*3*/   | RSV_TYPE SMT_NAME OPR3 expr ';' {
             bool is_error = false, error_flag = false;
 
             if(error_flag |= is_error = type_exists($2);
@@ -248,7 +245,7 @@ cls_fild: /** 4v rules */
             free($2);
             free($4);
         }
-/*4*/   | RSV_ARRY SMT_NAME OPR_ASSIGN expression ';' {
+/*4*/   | RSV_ARRY SMT_NAME OPR3 expr ';' {
             bool is_error = false, error_flag = false;
 
             if(error_flag |= is_error = type_exists($2);
@@ -613,8 +610,8 @@ cls_fild: /** 4v rules */
             free($1); free($2); 
           }
 
-/*3*/   | SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals /* type compat check */
-/*4*/   | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals /* type compat check */
+/*3*/   | SMT_NAME SMT_NAME OPR3 '{' attribte obj_vals /* type compat check */
+/*4*/   | DEF_ARRY SMT_NAME OPR3 '{' attribte obj_vals /* type compat check */
         
           /** 2a rules */
         | ACS_PRIV {}
@@ -665,7 +662,7 @@ var_decl: RSV_TYPE SMT_NAME ';' {
             free($1); free($2); 
           }
         ;
-var_defn: RSV_TYPE SMT_NAME OPR_ASSIGN expression ';' {
+var_defn: RSV_TYPE SMT_NAME OPR3 expr ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2);
@@ -691,7 +688,7 @@ var_defn: RSV_TYPE SMT_NAME OPR_ASSIGN expression ';' {
 
             free($1); free($2); 
           }
-        | RSV_ARRY SMT_NAME OPR_ASSIGN expression ';' {
+        | RSV_ARRY SMT_NAME OPR3 expr ';' {
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error = is_type($2);
@@ -816,7 +813,7 @@ obj_decl: SMT_NAME SMT_NAME ';' {
             free($1); free($2);
           }
         ;
-obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals /*{
+obj_defn: SMT_NAME SMT_NAME OPR3 '{' attribte obj_vals /*{
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -852,7 +849,7 @@ obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals /*{
               
             free($1); free($2); free($4);
           }*/
-        | DEF_ARRY SMT_NAME OPR_ASSIGN '{' attribte obj_vals /*{
+        | DEF_ARRY SMT_NAME OPR3 '{' attribte obj_vals /*{
             bool is_error = false, error_flag = false;
             
             error_flag |= is_error =
@@ -892,7 +889,7 @@ obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals /*{
 obj_vals: ',' attribte obj_vals
         | '}'
         ;
-attribte: expression
+attribte: expr
         ;
 
 /*!------------------------------------------------
@@ -901,7 +898,7 @@ attribte: expression
 
 statement_list: SCOPE_END
               | local_declaration statement_list
-              | expression ';' statement_list
+              | expr ';' statement_list
               | assignment ';' statement_list
               | ACT_BREK ';' statement_list
               | ACT_CONT ';' statement_list
@@ -917,7 +914,7 @@ local_declaration : var_decl
                   | obj_defn
                   ;
 
-expression: term OPR0 expression {
+expr: term OPR0 expr {
               std::string type_first(type_of($1));
               std::string type_secnd(type_of($3));
               if(type_first != type_secnd)
@@ -990,7 +987,7 @@ expression: term OPR0 expression {
               }
               $$ = strdup(s.c_str());
           }
-          | term OPR_RELTON expression {
+          | term OPR1 expr {
               std::string type_first(type_of($1));
               std::string type_secnd(type_of($3));
               if(type_first != type_secnd)
@@ -1078,7 +1075,7 @@ term: term OPR1 fact {
       }
     | fact { $$ = strdup($1); free($1); }
     ;
-fact: fact OPR2 powr {
+fact: fact OPR2 unit {
         std::string type_first(type_of($1));
         if(std::string("string") == type_first ||
           std::string("bool") == type_first ||
@@ -1109,11 +1106,11 @@ fact: fact OPR2 powr {
         free($1);
         free($3);
       }
-    | powr { $$ = strdup($1); free($1); }
+    | unit { $$ = strdup($1); free($1); }
     ;
-powr: '(' expression ')' { $$ = strdup($2); free($2); }
-    | LIT_CALL { $$ = strdup($1); free($1); }
-    | OPRU '(' expression ')' {
+unit: '(' expr ')' { $$ = strdup($2); free($2); }
+    | LITERAL { $$ = strdup($1); free($1); }
+    | OPRU '(' expr ')' {
         std::string type(type_of($3));
 
         std::string s;
@@ -1149,7 +1146,7 @@ powr: '(' expression ')' { $$ = strdup($2); free($2); }
         $$ = strdup(s.c_str());
         free($3);
       }
-    | OPRU LIT_CALL {
+    | OPRU LITERAL {
         std::string type(type_of($2));
 
         std::string s;
@@ -1188,39 +1185,32 @@ powr: '(' expression ')' { $$ = strdup($2); free($2); }
     /*todo */
     | SMT_NAME { $$ = 0; }
     | SMT_NAME ACS_FILD SMT_NAME { $$ = 0; }
-    | SMT_NAME '[' LIT_INTG ']' { $$ = 0; }
+    | SMT_NAME '[' LITERAL ']' { $$ = 0; }
     | SMT_NAME '[' SMT_NAME ']' { $$ = 0; }
-    | PRINTF '(' expression ')' { $$ = 0; printf("%s", $3); fflush(stdout); }
-    | TYPEOF '(' expression ')' {
+    | PRINTF '(' expr ')' { $$ = 0; printf("%s", $3); fflush(stdout); }
+    | TYPEOF '(' expr ')' {
         std::string s = type_of($3);
         $$ = strdup(s.c_str());
       }
     | fct_call {$$ = nullptr; }
     ;
 
-LIT_CALL: LIT_INTG { std::string s = std::to_string($1); $$ = strdup(s.c_str()); }
-        | LIT_FLOT { std::string s = std::to_string($1); $$ = strdup(s.c_str()); }
-        | LIT_CHAR { $$ = strdup($1); free($1); }
-        | LIT_STRG { $$ = strdup($1); free($1); }
-        | LIT_BOOL { $$ = false == $1 ? strdup("false") : strdup("true"); }
-        ;
-
-fct_call: SMT_NAME '(' expression arr_argm
+fct_call: SMT_NAME '(' expr arr_argm
         | SMT_NAME '('')'
         ;
-arr_argm: ',' expression arr_argm
+arr_argm: ',' expr arr_argm
         | ')'
         ;
 
-control : SEQ_IFIF '(' expression ')' '{' statement_list '}'
-        | SEQ_IFIF '(' expression ')' '{' statement_list '}' SEQ_ELSE '{' statement_list '}'
-        | SEQ_WHLE '(' expression ')' '{' statement_list '}'
-        | SEQ_FOOR '(' expression ';' expression ';' expression ')' '{' statement_list '}'
+control : SEQ_IFIF '(' expr ')' '{' statement_list '}'
+        | SEQ_IFIF '(' expr ')' '{' statement_list '}' SEQ_ELSE '{' statement_list '}'
+        | SEQ_WHLE '(' expr ')' '{' statement_list '}'
+        | SEQ_FOOR '(' expr ';' expr ';' expr ')' '{' statement_list '}'
 
-assignment: SMT_NAME OPR_ASSIGN assig_term
+assignment: SMT_NAME OPR3 assig_term
           ;
-assig_term: expression
-          | assignment
+assig_term: expr
+          | asig
           ;
 %%
 

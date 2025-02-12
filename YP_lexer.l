@@ -31,15 +31,17 @@ comment #.*
 
 %%
 
-"print_f"  { return PRINTF; }
-"type_of"  { return TYPEOF; }
-"master()" { return MASTER; }
 "{" { return SCOPE_BEGIN; }
 "}" { return SCOPE_END; }
+
+"type_of"  { return TYPEOF; }
+"print_f"  { return PRINTF; }
+"master()" { return MASTER; }
 
 "class"    { return RSV_CLSS; }
 "private:" { return ACS_PRIV; }
 "public:"  { return ACS_PUBL; }
+"."|"->"   { return ACS_FILD; }
 
 "+"|"-"|"&"|"|" { yylval.character = *yytext; return OPR0; }
 "⊕"|"XOR"       { yylval.character = XOR_CHR; return OPR0; }

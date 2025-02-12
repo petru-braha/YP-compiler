@@ -29,8 +29,6 @@
   #include <vector>
   class ast_statement;
   class ast_expression;
-  class ast_variable;
-  class ast_operator;
 }
 %union {
   char* information;
@@ -42,10 +40,10 @@
 
 %token SCOPE_BEGIN SCOPE_END
 %token ACT_BREK ACT_CONT ACT_RTRN
-%token SEQ_IFIF SEQ_ELSE SEQ_WHLE SEQ_FOOR
 
-%token<information> LITERAL
 %token<character> OPR0 OPR1 OPR2 OPR3 OPRU
+%token<information> LITERAL
+%token SEQ_IFIF SEQ_ELSE SEQ_WHLE SEQ_FOOR
 %token<information> SMT_NAME RSV_TYPE
 
 %type<s_node> scope
