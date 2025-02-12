@@ -10,8 +10,6 @@
  * listed after the operator precedence
  */
 
-// todo: 1. add char 2. char conversion(from ascii to 'a')
-
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>

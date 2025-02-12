@@ -29,18 +29,15 @@ Test-driven development principles were considered in this project.
 
 - x-dimensional arrays, where x could be any natural value not NULL. the same is assured for the size of each dimension.
 
-- Recognize both int[1][3] variable_name and int variable_name[14][5151][62];
-
 - Each file from [examples directory](/exs/) is responsable of one grammar rule.
 
 - See [implementation details](/docs/brainstorm.md) for more.
 
+- Default parameters for functions
+
 ## Limitations
 
 - No type qualifiers
-- No pointers or refferences
-- No union, struct
-- No casts
-- No inheritence of classes (no protected access specifier)
-- No method overloading
-- no default parameters for functions
+- No pointers, refferences
+- No struct, union
+- No inheritence of classes

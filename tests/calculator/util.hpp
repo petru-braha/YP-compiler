@@ -390,8 +390,6 @@ function_data::it function_data::end()
 //!------------------------------------------------
 //! object
 
-// TODO : make copy for objects
-
 // private
 object_data::object_data(const object_data &o)
     : item_data(ITEM_TYPE_OBJ, o.get_data_type())
@@ -497,7 +495,6 @@ object_data &object_data::
     if (ITEM_TYPE_FCT == value->get_item_type())
         yyerror("bad news");
 
-    // TODO: to remove?
     //  check if id belongs to type - redundant operation
     if (nullptr == type_exists(get_data_type())->get_data(id))
         yyerror("bad news");

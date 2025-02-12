@@ -1,7 +1,6 @@
 #ifndef __0CONSTANT0__
 #define __0CONSTANT0__
 
-#include <stdlib.h>
 #include <string>
 
 class item_data;

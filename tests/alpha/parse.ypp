@@ -10,6 +10,9 @@
   extern char* yytext;
   extern int yylineno;
   size_t count_error;
+
+  std::vector<symbol_table> symbols;
+  #define LAST_SCOPE symbols.size() - 1
 %}
 
 %left '&' '|'

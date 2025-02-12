@@ -6,7 +6,7 @@
 #include "arithmetic.hpp"
 #include "data.hpp"
 
-std::vector<symbol_table> symbols;
+extern std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
 
 constexpr char VAR_STAT_TYPE = 100;
@@ -69,7 +69,6 @@ ast_variable::ast_variable(const item_data *const data)
   if (ITEM_TYPE_VAR != data->get_item_type())
     yyerror("ast_variable() failed - wrong type");
 
-  // todo check if array
   value = strdup(((variable_data *)data)->get_value().c_str());
 }
 
@@ -116,7 +115,7 @@ ast_operator::ast_operator(ast_expression *const o0,
                            ast_expression *const o1)
     : left_child(o0), rght_child(o1), operation(op)
 {
-  if(ASG_CHR == op)
+  if (ASG_CHR == op)
     yyerror("ast_operator() failed - use ast_assign() instead");
   if ((nullptr == o0 && '!' != op && '-' != op) ||
       nullptr == o1)
@@ -169,15 +168,15 @@ char *ast_operator::evaluate() const
   return result;
 }
 
-// here left_child is always will always be evaluated last
+// here left_child is always evaluated last
 class ast_assign : public ast_expression
 {
-  const ast_variable *const left_child;
+  const ast_expression *const left_child;
   const ast_expression *const rght_child;
 
 public:
   virtual ~ast_assign();
-  ast_assign(ast_variable *const,
+  ast_assign(ast_expression *const,
              ast_expression *const);
 
   const char get_type() const override;
@@ -191,10 +190,11 @@ ast_assign::~ast_assign()
 }
 
 ast_assign::ast_assign(
-    ast_variable *const v0, ast_expression *const v1)
+    ast_expression *const v0,
+    ast_expression *const v1)
     : left_child(v0), rght_child(v1)
 {
-  if(nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1)
     yyerror("ast_assign() failed - received nullptr");
 }
 
@@ -205,8 +205,8 @@ const char ast_assign::get_type() const
 
 char *ast_assign::evaluate() const
 {
-  char* v1 = rght_child->evaluate();
-  char* v0 = left_child->evaluate();
+  char *v1 = rght_child->evaluate();
+  char *v0 = left_child->evaluate();
   return asg_vals(v0, v1);
 }
 
@@ -478,7 +478,5 @@ char *ast_def::evaluate() const
 {
   return nullptr;
 }
-
-// todo ast_assign
 
 #endif

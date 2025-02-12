@@ -16,7 +16,9 @@ class symbol_table;
  */
 class object_data : public item_data
 {
-    std::unordered_map<std::string, item_data *> attributes;
+    std::unordered_map<
+        std::string, item_data *>
+        attributes;
 
     friend class function_data;
     friend class symbol_table;

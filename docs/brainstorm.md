@@ -1,17 +1,15 @@
 ## To do
 
-0. array support
-0. ast - function call, assignement
+0. standard methods
 0. char - operations? '\n'
-0. assignation a = 5 + 4; // a will be 5... we need to ensure right association of assignation operand
-
-<br>
-
-0. complete the syntax documentation from the guidline
+0. complete the syntax documentation from the guidelines
 0. better names: abbreviation capslock?
-0. restrict access to type_table
 
 ## General ideas
+
+- memory allocation -> parser
+- memory deallocation -> ast, classes
+- a scope either returs or breaks
 
 - ids from scopes have priority before ids from the class definition
 - for now no global declarations after master()
@@ -205,20 +203,24 @@ string name = Type(a);
 
 level 3:
 - src/class/dev/yyerror.hpp
-- src/class/dev/alphabet.hpp
 - src/class/dev/item_data.hpp
+- src/class/dev/function.hpp
+- src/class/dev/ast.hpp
+- src/class/dev/ast_alphabet.hpp
+- src/class/dev/ast_arithmetic.hpp
 
 level 2:
 - src/class/variable_data.hpp
 - src/class/function_data.hpp
 - src/class/object_data.hpp
+- src/class/array_data.hpp
+- src/class/class_data.hpp
 - src/class/symbol_table.hpp
 - src/class/type_table.hpp
 
 level 1:
-- src/arithmetic.hpp
-- src/data.hpp
 - src/node.hpp
+- src/implementation.hpp
 
 level 0:
 - build.sh
@@ -245,41 +247,62 @@ level 0:
 - the compiler should not throw or crash! (no errors)
 
 ## Operators
+
 | class | operator | allowed types |
 |:-----:|:--------:|:--------------|
 | OPR0 | "+" | int float char string |
 | OPR0 | "-" | int float char string |
 | OPR0 | "&" | bool |
 | OPR0 | "\|"| bool |
-| OPR0 | "⊕"| bool |
+| OPR0 | "⊕" | bool |
 | OPR0 | "=="| int float char string bool |
 | OPR0 | "!="| int float char string bool |
 | OPR0 | "<="| int float char string |
 | OPR0 | "<" | int float char string |
 | OPR0 | ">="| int float char string |
 | OPR0 | ">" | int float char string |
-| OPR0 | "*" | int float char |
-| OPR0 | "/" | int float char |
-| OPR0 | "%" | int char |
-| OPR0 | "^" | int float char |
+| OPR1 | "*" | int float char |
+| OPR1 | "/" | int float char |
+| OPR1 | "%" | int char |
+| OPR2 | "^" | int float char |
+| OPRU | "!" | bool |
+| OPRU | "-" | int float |
+| OPRR | "=" | any |
 
-"=" | any
-"!" | bool
-"-" | int float
+## Ast
 
-// check precedence of last 3
+- statement
+    - expression
+        - constant // just primitive
+        - operator // just primitive
+        - assign
+        - symbolcall
+        - methodcall
+        - vanillacall
+    
+    - typecall
+    - definition
+    
+    - action
+    - return
+    
+    - scope
+    - scope_control
+    
+    - ifelse
+    - while
+    - for
 
 ## Sugar syntax
 
 - int a, b = 5, doua_zeci = 20;
 - 1.000 - int | 1,0 - float
--
-
 
 ## Future development
 
-- a lot of sugar syntax
+- sugar syntax
 - wide up the count of types allowed for the operators
-- for() just one instruction or none
+- control() just one instruction or none
 - global declaration after master
 - the end of compilation creates a binary file which evaluates the ast at run time
+

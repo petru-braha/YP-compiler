@@ -15,13 +15,12 @@
 #include <limits.h>
 #include <cmath>
 #include <string>
-#include "alphabet.hpp"
+#include "yyerror.hpp"
+#include "function.hpp"
+#include "ast_alphabet.hpp"
 
 constexpr size_t BO_COUNT_DIGIT = 6;
 constexpr size_t LL_COUNT_DIGIT = 20;
-
-void yyerror(const char *);
-std::string type_of(const std::string &primitive_value);
 
 char *negation(const char *const);
 char *chg_sign(const char *const);

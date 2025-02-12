@@ -3,6 +3,16 @@
 
 /* comments
  * a concatenation of three segments: err problem description
+ * error messages are provided when foreign keys ask to be
+    included in the current data
+      constructors
+      specific methods (such as insertions)
+ * interogations won't send any messages
+    their data is already filtered
+      constant methods
+      iterator methods
+
+ * exception: symbol table insertions won't provide error messages
  */
 
 void yyerror(const char *s);
