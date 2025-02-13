@@ -25,7 +25,7 @@ class object_data : public mutable_data
   const std::string data_type;
 
   typedef std::unordered_map<
-      std::string, field>
+      std::string, field_data>
       map;
   map *attributes;
 
@@ -39,10 +39,10 @@ public:
 
   virtual const char get_item_type() const override;
   virtual const std::string &get_data_type() const override;
-  field *get_attriubte(const std::string &id) const;
+  field_data *get_attriubte(const std::string &id) const;
 
   typedef std::unordered_map<
-      std::string, field>::iterator it;
+      std::string, field_data>::iterator it;
   it begin();
   it end();
 };
@@ -54,7 +54,7 @@ object_data::~object_data()
   delete attributes;
 }
 
-// default values of fields are being set at compilation time
+// default values of field_datas are being set at compilation time
 object_data::object_data(const std::string &type)
     : data_type(type)
 {
@@ -76,7 +76,7 @@ object_data::object_data(const std::string &type)
     const char access =
         symbol.second.access_modifier;
     mutable_data *data = (mutable_data *)symbol.second.data;
-    std::pair<std::string, field> p(
+    std::pair<std::string, field_data> p(
         symbol.first, {make_copy(data), access});
     attributes->insert(p);
   }
@@ -85,7 +85,7 @@ object_data::object_data(const std::string &type)
 object_data::object_data(
     const std::string &type,
     std::unordered_map<
-        std::string, field> *const arguments)
+        std::string, field_data> *const arguments)
     : data_type(type), attributes(arguments)
 {
   if (nullptr == arguments)
@@ -117,7 +117,7 @@ const std::string &object_data::get_data_type() const
   return data_type;
 }
 
-field *object_data::get_attriubte(const std::string &id) const
+field_data *object_data::get_attriubte(const std::string &id) const
 {
   auto it = attributes->find(id);
   if (it != attributes->end())

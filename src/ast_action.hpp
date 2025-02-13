@@ -8,9 +8,9 @@
  */
 
 #include <vector>
+#include "class/dev/ast.hpp"
 #include "class/dev/yyerror.hpp"
 #include "class/dev/item_data.hpp"
-#include "class/dev/ast.hpp"
 
 #include "class/symbol_table.hpp"
 
@@ -52,7 +52,7 @@ const char ast_action::get_stat_type() const
 struct return_value
 {
   const char action = ACT_RETURN;
-  const void *value;
+  mutable_data *value;
 };
 
 class ast_return : public ast_statement
@@ -83,7 +83,23 @@ ast_return::ast_return(ast_expression *const e)
 
 void *ast_return::evaluate()
 {
-  result.value = (const void *)get_buffer(data);
+  void *buffer = data->evaluate();
+  if (is_returning_char(data))
+  {
+    char *value = (char *)buffer;
+    result.value = new primitive_data(
+        type_of(value), value);
+    return (void *)&result;
+  }
+
+  item_data *temp = (item_data *)buffer;
+  if (FNCT_ITEM_TYPE == temp->get_item_type())
+  {
+    yyerror("ast_return() failed - received function");
+    return nullptr;
+  }
+
+  result.value = (mutable_data *)temp;
   return (void *)&result;
 }
 

@@ -8,25 +8,26 @@
  */
 
 #include <vector>
+#include "class/dev/ast.hpp"
 #include "class/dev/yyerror.hpp"
 #include "class/dev/item_data.hpp"
-#include "class/dev/ast.hpp"
 
 #include "class/class_data.hpp"
 #include "class/symbol_table.hpp"
 #include "class/type_table.hpp"
+#include "ast_call.hpp"
 
 extern std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
 
 class ast_typecall : public ast_statement
 {
-  const char *const id;
+  char *const id;
   class_data *const data;
 
 public:
   virtual ~ast_typecall() override;
-  ast_typecall(const char *const,
+  ast_typecall(char *const,
                class_data *const);
 
   virtual void *evaluate() override;
@@ -36,13 +37,13 @@ public:
 
 ast_typecall::~ast_typecall()
 {
-  delete id;
+  free(id);
   // last reminder about item_data's memory
   // delete data;
 }
 
 ast_typecall::ast_typecall(
-    const char *const id,
+    char *const id,
     class_data *const data)
     : id(id), data(data)
 {
@@ -72,13 +73,14 @@ const char ast_typecall::get_stat_type() const
 
 class ast_definiton : public ast_statement
 {
-  const char *const id;
-  item_data *const data;
+  char *const data_type;
+  char *const id;
+  ast_expression *const value;
 
 public:
   virtual ~ast_definiton() override;
-  ast_definiton(const char *const,
-                item_data *const);
+  ast_definiton(char *const, char *const,
+                ast_expression *const);
 
   virtual void *evaluate() override;
 
@@ -87,14 +89,18 @@ public:
 
 ast_definiton::~ast_definiton()
 {
-  delete id;
+  free(data_type);
+  free(id);
+  delete value;
 }
 
 ast_definiton::ast_definiton(
-    const char *const id, item_data *const data)
-    : id(id), data(data)
+    char *const type, char *const id,
+    ast_expression *const value)
+    : data_type(type), id(id), value(value)
 {
-  if (nullptr == id || nullptr == data)
+  if (nullptr == type || nullptr == id ||
+      nullptr == value)
     yyerror("ast_definiton() failed - received nullptr");
 }
 
@@ -102,18 +108,20 @@ void *ast_definiton::evaluate()
 {
   if (is_type(id))
   {
-    yyerror("ast_definiton() failed - received nullptr");
+    yyerror("ast_definiton() failed - already defined id");
     return nullptr;
   }
 
   if (scope_search(id))
   {
-    yyerror("ast_definiton() failed - received nullptr");
+    yyerror("ast_definiton() failed - already defined id");
     return nullptr;
   }
 
-  symbols[LAST_SCOPE].insert(id, data);
-  return data;
+  // void *buffer =
+  // symbols[LAST_SCOPE].insert(id, data);
+  // return data;
+  return nullptr;
 }
 
 const char ast_definiton::get_stat_type() const
@@ -121,5 +129,55 @@ const char ast_definiton::get_stat_type() const
   return DEF_STAT_TYPE;
 }
 
+class ast_declaration : public ast_statement
+{
+  char *const data_type;
+  char *const id;
+
+public:
+  virtual ~ast_declaration() override;
+  ast_declaration(char *const, char *const);
+
+  virtual void *evaluate() override;
+
+  virtual const char get_stat_type() const override;
+};
+
+ast_declaration::~ast_declaration()
+{
+  free(data_type);
+  free(id);
+}
+
+ast_declaration::ast_declaration(
+    char *const type, char *const id)
+    : data_type(type), id(id)
+{
+  if (nullptr == type || nullptr == id)
+    yyerror("ast_declaration() failed - received nullptr");
+}
+
+void *ast_declaration::evaluate()
+{
+  if (is_type(id))
+  {
+    yyerror("ast_declaration() failed - already defined id");
+    return nullptr;
+  }
+
+  if (scope_search(id))
+  {
+    yyerror("ast_declaration() failed - already defined id");
+    return nullptr;
+  }
+
+  // todo create data based on data_type
+  return id;
+}
+
+const char ast_declaration::get_stat_type() const
+{
+  return DCL_STAT_TYPE;
+}
 
 #endif

@@ -7,8 +7,8 @@
  * and not here
  */
 
-#include "class/dev/yyerror.hpp"
-#include "class/dev/ast.hpp"
+ #include "class/dev/ast.hpp"
+ #include "class/dev/yyerror.hpp"
 
 class ast_ifelse : public ast_statement
 {

@@ -271,32 +271,40 @@ level 0:
 | OPRU | "-" | int float |
 | OPRR | "=" | any |
 
-## Ast
+## Abstract syntax trees
 
-- statement
-    - expression
-        - constant // just primitive
-        - operator // just primitive
-        - assign
-        - symbolcall
-        - methodcall
-        - vanillacall
-        - indexing
-        - fielding
-        - fieldcall
-    
-    - typecall
-    - definition
-    
-    - action
-    - return
-    
-    - scope
-    - scope_control
-    
-    - ifelse
-    - while
-    - for
+| class | statement type | return type | notes | 
+|:-----:|:--------------:|:-----------:|:------|
+| ast_constant | ast_expression | char* | primitive unit |
+| ast_operator | ast_expression | char* | works only with primitive types |
+| ast_assign | ast_expression | item_data* | - |
+| | | |
+| ast_symbolcall | ast_expression | item_data* | used to scope_search() an id |
+| ast_methodcall | ast_expression | mutable_data* | as ast_return::evaluate() |
+| ast_vanillacall | ast_expression | char* | methods already defined |
+| | | |
+| ast_indexing | ast_expression | array_data* | ? |
+| ast_fielding | ast_expression | item_data* | ? |
+| ast_fieldcall | ast_expression | mutable_data* | ? |
+| | | |
+| ast_typecall | ast_statement | class_data* | user-defined class |
+| ast_definition | ast_statement | item_data* | any type of symbol |
+| ast_declaration | ast_statement | item_data* | any type of symbol |
+| | | |
+| ast_action | ast_statement | char | returns a single character |
+| ast_return | ast_statement | mutable_data* | - |
+| | | |
+| ast_scope | ast_statement | *** | list of statemets terminated by a ast_return |
+| ast_scope_control | ast_statement | *** | list of statemets terminated by a ast_return/ast_action |
+| | | |
+| ast_ifelse | ast_statement | *** | - |
+| ast_while | ast_statement | *** | - |
+| ast_for | ast_statement | *** | - |
+
+- *** == any from above
+- method == function
+
+- ast_expression -> char* / item_data*
 
 ## Sugar syntax
 

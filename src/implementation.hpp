@@ -1,10 +1,10 @@
 #ifndef __0UTILITY0__
 #define __0UTILITY0__
 
+#include "class/dev/ast.hpp"
 #include "class/dev/yyerror.hpp"
 #include "class/dev/item_data.hpp"
 #include "class/dev/function.hpp"
-#include "class/dev/ast.hpp"
 
 #include "class/primitive_data.hpp"
 #include "class/function_data.hpp"
@@ -14,8 +14,6 @@
 
 #include "class/symbol_table.hpp"
 #include "class/type_table.hpp"
-
-#include "ast_expression.hpp"
 
 extern std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
@@ -109,6 +107,18 @@ bool is_compatible(const char *type, const char *constant_value)
   return true;
 }
 
+bool is_returning_char(ast_expression *const node)
+{
+  if (nullptr == node)
+    return false;
+
+  if (node->get_stat_type() == CST_STAT_TYPE ||
+      node->get_stat_type() == OPR_STAT_TYPE ||
+      node->get_stat_type() == MTS_STAT_TYPE)
+    return true;
+  return false;
+}
+
 /* expression of primitive_data
  * also evaluates the expression
  * provides error messages
@@ -121,25 +131,26 @@ const char *get_buffer(ast_expression *const node)
     return nullptr;
   }
 
-  void *data = node->evaluate();
-  if (node->get_stat_type() == CST_STAT_TYPE ||
-      node->get_stat_type() == OPR_STAT_TYPE)
-    return (char *)data;
+  void *buffer = node->evaluate();
+  if (is_returning_char(node))
+    return (char *)buffer;
 
-  primitive_data *p = (primitive_data *)data;
-  if (!is_primitive(p->get_data_type()))
+  item_data *data = (item_data *)buffer;
+  if (PRMT_ITEM_TYPE != data->get_item_type() ||
+      false == is_primitive(data->get_data_type()))
   {
     yyerror("get_buffer() failed - not primitive type");
     return nullptr;
   }
 
+  primitive_data *p = (primitive_data *)data;
   return p->get_value().c_str();
 }
 
 /*
  * type_of(std::string); - high-level call
  * type_of(const char *); - vanilla call
-*/
+ */
 void *type_of(const char *const buffer, const char)
 {
   std::string type = type_of(std::string(buffer));
@@ -152,9 +163,39 @@ void *type_of(const char *const buffer, const char)
 
 void *print_f(const char *const buffer, const char)
 {
-  void* data = malloc(sizeof(int));
-  *(int*)data = printf("%s", buffer);
+  int number = printf("%s", buffer);
+  char *data = strdup(std::to_string(number).c_str());
   return data;
+}
+
+void initialize_compiler()
+{
+  symbols.emplace_back();
+  symbol_table &s = symbols[LAST_SCOPE];
+
+  s.insert(
+      "type_of",
+      new function_data(
+          STRG_DATA_TYPE,
+          new std::unordered_map<
+              std::string, mutable_data *>(),
+          new std::vector<ast_statement *>()));
+
+  s.insert(
+      "print_f",
+      new function_data(
+          INTG_DATA_TYPE,
+          new std::unordered_map<
+              std::string, mutable_data *>(),
+          new std::vector<ast_statement *>()));
+
+  s.insert(
+      "master",
+      new function_data(
+          INTG_DATA_TYPE,
+          new std::unordered_map<
+              std::string, mutable_data *>(),
+          new std::vector<ast_statement *>()));
 }
 
 #endif

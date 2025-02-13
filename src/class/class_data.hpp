@@ -10,7 +10,7 @@
 constexpr char ACCS_MODF_PRIV = 0;
 constexpr char ACCS_MODF_PUBL = 1;
 
-struct field
+struct field_data
 {
   item_data *data;
   const char access_modifier;
@@ -18,18 +18,22 @@ struct field
 
 class class_data : public table
 {
-  std::unordered_map<std::string, field> *const itm;
+  typedef std::unordered_map<
+      std::string, field_data>
+      map;
+  map *const itm;
 
 public:
   virtual ~class_data() override;
-  class_data(std::unordered_map<std::string, field> *const);
+  class_data(map *const);
 
-  field *get_data(const std::string &id);
-  
+  class_data &insert(const std::string &, const field_data &);
+  field_data *get_data(const std::string &id);
+
   virtual const size_t get_count(const char) const override;
 
   typedef std::unordered_map<
-      std::string, field>::iterator it;
+      std::string, field_data>::iterator it;
   it begin();
   it end();
 };
@@ -41,7 +45,8 @@ class_data::~class_data()
 }
 
 class_data::class_data(
-    std::unordered_map<std::string, field> *const data) : itm(data)
+    std::unordered_map<std::string, field_data> *const data)
+    : itm(data)
 {
   if (nullptr == data)
     yyerror("class_data() failed - received nullptr");
@@ -50,7 +55,7 @@ class_data::class_data(
 /* used for type_table too
 the only time when we don't check for previous scopes too
  */
-field *class_data::get_data(const std::string &id)
+field_data *class_data::get_data(const std::string &id)
 {
   auto it = itm->find(id);
   return it != itm->end() ? &((*it).second) : nullptr;

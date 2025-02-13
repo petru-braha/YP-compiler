@@ -11,15 +11,10 @@
  */
 
 #include <vector>
-#include "class/dev/yyerror.hpp"
-#include "class/dev/item_data.hpp"
-#include "class/dev/function.hpp"
-#include "class/dev/ast_alphabet.hpp"
-#include "class/dev/ast_arithmetic.hpp"
 #include "class/dev/ast.hpp"
+#include "class/dev/yyerror.hpp"
 
 #include "ast_action.hpp"
-#include "implementation.hpp"
 
 class ast_scope : public ast_statement
 {

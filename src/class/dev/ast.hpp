@@ -15,16 +15,17 @@ constexpr char FLC_STAT_TYPE = 108;
 
 constexpr char TYC_STAT_TYPE = 109;
 constexpr char DEF_STAT_TYPE = 110;
+constexpr char DCL_STAT_TYPE = 111;
 
-constexpr char ACT_STAT_TYPE = 111;
-constexpr char RET_STAT_TYPE = 112;
+constexpr char ACT_STAT_TYPE = 112;
+constexpr char RET_STAT_TYPE = 113;
 
-constexpr char SCP_STAT_TYPE = 113;
-constexpr char SCC_STAT_TYPE = 114;
+constexpr char SCP_STAT_TYPE = 114;
+constexpr char SCC_STAT_TYPE = 115;
 
-constexpr char IFE_STAT_TYPE = 115;
-constexpr char WHL_STAT_TYPE = 116;
-constexpr char FOR_STAT_TYPE = 117;
+constexpr char IFE_STAT_TYPE = 116;
+constexpr char WHL_STAT_TYPE = 117;
+constexpr char FOR_STAT_TYPE = 118;
 
 class ast_expression;
 const char *get_buffer(ast_expression *const);

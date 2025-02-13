@@ -43,6 +43,9 @@
   #include "src/class/type_table.hpp"
 
   #include "src/ast_expression.hpp"
+  #include "src/ast_call.hpp"
+  #include "src/ast_indexing.hpp"
+  
   #include "src/ast_definition.hpp"
   #include "src/ast_action.hpp"
   #include "src/ast_scope.hpp"
@@ -57,9 +60,11 @@
   extern char* yytext;
   extern int yylineno;
   size_t count_error;
+  char global_access;
 
   std::vector<symbol_table> symbols;
   #define LAST_SCOPE symbols.size() - 1
+  void initialize_compiler();
 %}
 
 %left '&' '|'
@@ -73,13 +78,22 @@
 
 %code requires
 {
+  #include <string>
   #include <vector>
+  #include <unordered_map>
+  
+  class item_data;
+
+  struct field_data;
   class ast_statement;
   class ast_expression;
 }
 %union {
   char* information;
   char character;
+
+  std::pair<std::string, field_data>* class_field;
+  std::unordered_map<std::string, field_data>* class_content; 
 
   ast_statement* s_node;
   ast_expression* e_node;
@@ -99,12 +113,16 @@
 
 %token<information> RSV_TYPE RSV_ARRY SMT_NAME DEF_ARRY
 
+%type<class_field> cls_fild
+%type<class_content> arr_fild
+
 %type<s_node> var_decl var_defn
 %type<s_node> fct_decl fct_defn
 %type<s_node> obj_decl obj_defn
+%type<s_node> cls_decl cls_defn
 
 %type<s_node> scope
-%type<subast> statement_list
+%type<subast> arr_stat
 %type<s_node> stat ctrl decl
 %type<e_node> expr term fact unit asgn
 
@@ -113,14 +131,101 @@
 %start starting_symbol
 
 %%
-/*!------------------------------------------------
-/*!------------------------------------------------
-/*! declarations */
 
-starting_symbol : { /** initialize the compiler */
-                  }
-                  global_declaration
-                  { /** check for errors at the end */
+/*! declaration */
+
+/* 1c rules */
+cls_decl: RSV_CLSS SMT_NAME ';'{
+            /*if(size_t(-1) != scope_search($2))
+              yyerror("identifier already defined");*/
+            free($2);
+          }
+        ;
+
+/* 2c rules */
+cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN arr_fild SCOPE_END {
+            $$ = new ast_typecall($2,
+              new class_data($4));
+          }
+        | RSV_CLSS SMT_NAME SCOPE_BEGIN SCOPE_END {
+            $$ = new ast_typecall($2,
+              new class_data(
+                new std::unordered_map<std::string, field_data>()));
+          }
+        ;
+
+arr_fild: arr_fild cls_fild { 
+            $1->insert(*$2);
+            $$ = $1;
+          }
+        | cls_fild {
+            $$ = new std::unordered_map<std::string, field_data>();
+            $$->insert(*$1);
+          }
+        ;
+
+cls_fild: var_decl
+        | var_defn
+        | fct_defn
+        | obj_decl
+        | obj_defn
+        | ACS_PRIV
+        | ACS_PUBL
+        ;
+
+/* 4v rules */
+var_decl: RSV_TYPE SMT_NAME { $$ = new ast_declaration($1, $2); }
+        | RSV_ARRY SMT_NAME { $$ = new ast_declaration($1, $2); }
+        ;
+var_defn: RSV_TYPE SMT_NAME OPR3 expr { $$ = new ast_definition($1, $2, $4); }
+        | RSV_ARRY SMT_NAME OPR3 expr { $$ = new ast_definition($1, $2, $4); }
+        ;
+
+/* 8f rules */
+fct_decl: RSV_TYPE SMT_NAME '(' arr_parm parametr ')'
+        | RSV_ARRY SMT_NAME '(' arr_parm parametr ')'
+        | RSV_TYPE SMT_NAME '(' ')'
+        | RSV_ARRY SMT_NAME '(' ')'
+        | SMT_NAME SMT_NAME '(' arr_parm parametr ')'
+        | DEF_ARRY SMT_NAME '(' arr_parm parametr ')'
+        | SMT_NAME SMT_NAME '(' ')'
+        | DEF_ARRY SMT_NAME '(' ')'
+        ;
+/* 8f rules */
+fct_defn: RSV_TYPE SMT_NAME '(' arr_parm parametr ')' scope
+        | RSV_ARRY SMT_NAME '(' arr_parm parametr ')' scope
+        | RSV_TYPE SMT_NAME '(' ')' scope
+        | RSV_ARRY SMT_NAME '(' ')' scope
+        | SMT_NAME SMT_NAME '(' arr_parm parametr ')' scope
+        | DEF_ARRY SMT_NAME '(' arr_parm parametr ')' scope
+        | SMT_NAME SMT_NAME '(' ')' scope
+        | DEF_ARRY SMT_NAME '(' ')' scope
+        ;
+arr_parm: arr_parm parametr ','
+        | /* epsilon */ {}
+        ;
+parametr: RSV_TYPE SMT_NAME
+        | RSV_ARRY SMT_NAME
+        | SMT_NAME SMT_NAME
+        | DEF_ARRY SMT_NAME
+        ;
+
+/* 4o rules */
+obj_decl: SMT_NAME SMT_NAME {}
+        | DEF_ARRY SMT_NAME {}
+        ;
+obj_defn: SMT_NAME SMT_NAME OPR3 '{' attribte obj_vals
+        | DEF_ARRY SMT_NAME OPR3 '{' attribte obj_vals
+        ;
+obj_vals: ',' attribte obj_vals
+        | '}'
+        ;
+attribte: expr
+        ;
+
+/*! statements */
+
+starting_symbol : { initialize_compiler(); } glb_decl {
                     if(0 == count_error)
                       printf("the program was compiled correctly.\n");
                     else
@@ -133,421 +238,44 @@ starting_symbol : { /** initialize the compiler */
     | SMT_NAME OPR3 test { printf("t"); }
     ;*/
 
-global_declaration: global_declaration cls_decl
-                  | global_declaration cls_defn
-                  | global_declaration var_decl
-                  | global_declaration var_defn
-                  | global_declaration fct_decl
-                  | global_declaration fct_defn
-                  | global_declaration obj_decl
-                  | global_declaration obj_defn
-                  | MASTER scope {
-                      symbols.emplace_back();
-                      $2->evaluate();
-                      delete $2;
-                    }
-                  ;
-
-cls_decl: RSV_CLSS SMT_NAME ';'{
-            /*if(size_t(-1) != scope_search($2))
-              yyerror("identifier already defined");*/
-            free($2);
+glb_decl: glb_decl decl
+        | MASTER scope {
+            symbols.emplace_back();
+            $2->evaluate();
+            delete $2;
           }
         ;
 
-cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN {}
-          cls_fild arr_fild {}
-        ;
-
-arr_fild: cls_fild arr_fild
-        | SCOPE_END
-        ;
-
-/* 20 rules for field
- * 4 rules for variable
- * 8 rules for function
- * 2 rules for constructor
- * 4 rules for object
- * 2 rules for access specifier
- */
-
-cls_fild: /** 4v rules */ 
-/*1*/     RSV_TYPE SMT_NAME ';' {}
-/*2*/   | RSV_ARRY SMT_NAME ';' {}
-/*3*/   | RSV_TYPE SMT_NAME OPR3 expr ';' {}
-/*4*/   | RSV_ARRY SMT_NAME OPR3 expr ';' {}
-        
-          /** 8f rules */
-/*1*/   | RSV_TYPE SMT_NAME
-          '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        
-/*2*/   | RSV_ARRY SMT_NAME /*{
-            bool is_error = false, error_flag = false;
-
-            if(error_flag |= is_error = type_exists($2);
-              is_error)
-              yyerror("type treated as an identifier");
-
-            if(error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-              is_error)
-              yyerror("identifier already defined in class");
-
-            // success
-            if(false == error_flag)
-            {
-              /*todo array
-              //function_data f_data($1);
-              //type_exists(cls_last_name)->insert($2, &f_data);
-              //f_data_global = (function_data*)
-                //type_exists(cls_last_name)->get_data($2);
-            }
-
-            free($1);
-            free($2);
-          }*/
-          
-          '(' parametr arr_parm /* { f_data_global = nullptr; } */
-          SCOPE_BEGIN
-          statement_list ';' { /*todo ast*/ }
-/*3*/   | RSV_TYPE SMT_NAME /*{
-            bool is_error = false, error_flag = false;
-
-            if(error_flag |= is_error = type_exists($2);
-              is_error)
-              yyerror("type treated as an identifier");
-
-            if(error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-              is_error)
-              yyerror("identifier already defined in class");
-
-            // success
-            if(false == error_flag)
-            {
-              function_data f_data($1);
-              type_exists(cls_last_name)->insert($2, &f_data);
-            }
-
-            free($1);
-            free($2);
-          }*/
-          
-          '('')'
-          SCOPE_BEGIN
-          statement_list ';' { /*todo ast*/ }
-
-/*4*/   | RSV_ARRY SMT_NAME /*{
-            bool is_error = false, error_flag = false;
-
-            if(error_flag |= is_error = type_exists($2);
-              is_error)
-              yyerror("type treated as an identifier");
-
-            if(error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-              is_error)
-              yyerror("identifier already defined in class");
-
-            // success
-            if(false == error_flag)
-            {
-              /*todo array
-              //function_data f_data($1);
-              //type_exists(cls_last_name)->insert($2, &f_data);
-            }
-
-            free($1);
-            free($2);
-          }*/
-
-          '('')'
-          SCOPE_BEGIN
-          statement_list ';' { /*todo ast*/ }
-          
-/*5*/   | SMT_NAME SMT_NAME /*{
-            bool is_error = false, error_flag = false;
-
-            error_flag |= is_error = 
-              nullptr == type_exists($1);
-            if(is_error)
-              yyerror("undefined type");
-            
-            error_flag |= is_error = is_type($2);
-            if(is_error)
-              yyerror("type treated as an identifier");
-            
-            error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-            if(is_error)
-              yyerror("identifier already defined in class");
-
-            // success
-            if(false == error_flag)
-            {
-              function_data f_data($1);
-              type_exists(cls_last_name)->insert($2, &f_data);
-              f_data_global = (function_data*)
-                type_exists(cls_last_name)->get_data($2);
-            }
-
-            free($1);
-            free($2);
-          }*/
-          
-          '(' parametr arr_parm /*{ f_data_global = nullptr; }*/
-          SCOPE_BEGIN
-          statement_list ';' { /*todo ast*/ }
-
-/*6*/   | DEF_ARRY SMT_NAME /*{
-            bool is_error = false, error_flag = false;
-
-            error_flag |= is_error = 
-              nullptr == type_exists($1);
-            if(is_error)
-              yyerror("undefined type");
-            
-            error_flag |= is_error = is_type($2);
-            if(is_error)
-              yyerror("type treated as an identifier");
-            
-            error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-            if(is_error)
-              yyerror("identifier already defined in class");
-
-            // success
-            if(false == error_flag)
-            {
-              function_data f_data($1);
-              type_exists(cls_last_name)->insert($2, &f_data);
-              f_data_global = (function_data*)
-                type_exists(cls_last_name)->get_data($2);
-            }
-
-            free($1);
-            free($2);
-          }*/
-          
-          '(' parametr arr_parm /*{ f_data_global = nullptr; }*/
-          SCOPE_BEGIN
-          statement_list ';' { /*todo ast*/ }
-
-/*7*/   | SMT_NAME SMT_NAME /*{
-            bool is_error = false, error_flag = false;
-
-            error_flag |= is_error = 
-              nullptr == type_exists($1);
-            if(is_error)
-              yyerror("undefined type");
-            
-            error_flag |= is_error = is_type($2);
-            if(is_error)
-              yyerror("type treated as an identifier");
-            
-            error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-            if(is_error)
-              yyerror("identifier already defined in class");
-
-            // success
-            if(false == error_flag)
-            {
-              function_data f_data($1);
-              type_exists(cls_last_name)->insert($2, &f_data);
-              f_data_global = (function_data*)
-                type_exists(cls_last_name)->get_data($2);
-          }*/
-          
-          '(' ')'
-          SCOPE_BEGIN
-          statement_list ';' { /*todo ast*/ }
-
-/*8*/   | DEF_ARRY SMT_NAME /*{
-            bool is_error = false, error_flag = false;
-
-            error_flag |= is_error = 
-              nullptr == type_exists($1);
-            if(is_error)
-              yyerror("undefined type");
-            
-            error_flag |= is_error = is_type($2);
-            if(is_error)
-              yyerror("type treated as an identifier");
-            
-            error_flag |= is_error =
-              type_exists(cls_last_name)->get_data($2);
-            if(is_error)
-              yyerror("identifier already defined in class");
-
-            // success
-            if(false == error_flag)
-            {
-              function_data f_data($1);
-              type_exists(cls_last_name)->insert($2, &f_data);
-              f_data_global = (function_data*)
-                type_exists(cls_last_name)->get_data($2);
-          }*/
-          
-          '(' ')'
-          SCOPE_BEGIN
-          statement_list ';' { /*todo ast*/ }
-
-          /** 2c rules */
-/*1*/   | SMT_NAME /*{
-            if(std::string($1) != std::string(cls_last_name))
-              yyerror("constructor should be labeled as class");
-            else
-            {
-              function_data f_data($1);
-              type_exists(cls_last_name)->insert($1, &f_data);
-              f_data_global = ...
-            }
-          }*/
-
-          '(' parametr arr_parm /* { f_data_global = nullptr; } */
-          SCOPE_BEGIN
-          statement_list ';' {
-            // symbols.emplace_back();
-            /*todo ast*/
-          }
-/*2*/   | SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';' {}
-        
-          /** 4o rules */
-/*1*/   | SMT_NAME SMT_NAME ';' {}
-
-/*2*/   | DEF_ARRY SMT_NAME ';' {
-            bool is_error = false, error_flag = false;
-
-            char * ptr = strchr($1, '[');
-            if(ptr)
-              *ptr = '\0';
-            error_flag |= is_error =
-              nullptr == type_exists($1);
-            if(is_error)
-              yyerror("undefined type");
-            
-            error_flag |= is_error = is_type($2);
-            if(is_error)
-              yyerror("type treated as an identifier");
-            
-            // success
-            if(false == error_flag)
-            {
-              object_data o_data($1);
-            }
-
-            free($1); free($2); 
-          }
-
-/*3*/   | SMT_NAME SMT_NAME OPR3 '{' attribte obj_vals /* type compat check */
-/*4*/   | DEF_ARRY SMT_NAME OPR3 '{' attribte obj_vals /* type compat check */
-        
-          /** 2a rules */
-        | ACS_PRIV {}
-        | ACS_PUBL {}
-        ;
-
-/* 4v rules */
-var_decl: RSV_TYPE SMT_NAME ';' {}
-        | RSV_ARRY SMT_NAME ';' {}
-        ;
-var_defn: RSV_TYPE SMT_NAME OPR3 expr ';' {}
-        | RSV_ARRY SMT_NAME OPR3 expr ';' {}
-        ;
-
-/* 8f rules */
-fct_decl: RSV_TYPE SMT_NAME '(' parametr arr_parm ';'
-        | RSV_ARRY SMT_NAME '(' parametr arr_parm ';'
-        | RSV_TYPE SMT_NAME '(' ')' ';'
-        | RSV_ARRY SMT_NAME '(' ')' ';'
-        | SMT_NAME SMT_NAME '(' parametr arr_parm ';'
-        | DEF_ARRY SMT_NAME '(' parametr arr_parm ';'
-        | SMT_NAME SMT_NAME '(' ')' ';'
-        | DEF_ARRY SMT_NAME '(' ')' ';'
-        ;
-/* 8f rules */
-fct_defn: RSV_TYPE SMT_NAME '(' parametr arr_parm 
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_ARRY SMT_NAME '(' parametr arr_parm 
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_TYPE SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';'
-        | RSV_ARRY SMT_NAME '(' ')'
-          SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | DEF_ARRY SMT_NAME '(' parametr arr_parm
-          SCOPE_BEGIN
-          statement_list ';'
-        | SMT_NAME SMT_NAME '(' ')'
-          SCOPE_BEGIN
-        | DEF_ARRY SMT_NAME '(' ')'
-          SCOPE_BEGIN
-        ;
-arr_parm: ',' parametr arr_parm
-        | ')'
-        ;
-parametr: RSV_TYPE SMT_NAME
-        | RSV_ARRY SMT_NAME
-        | SMT_NAME SMT_NAME
-        | DEF_ARRY SMT_NAME
-        ;
-
-/* 4o rules */
-obj_decl: SMT_NAME SMT_NAME ';' {}
-        | DEF_ARRY SMT_NAME ';' {}
-        ;
-obj_defn: SMT_NAME SMT_NAME OPR3 '{' attribte obj_vals
-        | DEF_ARRY SMT_NAME OPR3 '{' attribte obj_vals
-        ;
-obj_vals: ',' attribte obj_vals
-        | '}'
-        ;
-attribte: expr
-        ;
-
-/*!------------------------------------------------
-/*!------------------------------------------------
-/*! statements */
-
-scope : SCOPE_BEGIN statement_list SCOPE_END { $$ = new ast_scope($2); }
+scope : SCOPE_BEGIN arr_stat SCOPE_END { $$ = new ast_scope($2); }
       | SCOPE_BEGIN SCOPE_END {
             $$ = new ast_scope(new std::vector<ast_statement*>);
         }
       ;
 
-statement_list: statement_list stat { $1->emplace_back($2); $$ = $1; }
-              | stat {
-                  $$ = new std::vector<ast_statement*>;
-                  $$->emplace_back($1);
-                }
-              ;
+arr_stat: arr_stat stat { $1->emplace_back($2); $$ = $1; }
+        | stat {
+            $$ = new std::vector<ast_statement*>;
+            $$->emplace_back($1);
+          }
+        ;
 
 stat: asgn ';' { $$ = $1; }
     | ACT_BREK ';' { $$ = new ast_action(ACT_BREAK); }
     | ACT_CONT ';' { $$ = new ast_action(ACT_CONTINUE); }
     | ACT_RTRN expr ';' { $$ = new ast_return($2); }
-    | ctrl { $$ = $1; }
     | decl { $$ = $1; }
+    | ctrl { $$ = $1; }
     | scope { $$ = $1; }
     ;
 
-decl: var_decl { $$ = $1; }
-    | var_defn { $$ = $1; }
-    | fct_decl { $$ = $1; }
-    | fct_defn { $$ = $1; }
-    | obj_decl { $$ = $1; }
-    | obj_defn { $$ = $1; }
+decl: var_decl ';' { $$ = $1; }
+    | var_defn ';' { $$ = $1; }
+    | fct_decl ';' { $$ = $1; }
+    | fct_defn ';' { $$ = $1; }
+    | obj_decl ';' { $$ = $1; }
+    | obj_defn ';' { $$ = $1; }
+    | cls_decl ';' { $$ = $1; }
+    | cls_defn ';' { $$ = $1; }
     ;
 
 asgn: expr { $$ = $1; }
@@ -621,26 +349,26 @@ arr_argm: arr_argm expr ',' { $1->emplace_back($2); $$ = $1; }
         ;
 
 ctrl: SEQ_IFIF '(' expr ')' 
-        SCOPE_BEGIN statement_list SCOPE_END {
+        SCOPE_BEGIN arr_stat SCOPE_END {
           $$ = new ast_ifelse($3, 
             new ast_scope_control($6), 
             new ast_scope_control(
               new std::vector<ast_statement*>())); 
         }
     | SEQ_IFIF '(' expr ')'
-        SCOPE_BEGIN statement_list SCOPE_END
-        SEQ_ELSE SCOPE_BEGIN statement_list SCOPE_END {
+        SCOPE_BEGIN arr_stat SCOPE_END
+        SEQ_ELSE SCOPE_BEGIN arr_stat SCOPE_END {
           $$ = new ast_ifelse($3, 
             new ast_scope_control($6), 
             new ast_scope_control($10));
         }
     | SEQ_WHLE '(' expr ')'
-        SCOPE_BEGIN statement_list SCOPE_END {
+        SCOPE_BEGIN arr_stat SCOPE_END {
           $$ = new ast_while($3, 
             new ast_scope_control($6));
         }
     | SEQ_FOOR '(' stat ';' expr ';' stat ')' 
-        SCOPE_BEGIN statement_list SCOPE_END {
+        SCOPE_BEGIN arr_stat SCOPE_END {
           $$ = new ast_for($3, $5, $7, 
             new ast_scope_control($10));
         }

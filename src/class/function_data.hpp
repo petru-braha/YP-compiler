@@ -25,6 +25,7 @@ class function_data : public item_data
 
   static std::string available_id;
   const std::string &default_id();
+  bool emplace(const std::vector<mutable_data *> *const);
 
 public:
   virtual ~function_data() override;
