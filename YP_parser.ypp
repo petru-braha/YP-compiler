@@ -92,9 +92,6 @@
   char* information;
   char character;
 
-  std::pair<std::string, field_data>* class_field;
-  std::unordered_map<std::string, field_data>* class_content; 
-
   ast_statement* s_node;
   ast_expression* e_node;
   std::vector<ast_statement*>* subast;
@@ -113,19 +110,22 @@
 
 %token<information> RSV_TYPE RSV_ARRY SMT_NAME DEF_ARRY
 
-%type<class_field> cls_fild
-%type<class_content> arr_fild
-
 %type<s_node> var_decl var_defn
 %type<s_node> fct_decl fct_defn
+%type<subast> arr_parm 
+%type<s_node> parametr
+
 %type<s_node> obj_decl obj_defn
+%type<subast> arr_attr
+
 %type<s_node> cls_decl cls_defn
+%type<subast> arr_fild
+%type<s_node> cls_fild
 
 %type<s_node> scope
 %type<subast> arr_stat
 %type<s_node> stat ctrl decl
 %type<e_node> expr term fact unit asgn
-
 %type<subexp> arr_argm
 
 %start starting_symbol
@@ -133,6 +133,54 @@
 %%
 
 /*! declaration */
+
+/* 4v rules */
+var_decl: RSV_TYPE SMT_NAME { $$ = new ast_declaration($1, $2); }
+        | RSV_ARRY SMT_NAME { $$ = new ast_declaration($1, $2); }
+        ;
+var_defn: RSV_TYPE SMT_NAME OPR3 expr { /*$$ = new ast_definition($1, $2, $4);*/ }
+        | RSV_ARRY SMT_NAME OPR3 expr { /*$$ = new ast_definition($1, $2, $4);*/ }
+        ;
+
+/* 8f rules */
+fct_decl: RSV_TYPE SMT_NAME '(' arr_parm parametr ')'
+        | RSV_ARRY SMT_NAME '(' arr_parm parametr ')'
+        | RSV_TYPE SMT_NAME '(' ')'
+        | RSV_ARRY SMT_NAME '(' ')'
+        | SMT_NAME SMT_NAME '(' arr_parm parametr ')'
+        | DEF_ARRY SMT_NAME '(' arr_parm parametr ')'
+        | SMT_NAME SMT_NAME '(' ')'
+        | DEF_ARRY SMT_NAME '(' ')'
+        ;
+/* 8f rules */
+fct_defn: RSV_TYPE SMT_NAME '(' arr_parm parametr ')' scope
+        | RSV_ARRY SMT_NAME '(' arr_parm parametr ')' scope
+        | RSV_TYPE SMT_NAME '(' ')' scope
+        | RSV_ARRY SMT_NAME '(' ')' scope
+        | SMT_NAME SMT_NAME '(' arr_parm parametr ')' scope
+        | DEF_ARRY SMT_NAME '(' arr_parm parametr ')' scope
+        | SMT_NAME SMT_NAME '(' ')' scope
+        | DEF_ARRY SMT_NAME '(' ')' scope
+        ;
+arr_parm: arr_parm parametr ','
+        | /* epsilon */ {}
+        ;
+parametr: RSV_TYPE SMT_NAME
+        | RSV_ARRY SMT_NAME
+        | SMT_NAME SMT_NAME
+        | DEF_ARRY SMT_NAME
+        ;
+
+/* 4o rules */
+obj_decl: SMT_NAME SMT_NAME {}
+        | DEF_ARRY SMT_NAME {}
+        ;
+obj_defn: SMT_NAME SMT_NAME OPR3 '{' arr_attr expr '}' {}
+        | DEF_ARRY SMT_NAME OPR3 '{' arr_attr expr '}' {}
+        ;
+arr_attr: arr_attr expr ',' {}
+        | /* epsilon */ {}
+        ;
 
 /* 1c rules */
 cls_decl: RSV_CLSS SMT_NAME ';'{
@@ -173,56 +221,6 @@ cls_fild: var_decl
         | ACS_PUBL
         ;
 
-/* 4v rules */
-var_decl: RSV_TYPE SMT_NAME { $$ = new ast_declaration($1, $2); }
-        | RSV_ARRY SMT_NAME { $$ = new ast_declaration($1, $2); }
-        ;
-var_defn: RSV_TYPE SMT_NAME OPR3 expr { $$ = new ast_definition($1, $2, $4); }
-        | RSV_ARRY SMT_NAME OPR3 expr { $$ = new ast_definition($1, $2, $4); }
-        ;
-
-/* 8f rules */
-fct_decl: RSV_TYPE SMT_NAME '(' arr_parm parametr ')'
-        | RSV_ARRY SMT_NAME '(' arr_parm parametr ')'
-        | RSV_TYPE SMT_NAME '(' ')'
-        | RSV_ARRY SMT_NAME '(' ')'
-        | SMT_NAME SMT_NAME '(' arr_parm parametr ')'
-        | DEF_ARRY SMT_NAME '(' arr_parm parametr ')'
-        | SMT_NAME SMT_NAME '(' ')'
-        | DEF_ARRY SMT_NAME '(' ')'
-        ;
-/* 8f rules */
-fct_defn: RSV_TYPE SMT_NAME '(' arr_parm parametr ')' scope
-        | RSV_ARRY SMT_NAME '(' arr_parm parametr ')' scope
-        | RSV_TYPE SMT_NAME '(' ')' scope
-        | RSV_ARRY SMT_NAME '(' ')' scope
-        | SMT_NAME SMT_NAME '(' arr_parm parametr ')' scope
-        | DEF_ARRY SMT_NAME '(' arr_parm parametr ')' scope
-        | SMT_NAME SMT_NAME '(' ')' scope
-        | DEF_ARRY SMT_NAME '(' ')' scope
-        ;
-arr_parm: arr_parm parametr ','
-        | /* epsilon */ {}
-        ;
-parametr: RSV_TYPE SMT_NAME
-        | RSV_ARRY SMT_NAME
-        | SMT_NAME SMT_NAME
-        | DEF_ARRY SMT_NAME
-        ;
-
-/* 4o rules */
-obj_decl: SMT_NAME SMT_NAME {}
-        | DEF_ARRY SMT_NAME {}
-        ;
-obj_defn: SMT_NAME SMT_NAME OPR3 '{' attribte obj_vals
-        | DEF_ARRY SMT_NAME OPR3 '{' attribte obj_vals
-        ;
-obj_vals: ',' attribte obj_vals
-        | '}'
-        ;
-attribte: expr
-        ;
-
 /*! statements */
 
 starting_symbol : { initialize_compiler(); } glb_decl {
@@ -239,6 +237,8 @@ starting_symbol : { initialize_compiler(); } glb_decl {
     ;*/
 
 glb_decl: glb_decl decl
+        | glb_decl cls_decl ';'
+        | glb_decl cls_defn ';'
         | MASTER scope {
             symbols.emplace_back();
             $2->evaluate();
@@ -274,8 +274,6 @@ decl: var_decl ';' { $$ = $1; }
     | fct_defn ';' { $$ = $1; }
     | obj_decl ';' { $$ = $1; }
     | obj_defn ';' { $$ = $1; }
-    | cls_decl ';' { $$ = $1; }
-    | cls_defn ';' { $$ = $1; }
     ;
 
 asgn: expr { $$ = $1; }
