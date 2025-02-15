@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "dev/item_data.hpp"
+#include "dev/symbol_data.hpp"
 #include "dev/yyerror.hpp"
 
 class ast_statement;
@@ -12,7 +12,7 @@ class ast_statement;
 /* the parser makes heap allocations,
  * that are reverted in deconstructor here
  */
-class function_data : public item_data
+class function_data : public symbol_data
 {
   const std::string return_data_type;
 
@@ -37,6 +37,11 @@ public:
 
   virtual const char get_item_type() const override;
   virtual const std::string &get_data_type() const override;
+  const size_t get_count() const;
+
+  typedef map::const_iterator it;
+  it begin() const;
+  it end() const;
 };
 
 std::string function_data::available_id = "";
@@ -91,7 +96,7 @@ function_data::function_data(
 
 const char function_data::get_item_type() const
 {
-  return FNCT_ITEM_TYPE;
+  return FNCT_SYMB_TYPE;
 }
 
 const std::string &function_data::get_data_type() const
@@ -99,14 +104,19 @@ const std::string &function_data::get_data_type() const
   return return_data_type;
 }
 
-/* type id parameters {
+const size_t function_data::get_count() const
+{
+  return parameters->size();
+}
 
-  new function_data($1, $2, $3);
-  }
+function_data::it function_data::begin() const
+{
+  return parameters->begin();
+}
 
-parameters: '('
-          parameters parameter
-          | epsilon
-*/
+function_data::it function_data::end() const
+{
+  return parameters->end();
+}
 
 #endif

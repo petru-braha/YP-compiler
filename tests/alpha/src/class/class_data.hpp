@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include "dev/table.hpp"
-#include "dev/item_data.hpp"
+#include "dev/symbol_data.hpp"
 #include "dev/function.hpp"
 
 constexpr char ACCS_MODF_PRIV = 0;
@@ -12,7 +12,7 @@ constexpr char ACCS_MODF_PUBL = 1;
 
 struct field
 {
-  item_data *data;
+  symbol_data *data;
   const char access_modifier;
 };
 
@@ -25,7 +25,7 @@ public:
   class_data() = default;
 
   class_data &insert(
-      const std::string &, item_data *const, const char);
+      const std::string &, symbol_data *const, const char);
   field *get_data(const std::string &);
 
   virtual const size_t get_count(const char) const override;
@@ -45,7 +45,7 @@ class_data::~class_data()
 /* makes a copy of the pointer */
 class_data &class_data::
     insert(const std::string &id,
-           item_data *const value,
+           symbol_data *const value,
            const char access = ACCS_MODF_PRIV)
 {
   if (nullptr == value)
@@ -72,7 +72,7 @@ field *class_data::get_data(const std::string &id)
 // see "dev/table.hpp" for the predefined value of item_type
 const size_t class_data::get_count(const char item_type) const
 {
-  if (ITEM_TYPE_INVALID >= item_type)
+  if (SYMB_TYPE_INVALID >= item_type)
     return itm.size();
 
   size_t count = 0;

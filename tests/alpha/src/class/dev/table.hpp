@@ -3,15 +3,15 @@
 
 #include <string>
 
-constexpr char ITEM_TYPE_INVALID = 4;
+constexpr char SYMB_TYPE_INVALID = 4;
 
-class item_data;
+class symbol_data;
 
 class table
 {
 public:
   virtual ~table() = default;
-  virtual const size_t get_count(const char = ITEM_TYPE_INVALID) const = 0;
+  virtual const size_t get_count(const char = SYMB_TYPE_INVALID) const = 0;
 };
 
 #endif

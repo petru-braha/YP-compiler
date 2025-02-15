@@ -3,8 +3,7 @@
 
 #include <string>
 #include <unordered_map>
-#include "dev/table.hpp"
-#include "dev/item_data.hpp"
+#include "dev/symbol_data.hpp"
 #include "dev/function.hpp"
 
 constexpr char ACCS_MODF_PRIV = 0;
@@ -12,63 +11,60 @@ constexpr char ACCS_MODF_PUBL = 1;
 
 struct field_data
 {
-  item_data *data;
+  symbol_data *data;
   const char access_modifier;
 };
 
-class class_data : public table
+// uses multimap -> multiple constructors
+class class_data
 {
-  typedef std::unordered_map<
+  typedef std::unordered_multimap<
       std::string, field_data>
       map;
-  map *const itm;
+  map *const content;
 
 public:
-  virtual ~class_data() override;
+  ~class_data();
   class_data(map *const);
 
   class_data &insert(const std::string &, const field_data &);
-  field_data *get_data(const std::string &id);
 
-  virtual const size_t get_count(const char) const override;
+  const size_t get_count(const char = SYMB_TYPE_INVALID) const;
 
-  typedef std::unordered_map<
-      std::string, field_data>::iterator it;
+  typedef map::iterator it;
+  std::pair<it, it> get_data(const std::string &id);
   it begin();
   it end();
 };
 
 class_data::~class_data()
 {
-  for (const auto &item_pair : *itm)
+  for (const auto &item_pair : *content)
     delete item_pair.second.data;
+  delete content;
 }
 
 class_data::class_data(
-    std::unordered_map<std::string, field_data> *const data)
-    : itm(data)
+    std::unordered_multimap<std::string, field_data> *const data)
+    : content(data)
 {
   if (nullptr == data)
     yyerror("class_data() failed - received nullptr");
 }
 
-/* used for type_table too
-the only time when we don't check for previous scopes too
- */
-field_data *class_data::get_data(const std::string &id)
+std::pair<class_data::it, class_data::it> class_data::get_data(
+    const std::string &id)
 {
-  auto it = itm->find(id);
-  return it != itm->end() ? &((*it).second) : nullptr;
+  return content->equal_range(id);
 }
 
-// see "dev/table.hpp" for the predefined value of item_type
 const size_t class_data::get_count(const char item_type) const
 {
-  if (ITEM_TYPE_INVALID >= item_type)
-    return itm->size();
+  if (SYMB_TYPE_INVALID >= item_type)
+    return content->size();
 
   size_t count = 0;
-  for (const auto &instance : *itm)
+  for (const auto &instance : *content)
     if (item_type ==
         instance.second.data->get_item_type())
       count++;
@@ -77,12 +73,12 @@ const size_t class_data::get_count(const char item_type) const
 
 class_data::it class_data::begin()
 {
-  return itm->begin();
+  return content->begin();
 }
 
 class_data::it class_data::end()
 {
-  return itm->end();
+  return content->end();
 }
 
 #endif

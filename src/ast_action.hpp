@@ -3,14 +3,14 @@
 
 /* comments:
  * nullptr => error occured
- * item_data memory removal is performed by tables
+ * symbol_data memory removal is performed by tables
  * and not here
  */
 
 #include <vector>
 #include "class/dev/ast.hpp"
 #include "class/dev/yyerror.hpp"
-#include "class/dev/item_data.hpp"
+#include "class/dev/symbol_data.hpp"
 
 #include "class/symbol_table.hpp"
 
@@ -92,8 +92,8 @@ void *ast_return::evaluate()
     return (void *)&result;
   }
 
-  item_data *temp = (item_data *)buffer;
-  if (FNCT_ITEM_TYPE == temp->get_item_type())
+  symbol_data *temp = (symbol_data *)buffer;
+  if (FNCT_SYMB_TYPE == temp->get_item_type())
   {
     yyerror("ast_return() failed - received function");
     return nullptr;

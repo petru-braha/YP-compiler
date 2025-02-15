@@ -29,20 +29,20 @@ void yyerror(const char *s);
 #include "../../src/symbol_table.hpp"
 #include "../../src/type_table.hpp"
 
-item_data::item_data(const unsigned char i_t,
+symbol_data::symbol_data(const unsigned char i_t,
                      const std::string &d_t)
     : item_type(i_t), data_type(d_t)
 {
-    if (i_t > ITEM_TYPE_OBJ)
+    if (i_t > SYMB_TYPE_OBJ)
         yyerror("wrong item type");
 }
 
-const unsigned char item_data::get_item_type() const
+const unsigned char symbol_data::get_item_type() const
 {
     return item_type;
 }
 
-const std::string &item_data::get_data_type() const
+const std::string &symbol_data::get_data_type() const
 {
     return data_type;
 }
@@ -99,19 +99,19 @@ std::string type_of(const std::string &primitive_value)
 
 // private
 variable_data::variable_data(const variable_data &v)
-    : item_data(ITEM_TYPE_VAR, v.get_data_type()),
+    : symbol_data(SYMB_TYPE_VAR, v.get_data_type()),
       value(v.get_value())
 {
 }
 
 [[deprecated("not a safe method, always be specific")]]
 variable_data::variable_data()
-    : item_data(ITEM_TYPE_VAR, std::string(DATA_TYPE_INT))
+    : symbol_data(SYMB_TYPE_VAR, std::string(DATA_TYPE_INT))
 {
 }
 
 variable_data::variable_data(const std::string &type)
-    : item_data(ITEM_TYPE_VAR, type)
+    : symbol_data(SYMB_TYPE_VAR, type)
 {
     if (false == is_primitive(type))
         yyerror("the argument should be primitive");
@@ -120,7 +120,7 @@ variable_data::variable_data(const std::string &type)
 
 variable_data::variable_data(const std::string &type,
                              const std::string &v)
-    : item_data(ITEM_TYPE_VAR, type), value()
+    : symbol_data(SYMB_TYPE_VAR, type), value()
 {
     if (false == is_primitive(type))
         yyerror("the argument should be primitive");
@@ -132,7 +132,7 @@ variable_data::variable_data(const std::string &type,
 // not verification required - v can only be legitimate
 variable_data ::variable_data(const std::string &type,
                               const variable_data &v)
-    : item_data(ITEM_TYPE_VAR, type),
+    : symbol_data(SYMB_TYPE_VAR, type),
       value(v.get_value())
 {
     if (type != v.get_data_type())
@@ -160,7 +160,7 @@ const std::string &variable_data::get_value() const
 
 // private
 function_data::function_data(const function_data &f)
-    : item_data(ITEM_TYPE_FCT, f.get_data_type()),
+    : symbol_data(SYMB_TYPE_FCT, f.get_data_type()),
       parameters(f.parameters)
 {
 }
@@ -193,8 +193,8 @@ function_data::~function_data()
 {
     for (const auto &item_pair : parameters)
     {
-        item_data *i = item_pair.second;
-        if (ITEM_TYPE_VAR ==
+        symbol_data *i = item_pair.second;
+        if (SYMB_TYPE_VAR ==
             i->get_item_type())
         {
             variable_data *v = (variable_data *)i;
@@ -209,19 +209,19 @@ function_data::~function_data()
 
 [[deprecated("not a safe method, always be specific")]]
 function_data::function_data()
-    : item_data(ITEM_TYPE_FCT, DATA_TYPE_INT)
+    : symbol_data(SYMB_TYPE_FCT, DATA_TYPE_INT)
 {
 }
 
 // no parameters
 function_data::function_data(const std::string &type)
-    : item_data(ITEM_TYPE_FCT, type)
+    : symbol_data(SYMB_TYPE_FCT, type)
 {
 }
 
 /* DOES NOT check for parameter definition */
 function_data &function_data::
-    parameter_insert(item_data *const value)
+    parameter_insert(symbol_data *const value)
 {
     if (nullptr == value)
     {
@@ -230,22 +230,22 @@ function_data &function_data::
     }
 
     // type checking
-    if (value->get_item_type() > ITEM_TYPE_OBJ)
+    if (value->get_item_type() > SYMB_TYPE_OBJ)
     {
         yyerror("bad news");
         return *this;
     }
-    if (ITEM_TYPE_FCT == value->get_item_type())
+    if (SYMB_TYPE_FCT == value->get_item_type())
     {
         yyerror("bad news");
         return *this;
     }
 
-    if (ITEM_TYPE_VAR == value->get_item_type())
+    if (SYMB_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
         variable_data *parameter = new variable_data(*v_data);
-        std::pair<std::string, item_data *>
+        std::pair<std::string, symbol_data *>
             f_pair(default_id(), parameter);
         parameters.insert(f_pair);
         return *this;
@@ -253,7 +253,7 @@ function_data &function_data::
 
     object_data *o_data = (object_data *)value;
     object_data *parameter = new object_data(*o_data);
-    std::pair<std::string, item_data *>
+    std::pair<std::string, symbol_data *>
         f_pair(default_id(), parameter);
     parameters.insert(f_pair);
     return *this;
@@ -264,7 +264,7 @@ function_data &function_data::
  */
 function_data &function_data::
     parameter_insert(const std::string &id,
-                     item_data *const value)
+                     symbol_data *const value)
 {
     if (nullptr == value)
     {
@@ -273,12 +273,12 @@ function_data &function_data::
     }
 
     // type checking
-    if (value->get_item_type() > ITEM_TYPE_OBJ)
+    if (value->get_item_type() > SYMB_TYPE_OBJ)
     {
         yyerror("bad news");
         return *this;
     }
-    if (ITEM_TYPE_FCT == value->get_item_type())
+    if (SYMB_TYPE_FCT == value->get_item_type())
     {
         yyerror("bad news");
         return *this;
@@ -290,16 +290,16 @@ function_data &function_data::
         return *this;
     }
 
-    if (value->get_item_type() > ITEM_TYPE_OBJ)
+    if (value->get_item_type() > SYMB_TYPE_OBJ)
         yyerror("bad news");
-    if (ITEM_TYPE_FCT == value->get_item_type())
+    if (SYMB_TYPE_FCT == value->get_item_type())
         yyerror("bad news");
 
-    if (ITEM_TYPE_VAR == value->get_item_type())
+    if (SYMB_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
         variable_data *parameter = new variable_data(*v_data);
-        std::pair<std::string, item_data *>
+        std::pair<std::string, symbol_data *>
             f_pair(id, parameter);
         parameters.insert(f_pair);
         return *this;
@@ -307,7 +307,7 @@ function_data &function_data::
 
     object_data *o_data = (object_data *)value;
     object_data *parameter = new object_data(*o_data);
-    std::pair<std::string, item_data *>
+    std::pair<std::string, symbol_data *>
         f_pair(id, parameter);
     parameters.insert(f_pair);
     return *this;
@@ -316,7 +316,7 @@ function_data &function_data::
 // to be called for every parameter - calling the function
 function_data &function_data::
     set_parameter(const std::string &id,
-                  item_data *const value)
+                  symbol_data *const value)
 {
     if (nullptr == value)
     {
@@ -330,9 +330,9 @@ function_data &function_data::
         return *this;
     }
 
-    if (value->get_item_type() > ITEM_TYPE_OBJ)
+    if (value->get_item_type() > SYMB_TYPE_OBJ)
         yyerror("bad news");
-    if (ITEM_TYPE_FCT == value->get_item_type())
+    if (SYMB_TYPE_FCT == value->get_item_type())
         yyerror("bad news");
 
     if (value->get_data_type() !=
@@ -342,13 +342,13 @@ function_data &function_data::
         return *this;
     }
 
-    if (ITEM_TYPE_VAR == value->get_item_type())
+    if (SYMB_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
         variable_data *parameter = new variable_data(*v_data);
         variable_data *old_parameter =
             (variable_data *)parameters.at(id);
-        std::pair<std::string, item_data *>
+        std::pair<std::string, symbol_data *>
             f_pair(id, parameter);
         parameters.insert(f_pair);
         delete old_parameter;
@@ -359,7 +359,7 @@ function_data &function_data::
     object_data *parameter = new object_data(*o_data);
     object_data *old_parameter =
         (object_data *)parameters.at(id);
-    std::pair<std::string, item_data *>
+    std::pair<std::string, symbol_data *>
         f_pair(id, parameter);
     parameters.insert(f_pair);
     delete old_parameter;
@@ -371,7 +371,7 @@ const size_t function_data::get_count_parameter() const
     return parameters.size();
 }
 
-item_data *function_data::
+symbol_data *function_data::
     get_parameter(const std::string &id) const
 {
     if (parameters.find(id) == parameters.end())
@@ -394,7 +394,7 @@ function_data::it function_data::end()
 
 // private
 object_data::object_data(const object_data &o)
-    : item_data(ITEM_TYPE_OBJ, o.get_data_type())
+    : symbol_data(SYMB_TYPE_OBJ, o.get_data_type())
 {
 }
 
@@ -402,8 +402,8 @@ object_data::~object_data()
 {
     for (const auto &item_pair : attributes)
     {
-        item_data *i = item_pair.second;
-        if (ITEM_TYPE_VAR ==
+        symbol_data *i = item_pair.second;
+        if (SYMB_TYPE_VAR ==
             i->get_item_type())
         {
             variable_data *v = (variable_data *)i;
@@ -418,13 +418,13 @@ object_data::~object_data()
 
 [[deprecated("not a safe method, always be specific")]]
 object_data::object_data()
-    : item_data(ITEM_TYPE_OBJ, DATA_TYPE_INT)
+    : symbol_data(SYMB_TYPE_OBJ, DATA_TYPE_INT)
 {
 }
 
 // default values of fields are being set at compilation time
 object_data::object_data(const std::string &type)
-    : item_data(ITEM_TYPE_OBJ, type)
+    : symbol_data(SYMB_TYPE_OBJ, type)
 {
     if (is_primitive(type))
         yyerror("primitive type");
@@ -439,10 +439,10 @@ object_data::object_data(const std::string &type)
     auto i = o_attributes.begin();
     while (i != o_attributes.end())
     {
-        item_data *data = (*i).second;
-        if (ITEM_TYPE_VAR == data->get_item_type())
+        symbol_data *data = (*i).second;
+        if (SYMB_TYPE_VAR == data->get_item_type())
         {
-            std::pair<std::string, item_data *>
+            std::pair<std::string, symbol_data *>
                 i_pair((*i).first,
                        new variable_data(*((variable_data *)data)));
             attributes.insert(i_pair);
@@ -451,13 +451,13 @@ object_data::object_data(const std::string &type)
         }
 
         // it's pointless to copy function_data
-        if (ITEM_TYPE_FCT == data->get_item_type())
+        if (SYMB_TYPE_FCT == data->get_item_type())
         {
             i++;
             continue;
         }
 
-        std::pair<std::string, item_data *>
+        std::pair<std::string, symbol_data *>
             i_pair((*i).first,
                    new object_data(*((object_data *)data)));
         attributes.insert(i_pair);
@@ -471,7 +471,7 @@ object_data::object_data(const std::string &type)
  */
 object_data::object_data(const std::string &type,
                          const object_data &o)
-    : item_data(ITEM_TYPE_OBJ, type),
+    : symbol_data(SYMB_TYPE_OBJ, type),
       attributes(o.attributes)
 {
     if (type != o.get_data_type())
@@ -485,7 +485,7 @@ object_data::object_data(const std::string &type,
 /* useful in initialization */
 object_data &object_data::
     attribute_insert(const std::string &id,
-                     item_data *const value)
+                     symbol_data *const value)
 {
     if (nullptr == value)
     {
@@ -493,20 +493,20 @@ object_data &object_data::
         return *this;
     }
 
-    if (value->get_item_type() > ITEM_TYPE_OBJ)
+    if (value->get_item_type() > SYMB_TYPE_OBJ)
         yyerror("bad news");
-    if (ITEM_TYPE_FCT == value->get_item_type())
+    if (SYMB_TYPE_FCT == value->get_item_type())
         yyerror("bad news");
 
     //  check if id belongs to type - redundant operation
     if (nullptr == type_exists(get_data_type())->get_data(id))
         yyerror("bad news");
 
-    if (ITEM_TYPE_VAR == value->get_item_type())
+    if (SYMB_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
         variable_data *attribute = new variable_data(*v_data);
-        std::pair<std::string, item_data *>
+        std::pair<std::string, symbol_data *>
             o_pair(id, attribute);
         attributes.insert(o_pair);
         return *this;
@@ -514,7 +514,7 @@ object_data &object_data::
 
     object_data *o_data = (object_data *)value;
     object_data *attribute = new object_data(*o_data);
-    std::pair<std::string, item_data *>
+    std::pair<std::string, symbol_data *>
         o_pair(id, attribute);
     attributes.insert(o_pair);
     return *this;
@@ -523,7 +523,7 @@ object_data &object_data::
 /* useful in assignation */
 object_data &object_data::
     set_attribute(const std::string &id,
-                  item_data *const value)
+                  symbol_data *const value)
 {
     if (nullptr == value)
     {
@@ -531,9 +531,9 @@ object_data &object_data::
         return *this;
     }
 
-    if (value->get_item_type() > ITEM_TYPE_OBJ)
+    if (value->get_item_type() > SYMB_TYPE_OBJ)
         yyerror("bad news");
-    if (ITEM_TYPE_FCT == value->get_item_type())
+    if (SYMB_TYPE_FCT == value->get_item_type())
         yyerror("bad news");
 
     // check if id belongs to type
@@ -544,7 +544,7 @@ object_data &object_data::
         attributes.at(id)->get_data_type())
         yyerror("incompatible types");
 
-    if (ITEM_TYPE_VAR == value->get_item_type())
+    if (SYMB_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
         variable_data *attribute = new variable_data(*v_data);
@@ -569,7 +569,7 @@ const size_t object_data::get_count_attributes() const
     return attributes.size();
 }
 
-item_data *object_data::
+symbol_data *object_data::
     get_attribute(const std::string &id) const
 {
     return attributes.at(id);
@@ -592,11 +592,11 @@ symbol_table::~symbol_table()
 {
     for (const auto &item_pair : itm)
     {
-        item_data *i = item_pair.second;
+        symbol_data *i = item_pair.second;
         if (nullptr == i)
             continue;
 
-        if (ITEM_TYPE_VAR ==
+        if (SYMB_TYPE_VAR ==
             i->get_item_type())
         {
             variable_data *v = (variable_data *)i;
@@ -604,7 +604,7 @@ symbol_table::~symbol_table()
             continue;
         }
 
-        if (ITEM_TYPE_FCT ==
+        if (SYMB_TYPE_FCT ==
             i->get_item_type())
         {
             function_data *f = (function_data *)i;
@@ -612,7 +612,7 @@ symbol_table::~symbol_table()
             continue;
         }
 
-        if (ITEM_TYPE_OBJ ==
+        if (SYMB_TYPE_OBJ ==
             i->get_item_type())
         {
             object_data *o = (object_data *)i;
@@ -633,7 +633,7 @@ symbol_table::symbol_table(const std::string &s_id)
 /* makes a copy of the pointer */
 symbol_table &symbol_table::
     insert(const std::string &id,
-           item_data *const value)
+           symbol_data *const value)
 {
     if (nullptr == value)
     {
@@ -641,23 +641,23 @@ symbol_table &symbol_table::
         return *this;
     }
 
-    if (ITEM_TYPE_VAR == value->get_item_type())
+    if (SYMB_TYPE_VAR == value->get_item_type())
     {
         variable_data *v_data = (variable_data *)value;
         variable_data *to_insert =
             new variable_data(v_data->get_data_type(),
                               v_data->get_value());
-        std::pair<std::string, item_data *>
+        std::pair<std::string, symbol_data *>
             i_pair(id, to_insert);
         itm.insert(i_pair);
         return *this;
     }
 
-    if (ITEM_TYPE_FCT == value->get_item_type())
+    if (SYMB_TYPE_FCT == value->get_item_type())
     {
         function_data *f_data = (function_data *)value;
         function_data *to_insert = new function_data(*f_data);
-        std::pair<std::string, item_data *>
+        std::pair<std::string, symbol_data *>
             i_pair(id, to_insert);
         itm.insert(i_pair);
         return *this;
@@ -665,7 +665,7 @@ symbol_table &symbol_table::
 
     object_data *o_data = (object_data *)value;
     object_data *to_insert = new object_data(*o_data);
-    std::pair<std::string, item_data *>
+    std::pair<std::string, symbol_data *>
         i_pair(id, to_insert);
     itm.insert(i_pair);
     return *this;
@@ -674,7 +674,7 @@ symbol_table &symbol_table::
 /* used for type_table too
 the only time when we don't check for previous scopes too
  */
-item_data *symbol_table::get_data(const std::string &id) const
+symbol_data *symbol_table::get_data(const std::string &id) const
 {
     if (itm.find(id) != itm.end())
         return (*itm.find(id)).second;
@@ -695,7 +695,7 @@ const size_t symbol_table::get_count_variable() const
 {
     size_t count = 0;
     for (const auto &instance : itm)
-        if (ITEM_TYPE_VAR ==
+        if (SYMB_TYPE_VAR ==
             instance.second->get_item_type())
             count++;
     return count;
@@ -705,7 +705,7 @@ const size_t symbol_table::get_count_function() const
 {
     size_t count = 0;
     for (const auto &instance : itm)
-        if (ITEM_TYPE_FCT ==
+        if (SYMB_TYPE_FCT ==
             instance.second->get_item_type())
             count++;
     return count;
@@ -715,7 +715,7 @@ const size_t symbol_table::get_count_object() const
 {
     size_t count = 0;
     for (const auto &instance : itm)
-        if (ITEM_TYPE_OBJ ==
+        if (SYMB_TYPE_OBJ ==
             instance.second->get_item_type())
             count++;
     return count;

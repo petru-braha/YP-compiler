@@ -183,14 +183,14 @@ void yyerror(const char * s){
 /* goes through every scope
  * could add extra time complexity
  */
-item_data* scope_search(const std::string &id)
+symbol_data* scope_search(const std::string &id)
 {
   if(0 == symbols.size())
     return nullptr;
 
   for (size_t scope = LAST_SCOPE;; scope--)
   {
-    item_data* data = symbols[scope].get_data(id);
+    symbol_data* data = symbols[scope].get_data(id);
     if(data)
       return data;
     if (0 == scope)

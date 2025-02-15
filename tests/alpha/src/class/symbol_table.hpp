@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include "dev/table.hpp"
-#include "dev/item_data.hpp"
+#include "dev/symbol_data.hpp"
 
 /* commments
  * exists method are useful just
@@ -18,7 +18,7 @@
 class symbol_table : public table
 {
   std::string s_id;
-  std::unordered_map<std::string, item_data *> itm;
+  std::unordered_map<std::string, symbol_data *> itm;
 
   static size_t available_id;
 
@@ -28,14 +28,14 @@ public:
   symbol_table(const std::string &);
 
   symbol_table &insert(const std::string &,
-                       item_data *const);
+                       symbol_data *const);
 
   virtual const size_t get_count(const char) const override;
   const std::string &get_id() const;
-  item_data *get_data(const std::string &) const;
+  symbol_data *get_data(const std::string &) const;
 
   typedef std::unordered_map<
-      std::string, item_data *>::iterator it;
+      std::string, symbol_data *>::iterator it;
   it begin();
   it end();
 };
@@ -62,7 +62,7 @@ symbol_table::symbol_table(const std::string &s_id)
 /* makes a copy of the pointer */
 symbol_table &symbol_table::
     insert(const std::string &id,
-           item_data *const value)
+           symbol_data *const value)
 {
   if (nullptr == value)
   {
@@ -70,7 +70,7 @@ symbol_table &symbol_table::
     return *this;
   }
 
-  std::pair<std::string, item_data *>
+  std::pair<std::string, symbol_data *>
       i_pair(id, value);
   itm.insert(i_pair);
   return *this;
@@ -79,7 +79,7 @@ symbol_table &symbol_table::
 // see "dev/table.hpp" for the predefined value of item_type
 const size_t symbol_table::get_count(const char item_type) const
 {
-  if (ITEM_TYPE_INVALID >= item_type)
+  if (SYMB_TYPE_INVALID >= item_type)
     return itm.size();
 
   size_t count = 0;
@@ -93,7 +93,7 @@ const size_t symbol_table::get_count(const char item_type) const
 /* used for type_table too
 the only time when we don't check for previous scopes too
  */
-item_data *symbol_table::get_data(const std::string &id) const
+symbol_data *symbol_table::get_data(const std::string &id) const
 {
   auto it = itm.find(id);
   return it != itm.end() ? (*it).second : nullptr;

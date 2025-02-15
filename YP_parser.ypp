@@ -1,24 +1,20 @@
 /* comments:
  * YP_parser.ypp - bottom-up parser, LARL(1) grammar
  * (c) authors - Braha Petru Bogdan - <petrubraha@gmail.com>
- *             - Meraru Ioan Lucian - <https://github.com/Zamdacmalfal>
  * run command example: ./YP exs/success/declaration/class/declaration.txt
  * run command example: ./YP exs/fail/declaration/class/field\ 0.txt
  
- *!* compilation should never throw exceptions *!*
- *!* all data is encoded as string *!*
- 
  * rules' summary
   * declarations
-  ** class(type)
-  ** variable
+  ** primitive
   ** function
   ** object
+  ** class
   * statements
   ** expression
   ** fct_call
   ** control
-  ** assignment
+
  * order of function rules
   ** yes parameters - no  array
   ** yes parameters - yes array
@@ -27,20 +23,7 @@
  */
 
 %{
-  #include <stdio.h>
-  #include <cstring>
-  #include <cmath>
-  #include <string>
-  #include <vector>
-
-  #include "src/class/primitive_data.hpp"
-  #include "src/class/function_data.hpp"
-  #include "src/class/object_data.hpp"
-  #include "src/class/array_data.hpp"
-  #include "src/class/class_data.hpp"
-
-  #include "src/class/symbol_table.hpp"
-  #include "src/class/type_table.hpp"
+  #include "src/implementation.hpp"
 
   #include "src/ast_expression.hpp"
   #include "src/ast_call.hpp"
@@ -51,19 +34,13 @@
   #include "src/ast_scope.hpp"
   #include "src/ast_control.hpp"
   
-  #include "src/implementation.hpp"
-
-  extern int yylex();
-  void yyerror(const char * s);
-
   extern FILE* yyin;
   extern char* yytext;
   extern int yylineno;
   size_t count_error;
-  char global_access;
 
-  std::vector<symbol_table> symbols;
-  #define LAST_SCOPE symbols.size() - 1
+  extern int yylex();
+  void yyerror(const char * s);
   void initialize_compiler();
 %}
 
@@ -78,14 +55,10 @@
 
 %code requires
 {
-  #include <string>
   #include <vector>
-  #include <unordered_map>
   
-  class item_data;
-
-  struct field_data;
   class ast_statement;
+  class ast_definition;
   class ast_expression;
 }
 %union {
@@ -93,8 +66,10 @@
   char character;
 
   ast_statement* s_node;
+  ast_definition* d_node;
   ast_expression* e_node;
   std::vector<ast_statement*>* subast;
+  std::vector<ast_definition*>* subdef;
   std::vector<ast_expression*>* subexp;
 }
 
@@ -110,17 +85,21 @@
 
 %token<information> RSV_TYPE RSV_ARRY SMT_NAME DEF_ARRY
 
-%type<s_node> var_decl var_defn
-%type<s_node> fct_decl fct_defn
-%type<subast> arr_parm 
-%type<s_node> parametr
+%start entrance
+%type<subast> global
 
-%type<s_node> obj_decl obj_defn
-%type<subast> arr_attr
+%type<d_node> prm_decl prm_defn
+%type<d_node> fct_decl fct_defn
+%type<subdef> synopsis
+%type<subdef> arr_parm
+%type<d_node> parametr
+
+%type<d_node> obj_decl obj_defn
+%type<subexp> arr_attr
 
 %type<s_node> cls_decl cls_defn
-%type<subast> arr_fild
-%type<s_node> cls_fild
+%type<subdef> arr_fild
+%type<d_node> cls_fild
 
 %type<s_node> scope
 %type<subast> arr_stat
@@ -128,58 +107,66 @@
 %type<e_node> expr term fact unit asgn
 %type<subexp> arr_argm
 
-%start starting_symbol
-
 %%
 
 /*! declaration */
 
 /* 4v rules */
-var_decl: RSV_TYPE SMT_NAME { $$ = new ast_declaration($1, $2); }
-        | RSV_ARRY SMT_NAME { $$ = new ast_declaration($1, $2); }
+prm_decl: RSV_TYPE SMT_NAME { $$ = new ast_primitivedefn($1, $2); }
+        | RSV_ARRY SMT_NAME { $$ = new ast_primitivedefn($1, $2); }
         ;
-var_defn: RSV_TYPE SMT_NAME OPR3 expr { /*$$ = new ast_definition($1, $2, $4);*/ }
-        | RSV_ARRY SMT_NAME OPR3 expr { /*$$ = new ast_definition($1, $2, $4);*/ }
+prm_defn: RSV_TYPE SMT_NAME OPR3 expr {
+            $$ = new ast_primitivedefn($1, $2, $4); }
+        | RSV_ARRY SMT_NAME OPR3 expr {
+            $$ = new ast_primitivedefn($1, $2, $4); }
         ;
 
-/* 8f rules */
-fct_decl: RSV_TYPE SMT_NAME '(' arr_parm parametr ')'
-        | RSV_ARRY SMT_NAME '(' arr_parm parametr ')'
-        | RSV_TYPE SMT_NAME '(' ')'
-        | RSV_ARRY SMT_NAME '(' ')'
-        | SMT_NAME SMT_NAME '(' arr_parm parametr ')'
-        | DEF_ARRY SMT_NAME '(' arr_parm parametr ')'
-        | SMT_NAME SMT_NAME '(' ')'
-        | DEF_ARRY SMT_NAME '(' ')'
+/* 2f rules */
+fct_decl: RSV_TYPE SMT_NAME synopsis
+        | RSV_ARRY SMT_NAME synopsis
+        | SMT_NAME SMT_NAME synopsis
+        | DEF_ARRY SMT_NAME synopsis
         ;
-/* 8f rules */
-fct_defn: RSV_TYPE SMT_NAME '(' arr_parm parametr ')' scope
-        | RSV_ARRY SMT_NAME '(' arr_parm parametr ')' scope
-        | RSV_TYPE SMT_NAME '(' ')' scope
-        | RSV_ARRY SMT_NAME '(' ')' scope
-        | SMT_NAME SMT_NAME '(' arr_parm parametr ')' scope
-        | DEF_ARRY SMT_NAME '(' arr_parm parametr ')' scope
-        | SMT_NAME SMT_NAME '(' ')' scope
-        | DEF_ARRY SMT_NAME '(' ')' scope
+fct_defn: RSV_TYPE SMT_NAME synopsis scope {
+            $$ = new ast_functiondefn($1, $2, $3, $4);
+          }
+        | RSV_ARRY SMT_NAME synopsis scope {
+            $$ = new ast_functiondefn($1, $2, $3, $4);
+          }
+        | SMT_NAME SMT_NAME synopsis scope {
+            $$ = new ast_functiondefn($1, $2, $3, $4);
+          }
+        | DEF_ARRY SMT_NAME synopsis scope {
+            $$ = new ast_functiondefn($1, $2, $3, $4);
+          }
         ;
-arr_parm: arr_parm parametr ','
-        | /* epsilon */ {}
+synopsis: '(' arr_parm parametr ')' { $2->emplace_back($3); $$ = $2; }
+        | '(' ')' { $$ = new std::vector<ast_definition*>(); }
         ;
-parametr: RSV_TYPE SMT_NAME
-        | RSV_ARRY SMT_NAME
-        | SMT_NAME SMT_NAME
-        | DEF_ARRY SMT_NAME
+arr_parm: arr_parm parametr ',' { $1->emplace_back($2); $$ = $1; }
+        | /* epsilon */ { $$ = new std::vector<ast_definition*>(); }
+        ;
+parametr: prm_decl { $$ = $1; }
+        | prm_defn { $$ = $1; }
+        | obj_decl { $$ = $1; }
+        | obj_defn { $$ = $1; }
         ;
 
 /* 4o rules */
-obj_decl: SMT_NAME SMT_NAME {}
-        | DEF_ARRY SMT_NAME {}
+obj_decl: SMT_NAME SMT_NAME { $$ = new ast_objectdefn($1, $2); }
+        | DEF_ARRY SMT_NAME { $$ = new ast_objectdefn($1, $2); }
         ;
-obj_defn: SMT_NAME SMT_NAME OPR3 '{' arr_attr expr '}' {}
-        | DEF_ARRY SMT_NAME OPR3 '{' arr_attr expr '}' {}
+obj_defn: SMT_NAME SMT_NAME OPR3 '{' arr_attr expr '}' {
+            $5->emplace_back($6);
+            $$ = new ast_objectdefn($1, $2, $5);
+          }
+        | DEF_ARRY SMT_NAME OPR3 '{' arr_attr expr '}' {
+            $5->emplace_back($6);
+            $$ = new ast_objectdefn($1, $2, $5);
+          }
         ;
-arr_attr: arr_attr expr ',' {}
-        | /* epsilon */ {}
+arr_attr: arr_attr expr ',' { $1->emplace_back($2); $$ = $1; }
+        | /* epsilon */ { $$ = new std::vector<ast_expression*>(); }
         ;
 
 /* 1c rules */
@@ -192,28 +179,19 @@ cls_decl: RSV_CLSS SMT_NAME ';'{
 
 /* 2c rules */
 cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN arr_fild SCOPE_END {
-            $$ = new ast_typecall($2,
-              new class_data($4));
           }
         | RSV_CLSS SMT_NAME SCOPE_BEGIN SCOPE_END {
-            $$ = new ast_typecall($2,
-              new class_data(
-                new std::unordered_map<std::string, field_data>()));
           }
         ;
 
 arr_fild: arr_fild cls_fild { 
-            $1->insert(*$2);
-            $$ = $1;
           }
         | cls_fild {
-            $$ = new std::unordered_map<std::string, field_data>();
-            $$->insert(*$1);
           }
         ;
 
-cls_fild: var_decl
-        | var_defn
+cls_fild: prm_decl
+        | prm_defn
         | fct_defn
         | obj_decl
         | obj_defn
@@ -221,30 +199,48 @@ cls_fild: var_decl
         | ACS_PUBL
         ;
 
+/*
+__    __
+| \  / |
+ \    / 
+  \  /
+   \/
+
+*/
+
 /*! statements */
 
-starting_symbol : { initialize_compiler(); } glb_decl {
-                    if(0 == count_error)
-                      printf("the program was compiled correctly.\n");
-                    else
-                      printf("the program has %zu errors.\n", count_error);
-                  }
-                //| test
-                ;
+entrance: global {
+            // $1->at(0) is the master function
+            initialize_compiler();
+            for(size_t i = 1; i < $1->size(); i++)
+              $1->at(i)->evaluate();
+            $1->at(0)->evaluate();
+            for(size_t i = 1; i < $1->size(); i++)
+              delete $1->at(i);
+            delete $1->at(0);
+            delete $1;
+            
+            if(0 == count_error)
+              printf("the program was compiled correctly.\n");
+            else
+              printf("the program has %zu errors.\n", count_error);
+          }
+        //| test
+        ;
 
 /*test: SMT_NAME { printf("f"); }
     | SMT_NAME OPR3 test { printf("t"); }
     ;*/
 
-glb_decl: glb_decl decl
-        | glb_decl cls_decl ';'
-        | glb_decl cls_defn ';'
-        | MASTER scope {
-            symbols.emplace_back();
-            $2->evaluate();
-            delete $2;
-          }
-        ;
+global: global decl { $1->emplace_back($2); $$ = $1; }
+      | global cls_decl ';' { $1->emplace_back($2); $$ = $1; }
+      | global cls_defn ';' { $1->emplace_back($2); $$ = $1; }
+      | MASTER scope {
+          $$ = new std::vector<ast_statement*>();
+          $$->emplace_back($2);
+        }
+      ;
 
 scope : SCOPE_BEGIN arr_stat SCOPE_END { $$ = new ast_scope($2); }
       | SCOPE_BEGIN SCOPE_END {
@@ -268,8 +264,8 @@ stat: asgn ';' { $$ = $1; }
     | scope { $$ = $1; }
     ;
 
-decl: var_decl ';' { $$ = $1; }
-    | var_defn ';' { $$ = $1; }
+decl: prm_decl ';' { $$ = $1; }
+    | prm_defn ';' { $$ = $1; }
     | fct_decl ';' { $$ = $1; }
     | fct_defn ';' { $$ = $1; }
     | obj_decl ';' { $$ = $1; }
@@ -373,17 +369,7 @@ ctrl: SEQ_IFIF '(' expr ')'
     ;
 %%
 
-/*!------------------------------------------------
-/*!------------------------------------------------
-/*! C++ functions */
-
-void yyerror(const char * s)
-{
-  count_error++;
-  printf("error - line %d: %s.\n", yylineno, s);
-  if(0 == strcmp(s, "syntax error"))
-    printf("the program has %zu errors.\n", count_error);
-}
+//------------------------------------------------
 
 int main(int argc, char** argv)
 {

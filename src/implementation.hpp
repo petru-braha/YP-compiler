@@ -3,7 +3,7 @@
 
 #include "class/dev/ast.hpp"
 #include "class/dev/yyerror.hpp"
-#include "class/dev/item_data.hpp"
+#include "class/dev/symbol_data.hpp"
 #include "class/dev/function.hpp"
 
 #include "class/primitive_data.hpp"
@@ -15,27 +15,46 @@
 #include "class/symbol_table.hpp"
 #include "class/type_table.hpp"
 
-extern std::vector<symbol_table> symbols;
+extern int yylineno;
+extern size_t count_error;
+std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
+
+void yywarning(const char *message)
+{
+  count_error++;
+  printf("%s warning - line %d: %s.\n",
+         __FILE__, yylineno, message);
+}
+
+// breaks
+void yyerror(const char *message)
+{
+  count_error++;
+  printf("%s error - line %d: %s.\n",
+         __FILE__, yylineno, message);
+  if (0 == strcmp(message, "syntax error"))
+    printf("the program has %zu errors.\n", count_error);
+}
 
 mutable_data *make_copy(const mutable_data *const data)
 {
   if (nullptr == data)
     return nullptr;
 
-  if (PRMT_ITEM_TYPE == data->get_item_type())
+  if (PRMT_SYMB_TYPE == data->get_item_type())
   {
     primitive_data *p_data = (primitive_data *)data;
     return new primitive_data(p_data->get_data_type(), *p_data);
   }
 
-  if (OBJT_ITEM_TYPE == data->get_item_type())
+  if (OBJT_SYMB_TYPE == data->get_item_type())
   {
     object_data *o_data = (object_data *)data;
     return new object_data(o_data->get_data_type(), *o_data);
   }
 
-  if (ARRY_ITEM_TYPE == data->get_item_type())
+  if (ARRY_SYMB_TYPE == data->get_item_type())
   {
     array_data *a_data = (array_data *)data;
     return new array_data(a_data->get_data_type(), *a_data);
@@ -47,14 +66,14 @@ mutable_data *make_copy(const mutable_data *const data)
 /* goes through every scope
  * could add extra time complexity
  */
-item_data *scope_search(const std::string &id)
+symbol_data *scope_search(const std::string &id)
 {
   if (0 == symbols.size())
     return nullptr;
 
   for (size_t scope = LAST_SCOPE;; scope--)
   {
-    item_data *data = symbols[scope].get_data(id);
+    symbol_data *data = symbols[scope].get_data(id);
     if (data)
       return data;
     if (0 == scope)
@@ -135,8 +154,8 @@ const char *get_buffer(ast_expression *const node)
   if (is_returning_char(node))
     return (char *)buffer;
 
-  item_data *data = (item_data *)buffer;
-  if (PRMT_ITEM_TYPE != data->get_item_type() ||
+  symbol_data *data = (symbol_data *)buffer;
+  if (PRMT_SYMB_TYPE != data->get_item_type() ||
       false == is_primitive(data->get_data_type()))
   {
     yyerror("get_buffer() failed - not primitive type");

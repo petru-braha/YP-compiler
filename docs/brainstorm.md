@@ -7,6 +7,10 @@
 
 ## General ideas
 
+
+*!* compilation should never throw exceptions *!*
+ *!* all data is encoded as string *!*
+ 
 - note to self: doing left recursion is alright: the base case is firstly evaluated (similar to right recursion)
 
 - memory allocation -> parser
@@ -205,7 +209,7 @@ string name = Type(a);
 
 level 3:
 - src/class/dev/yyerror.hpp
-- src/class/dev/item_data.hpp
+- src/class/dev/symbol_data.hpp
 - src/class/dev/function.hpp
 - src/class/dev/ast.hpp
 - src/class/dev/ast_alphabet.hpp
@@ -277,19 +281,19 @@ level 0:
 |:-----:|:--------------:|:-----------:|:------|
 | ast_constant | ast_expression | char* | primitive unit |
 | ast_operator | ast_expression | char* | works only with primitive types |
-| ast_assign | ast_expression | item_data* | - |
+| ast_assign | ast_expression | symbol_data* | - |
 | | | |
-| ast_symbolcall | ast_expression | item_data* | used to scope_search() an id |
+| ast_symbolcall | ast_expression | symbol_data* | used to scope_search() an id |
 | ast_methodcall | ast_expression | mutable_data* | as ast_return::evaluate() |
 | ast_vanillacall | ast_expression | char* | methods already defined |
 | | | |
 | ast_indexing | ast_expression | array_data* | ? |
-| ast_fielding | ast_expression | item_data* | ? |
+| ast_fielding | ast_expression | symbol_data* | ? |
 | ast_fieldcall | ast_expression | mutable_data* | ? |
 | | | |
 | ast_typecall | ast_statement | class_data* | user-defined class |
-| ast_definition | ast_statement | item_data* | any type of symbol |
-| ast_declaration | ast_statement | item_data* | any type of symbol |
+| ast_definition | ast_statement | symbol_data* | any type of symbol |
+| ast_declaration | ast_statement | symbol_data* | any type of symbol |
 | | | |
 | ast_action | ast_statement | char | returns a single character |
 | ast_return | ast_statement | mutable_data* | - |
@@ -304,7 +308,7 @@ level 0:
 - *** == any from above
 - method == function
 
-- ast_expression -> char* / item_data*
+- ast_expression -> char* / symbol_data*
 
 ## Sugar syntax
 

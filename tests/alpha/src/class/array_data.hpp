@@ -4,7 +4,7 @@
 #include <vector>
 #include <numeric>
 #include "dev/yyerror.hpp"
-#include "dev/item_data.hpp"
+#include "dev/symbol_data.hpp"
 #include "dev/function.hpp"
 
 #include "primitive_data.hpp"
@@ -173,7 +173,7 @@ mutable_data *array_data::get_value()
 
 const char array_data::get_item_type() const
 {
-  return ARRY_ITEM_TYPE;
+  return ARRY_SYMB_TYPE;
 }
 
 const std::string &array_data::get_data_type() const

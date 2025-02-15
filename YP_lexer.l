@@ -1,6 +1,5 @@
 /* YP_lexer.l - text recognition component
  * (c) authors - Braha Petru Bogdan - <petrubraha@gmail.com>
- *             - Meraru Ioan Lucian - <https://github.com/Zamdacmalfal>
  */
 
 %{

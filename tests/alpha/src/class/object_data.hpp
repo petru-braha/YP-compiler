@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 #include "dev/yyerror.hpp"
-#include "dev/item_data.hpp"
+#include "dev/symbol_data.hpp"
 #include "dev/function.hpp"
 #include "class_data.hpp"
 #include "type_table.hpp"
@@ -69,7 +69,7 @@ object_data::object_data(const std::string &type)
   attributes = new map;
   for (const auto &symbol : *s)
   {
-    if (FNCT_ITEM_TYPE ==
+    if (FNCT_SYMB_TYPE ==
         symbol.second.data->get_item_type())
       continue;
 
@@ -109,7 +109,7 @@ object_data::object_data(
 
 const char object_data::get_item_type() const
 {
-  return OBJT_ITEM_TYPE;
+  return OBJT_SYMB_TYPE;
 }
 
 const std::string &object_data::get_data_type() const

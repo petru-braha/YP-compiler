@@ -3,7 +3,7 @@
 
 /* comments:
  * nullptr => error occured
- * item_data memory removal is performed by tables
+ * symbol_data memory removal is performed by tables
  * and not here
 
  * ast_scope_control returns the break/continue statements
@@ -12,7 +12,7 @@
 
 #include <vector>
 #include "class/dev/yyerror.hpp"
-#include "class/dev/item_data.hpp"
+#include "class/dev/symbol_data.hpp"
 #include "class/dev/function.hpp"
 #include "class/dev/ast_alphabet.hpp"
 #include "class/dev/ast_arithmetic.hpp"

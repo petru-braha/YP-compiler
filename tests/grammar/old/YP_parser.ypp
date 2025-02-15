@@ -833,7 +833,7 @@ obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals /*{
             if(is_error)
               yyerror("identifier already defined");
             
-            item_data* argument = nullptr;
+            symbol_data* argument = nullptr;
             size_t scope = scope_search($4);
             if(size_t(-1) != scope)
               argument = symbols.at(scope).get_data($4);
@@ -869,7 +869,7 @@ obj_defn: SMT_NAME SMT_NAME OPR_ASSIGN '{' attribte obj_vals /*{
             if(is_error)
               yyerror("identifier already defined");
             
-            item_data* argument = nullptr;
+            symbol_data* argument = nullptr;
             size_t scope = scope_search($4);
             if(size_t(-1) != scope)
               argument = symbols.at(scope).get_data($4);

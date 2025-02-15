@@ -3,7 +3,7 @@
 
 /* comments:
  * nullptr => error occured
- * item_data memory removal is performed by tables
+ * symbol_data memory removal is performed by tables
  * and not here
 
  * ast_scope_control returns the break/continue statements

@@ -3,7 +3,6 @@
 
 #include <string>
 #include <unordered_map>
-#include "dev/table.hpp"
 #include "class_data.hpp"
 
 class type_table final

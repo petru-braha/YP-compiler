@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "dev/item_data.hpp"
+#include "dev/symbol_data.hpp"
 #include "dev/yyerror.hpp"
 
 class ast_statement;
@@ -12,7 +12,7 @@ class ast_statement;
 /* the parser makes heap allocations,
  * that are reverted in deconstructor here
  */
-class function_data : public item_data
+class function_data : public symbol_data
 {
   const std::string return_data_type;
 
@@ -90,7 +90,7 @@ function_data::function_data(
 
 const char function_data::get_item_type() const
 {
-  return FNCT_ITEM_TYPE;
+  return FNCT_SYMB_TYPE;
 }
 
 const std::string &function_data::get_data_type() const

@@ -3,13 +3,13 @@
 
 /* comments:
  * nullptr => error occured
- * item_data memory removal is performed by tables
+ * symbol_data memory removal is performed by tables
  * and not here
  */
 
 #include <vector>
 #include "class/dev/yyerror.hpp"
-#include "class/dev/item_data.hpp"
+#include "class/dev/symbol_data.hpp"
 #include "class/dev/ast.hpp"
 
 #include "class/class_data.hpp"
@@ -37,7 +37,7 @@ public:
 ast_typecall::~ast_typecall()
 {
   delete id;
-  // last reminder about item_data's memory
+  // last reminder about symbol_data's memory
   // delete data;
 }
 
@@ -73,12 +73,12 @@ const char ast_typecall::get_stat_type() const
 class ast_definiton : public ast_statement
 {
   const char *const id;
-  item_data *const data;
+  symbol_data *const data;
 
 public:
   virtual ~ast_definiton() override;
   ast_definiton(const char *const,
-                item_data *const);
+                symbol_data *const);
 
   virtual void *evaluate() override;
 
@@ -91,7 +91,7 @@ ast_definiton::~ast_definiton()
 }
 
 ast_definiton::ast_definiton(
-    const char *const id, item_data *const data)
+    const char *const id, symbol_data *const data)
     : id(id), data(data)
 {
   if (nullptr == id || nullptr == data)

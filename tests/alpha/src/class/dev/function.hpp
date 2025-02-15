@@ -5,10 +5,10 @@
 
 void yyerror(const char *s);
 
-class item_data;
+class symbol_data;
 class mutable_data;
 
-item_data *scope_search(const std::string &);
+symbol_data *scope_search(const std::string &);
 mutable_data *make_copy(const mutable_data *const);
 
 bool is_type(const std::string &);

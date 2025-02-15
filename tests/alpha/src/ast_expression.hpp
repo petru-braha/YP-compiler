@@ -3,12 +3,12 @@
 
 /* comments:
  * nullptr => error occured
- * item_data memory removal is performed by tables
+ * symbol_data memory removal is performed by tables
  * and not here
  */
 
 #include "class/dev/yyerror.hpp"
-#include "class/dev/item_data.hpp"
+#include "class/dev/symbol_data.hpp"
 #include "class/dev/function.hpp"
 #include "class/dev/ast.hpp"
 #include "class/dev/ast_alphabet.hpp"
@@ -250,7 +250,7 @@ ast_symbolcall::ast_symbolcall(const char *const id)
 
 void *ast_symbolcall::evaluate()
 {
-  item_data *data = scope_search(id);
+  symbol_data *data = scope_search(id);
   if (nullptr == data)
   {
     yyerror("ast_symbolcall() failed - undefined id");
@@ -300,14 +300,14 @@ ast_methodcall::ast_methodcall(
 
 void *ast_methodcall::evaluate()
 {
-  item_data *data = scope_search(id);
+  symbol_data *data = scope_search(id);
   if (nullptr == data)
   {
     yyerror("ast_methodcall() failed - undefined id");
     return nullptr;
   }
 
-  if (FNCT_ITEM_TYPE != data->get_item_type())
+  if (FNCT_SYMB_TYPE != data->get_item_type())
   {
     yyerror("ast_methodcall() failed - wrong type");
     return nullptr;

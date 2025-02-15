@@ -3,13 +3,13 @@
 
 /* comments:
  * nullptr => error occured
- * item_data memory removal is performed by tables
+ * symbol_data memory removal is performed by tables
  * and not here
  */
 
 #include "class/dev/ast.hpp"
 #include "class/dev/yyerror.hpp"
-#include "class/dev/item_data.hpp"
+#include "class/dev/symbol_data.hpp"
 #include "class/dev/ast_alphabet.hpp"
 #include "class/dev/ast_arithmetic.hpp"
 
@@ -170,8 +170,8 @@ ast_assign::ast_assign(
 // returns mutable_data*
 void *ast_assign::evaluate()
 {
-  item_data *left = (item_data *)left_child->evaluate();
-  if (FNCT_ITEM_TYPE == left->get_item_type())
+  symbol_data *left = (symbol_data *)left_child->evaluate();
+  if (FNCT_SYMB_TYPE == left->get_item_type())
   {
     yyerror("ast_assign() failed - received function symbol");
     return nullptr;
@@ -198,8 +198,8 @@ void *ast_assign::evaluate()
   }
 
   // is_returning_char == false
-  item_data *temp = (item_data *)rght;
-  if (FNCT_ITEM_TYPE == temp->get_item_type())
+  symbol_data *temp = (symbol_data *)rght;
+  if (FNCT_SYMB_TYPE == temp->get_item_type())
   {
     yyerror("ast_assign() failed - received function symbol");
     return nullptr;

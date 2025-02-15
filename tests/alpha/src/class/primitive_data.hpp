@@ -3,7 +3,7 @@
 
 #include <string>
 #include <string.h>
-#include "dev/item_data.hpp"
+#include "dev/symbol_data.hpp"
 #include "dev/yyerror.hpp"
 
 const char INTG_DATA_TYPE[] = "int";
@@ -142,7 +142,7 @@ primitive_data &primitive_data::set_value(const std::string &value)
 
 const char primitive_data::get_item_type() const
 {
-  return PRMT_ITEM_TYPE;
+  return PRMT_SYMB_TYPE;
 }
 
 const std::string &primitive_data::get_data_type() const

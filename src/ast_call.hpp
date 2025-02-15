@@ -4,7 +4,7 @@
 #include <vector>
 #include "class/dev/ast.hpp"
 #include "class/dev/yyerror.hpp"
-#include "class/dev/item_data.hpp"
+#include "class/dev/symbol_data.hpp"
 
 #include "class/function_data.hpp"
 #include "class/symbol_table.hpp"
@@ -100,11 +100,11 @@ ast_methodcall::ast_methodcall(
 
 void *ast_methodcall::evaluate()
 {
-  item_data *data = (item_data *)id->evaluate();
+  symbol_data *data = (symbol_data *)id->evaluate();
   if (nullptr == data)
     return nullptr;
 
-  if (FNCT_ITEM_TYPE != data->get_item_type())
+  if (FNCT_SYMB_TYPE != data->get_item_type())
   {
     yyerror("ast_methodcall() failed - wrong type");
     return nullptr;
@@ -124,8 +124,8 @@ void *ast_methodcall::evaluate()
     }
 
     // is_returning_char == false
-    item_data *temp = (item_data *)buffer;
-    if (FNCT_ITEM_TYPE == temp->get_item_type())
+    symbol_data *temp = (symbol_data *)buffer;
+    if (FNCT_SYMB_TYPE == temp->get_item_type())
     {
       yyerror("ast_methodcall() failed - received function");
       return nullptr;
@@ -222,8 +222,8 @@ void *function_data::call(
     return nullptr;
   }
 
-  item_data *data = (item_data *)buffer;
-  if (FNCT_ITEM_TYPE == data->get_item_type() ||
+  symbol_data *data = (symbol_data *)buffer;
+  if (FNCT_SYMB_TYPE == data->get_item_type() ||
       data->get_data_type() != return_data_type)
   {
     yyerror("function_call() failed - return type missmatch");

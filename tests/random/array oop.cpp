@@ -21,16 +21,16 @@ bool is_primitive(const std::string &type)
   return false;
 }
 
-class item_data
+class symbol_data
 {
 public:
-  virtual ~item_data() = default;
-  virtual item_data *evaluate(const size_t) { return nullptr; }
+  virtual ~symbol_data() = default;
+  virtual symbol_data *evaluate(const size_t) { return nullptr; }
 
   virtual const std::string &get_data_type() const = 0;
 };
 
-class primitive_data : public item_data
+class primitive_data : public symbol_data
 {
   std::string data_type;
 
@@ -40,7 +40,7 @@ public:
   int a;
 };
 
-class object_data : public item_data
+class object_data : public symbol_data
 {
   std::string data_type;
 
@@ -88,7 +88,7 @@ class array_data;
 
 //! base case
 template <class T>
-class array_data<T, 0> : public item_data
+class array_data<T, 0> : public symbol_data
 {
   T structure;
   std::string data_type;
@@ -106,11 +106,11 @@ public:
 
 //! inductive case
 template <class T, size_t deep_level>
-class array_data : public item_data
+class array_data : public symbol_data
 {
   std::string data_type;
   typedef array_data<T, deep_level - 1> instance;
-  std::vector<item_data *> m_array;
+  std::vector<symbol_data *> m_array;
 
 public:
   virtual ~array_data() = default;
@@ -120,10 +120,10 @@ public:
       const std::vector<size_t> &);
 
 
-  virtual item_data *evaluate(const size_t) override;
+  virtual symbol_data *evaluate(const size_t) override;
 
   const std::string &get_data_type() const override;
-  const item_data *get_value(const size_t) const;
+  const symbol_data *get_value(const size_t) const;
 };
 
 template <class T, size_t deep_level>
@@ -156,7 +156,7 @@ array_data<T, deep_level>::
 }
 
 template <class T, size_t deep_level>
-item_data *
+symbol_data *
 array_data<T, deep_level>::
     evaluate(const size_t index)
 {
@@ -172,7 +172,7 @@ array_data<T, deep_level>::
 }
 
 template <class T, size_t deep_level>
-const item_data *
+const symbol_data *
 array_data<T, deep_level>::
     get_value(const size_t index) const
 {
@@ -183,7 +183,7 @@ array_data<T, deep_level>::
 namespace dynamic_array
 {
   template <class T, size_t index>
-  item_data *array_for_index(
+  symbol_data *array_for_index(
       const std::string &data_type,
       const std::vector<size_t> &level_data)
   {
@@ -198,14 +198,14 @@ namespace dynamic_array
       const std::vector<size_t> &level_data,
       size_t i, std::index_sequence<indexes...>)
   {
-    using function = item_data *(*)(const std::string &,
+    using function = symbol_data *(*)(const std::string &,
                                     const std::vector<size_t> &);
     constexpr function f[] = {array_for_index<T, indexes>...};
     return f[i](data_type, level_data);
   }
 }
 
-item_data *init_array(const std::string &data_type,
+symbol_data *init_array(const std::string &data_type,
                       const std::vector<size_t> &level_data)
 {
   if (level_data.size() >= LEVELMAX)
@@ -230,10 +230,10 @@ int main()
   std::string my_type = "int[2][3][4][5]";
   std::vector<size_t> level_data{2, 3, 4, 5};
 
-  item_data *arr = init_array(my_type, level_data);
+  symbol_data *arr = init_array(my_type, level_data);
   std::cout << arr->get_data_type() << "\n";
 
-  item_data *sub_arr = arr->evaluate(0);
+  symbol_data *sub_arr = arr->evaluate(0);
   std::cout << sub_arr->get_data_type() << "\n";
 
   delete arr;

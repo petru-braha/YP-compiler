@@ -21,19 +21,19 @@ bool is_primitive(const std::string &type)
   return false;
 }
 
-class item_data
+class symbol_data
 {
 public:
-  virtual ~item_data() = default;
+  virtual ~symbol_data() = default;
 };
 
-class primitive_data : public item_data
+class primitive_data : public symbol_data
 {
 public:
   virtual ~primitive_data() = default;
 };
 
-class object_data : public item_data
+class object_data : public symbol_data
 {
 public:
   virtual ~object_data() = default;

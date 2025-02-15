@@ -52,7 +52,7 @@ void *ast_indexing::evaluate()
   }
 
   mutable_data *data = (mutable_data *)id->evaluate();
-  if (ARRY_ITEM_TYPE != data->get_item_type())
+  if (ARRY_SYMB_TYPE != data->get_item_type())
   {
     yyerror("ast_indexing() failed - not array type");
     return nullptr;
@@ -99,11 +99,11 @@ ast_fielding::ast_fielding(
 
 void *ast_fielding::evaluate()
 {
-  item_data *data = (item_data *)object_id->evaluate();
+  symbol_data *data = (symbol_data *)object_id->evaluate();
   if (nullptr == data)
     return nullptr;
 
-  if (OBJT_ITEM_TYPE != data->get_item_type())
+  if (OBJT_SYMB_TYPE != data->get_item_type())
   {
     yyerror("ast_fielding() failed - wrong type");
     return nullptr;
@@ -117,7 +117,7 @@ void *ast_fielding::evaluate()
     return nullptr;
   }
 
-  if (FNCT_ITEM_TYPE == f->data->get_item_type())
+  if (FNCT_SYMB_TYPE == f->data->get_item_type())
   {
     yyerror("ast_fielding() failed - use ast_fieldcall()");
     return nullptr;
@@ -170,11 +170,11 @@ ast_fieldcall::ast_fieldcall(
 
 void *ast_fieldcall::evaluate()
 {
-  item_data *data = (item_data *)object_id->evaluate();
+  symbol_data *data = (symbol_data *)object_id->evaluate();
   if (nullptr == data)
     return nullptr;
 
-  if (OBJT_ITEM_TYPE != data->get_item_type())
+  if (OBJT_SYMB_TYPE != data->get_item_type())
   {
     yyerror("ast_fieldcall() failed - wrong type");
     return nullptr;
@@ -188,7 +188,7 @@ void *ast_fieldcall::evaluate()
     return nullptr;
   }
 
-  if (FNCT_ITEM_TYPE != f->data->get_item_type())
+  if (FNCT_SYMB_TYPE != f->data->get_item_type())
   {
     yyerror("ast_fieldcall() failed - use ast_fielding()");
     return nullptr;
