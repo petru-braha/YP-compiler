@@ -101,7 +101,7 @@ void *ast_primitivedefn::evaluate()
 
 const char ast_primitivedefn::get_stat_type() const
 {
-  return DEF_STAT_TYPE;
+  return PMD_STAT_TYPE;
 }
 
 class ast_functiondefn : public ast_definition
@@ -149,7 +149,7 @@ void *ast_functiondefn::evaluate()
 
 const char ast_functiondefn::get_stat_type() const
 {
-  return DEF_STAT_TYPE;
+  return FCD_STAT_TYPE;
 }
 
 class ast_objectdefn : public ast_definition
@@ -284,18 +284,17 @@ void *ast_objectdefn::evaluate()
 // todo if array
 const char ast_objectdefn::get_stat_type() const
 {
-  return DEF_STAT_TYPE;
+  return OBD_STAT_TYPE;
 }
 
-// class definition
-class ast_typecall : public ast_statement
+class ast_classdefn : public ast_statement
 {
   char *const id;
   std::vector<ast_definition *> *const fields;
 
 public:
-  virtual ~ast_typecall() override;
-  ast_typecall(
+  virtual ~ast_classdefn() override;
+  ast_classdefn(
       char *const,
       std::vector<ast_definition *> *const);
 
@@ -304,7 +303,7 @@ public:
   virtual const char get_stat_type() const override;
 };
 
-ast_typecall::~ast_typecall()
+ast_classdefn::~ast_classdefn()
 {
   free(id);
   for (size_t i = 0; i < fields->size(); i++)
@@ -312,38 +311,81 @@ ast_typecall::~ast_typecall()
   delete fields;
 }
 
-ast_typecall::ast_typecall(
+ast_classdefn::ast_classdefn(
     char *const id,
     std::vector<ast_definition *> *const data)
     : id(id), fields(data)
 {
   if (nullptr == id || nullptr == data)
-    yyerror("ast_typecall() failed - received nullptr");
-
+    yyerror("ast_classdefn() failed - received nullptr");
   if (0 != LAST_SCOPE)
-    yyerror("ast_typecall() failed - class declared in scope");
+    yyerror("ast_classdefn() failed - class declared in scope");
 }
 
-void *ast_typecall::evaluate()
+void *ast_classdefn::evaluate()
 {
   if (type_exists(id) || scope_search(id))
   {
-    yyerror("ast_typecall() failed - id already defined");
+    yyerror("ast_classdefn() failed - id already defined");
     return nullptr;
   }
 
-  // evaluate 
-  // place in buffer
-  //auto * buffer = 
-  //class_data* data = new class_data();
-  //if (false == type_insert(id, fields))
-    //return type_exists(id);
+  //todo evaluation
+  //todo access modifier
+  //todo function class declaration
+
+  typedef std::unordered_multimap<std::string, field_data> map;
+  map *definition = new map();
+  class_data *data = new class_data(definition);
+  if (false == type_insert(id, data))
+  {
+    delete data;
+    return nullptr;
+  }
+
+  return data;
+}
+
+const char ast_classdefn::get_stat_type() const
+{
+  return CLD_STAT_TYPE;
+}
+
+class ast_scopedefn : public ast_statement
+{
+  ast_definition *const def;
+
+public:
+  virtual ~ast_scopedefn() override;
+  ast_scopedefn(ast_definition *const);
+
+  virtual void *evaluate() override;
+
+  virtual const char get_stat_type() const override;
+};
+
+ast_scopedefn::~ast_scopedefn()
+{
+  delete def;
+}
+
+ast_scopedefn::ast_scopedefn(ast_definition *const def)
+    : def(def)
+{
+  if (nullptr == def)
+    yyerror("ast_scopedefn() failed - received nullptr");
+}
+
+void *ast_scopedefn::evaluate()
+{
+
+  // add to symbols
   return nullptr;
 }
 
-const char ast_typecall::get_stat_type() const
+const char ast_scopedefn::get_stat_type() const
 {
-  return TYC_STAT_TYPE;
+  return SCD_STAT_TYPE;
 }
 
 #endif

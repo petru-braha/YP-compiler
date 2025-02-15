@@ -33,15 +33,6 @@
   #include "src/ast_action.hpp"
   #include "src/ast_scope.hpp"
   #include "src/ast_control.hpp"
-  
-  extern FILE* yyin;
-  extern char* yytext;
-  extern int yylineno;
-  size_t count_error;
-
-  extern int yylex();
-  void yyerror(const char * s);
-  void initialize_compiler();
 %}
 
 %left '&' '|'
@@ -112,8 +103,12 @@
 /*! declaration */
 
 /* 4v rules */
-prm_decl: RSV_TYPE SMT_NAME { $$ = new ast_primitivedefn($1, $2); }
-        | RSV_ARRY SMT_NAME { $$ = new ast_primitivedefn($1, $2); }
+prm_decl: RSV_TYPE SMT_NAME {
+            $$ = new ast_primitivedefn($1, $2);
+          }
+        | RSV_ARRY SMT_NAME {
+            $$ = new ast_primitivedefn($1, $2);
+          }
         ;
 prm_defn: RSV_TYPE SMT_NAME OPR3 expr {
             $$ = new ast_primitivedefn($1, $2, $4); }
@@ -179,22 +174,29 @@ cls_decl: RSV_CLSS SMT_NAME ';'{
 
 /* 2c rules */
 cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN arr_fild SCOPE_END {
+            $$ = new ast_classdefn($2, $4);
           }
         | RSV_CLSS SMT_NAME SCOPE_BEGIN SCOPE_END {
+            $$ = new ast_classdefn($2,
+              new std::vector<ast_definition*>());
           }
         ;
 
-arr_fild: arr_fild cls_fild { 
+arr_fild: arr_fild cls_fild {
+            $1->emplace_back($2);
+            $$ = $1; 
           }
         | cls_fild {
+            $$ = new std::vector<ast_definition*>();
+            $$->emplace_back($1);
           }
         ;
 
-cls_fild: prm_decl
-        | prm_defn
-        | fct_defn
-        | obj_decl
-        | obj_defn
+cls_fild: prm_decl { $$ = $1; }
+        | prm_defn { $$ = $1; }
+        | fct_defn { $$ = $1; }
+        | obj_decl { $$ = $1; }
+        | obj_defn { $$ = $1; }
         | ACS_PRIV
         | ACS_PUBL
         ;
@@ -211,6 +213,7 @@ __    __
 /*! statements */
 
 entrance: global {
+            // here, the source file is completetly read
             // $1->at(0) is the master function
             initialize_compiler();
             for(size_t i = 1; i < $1->size(); i++)
@@ -233,7 +236,7 @@ entrance: global {
     | SMT_NAME OPR3 test { printf("t"); }
     ;*/
 
-global: global decl { $1->emplace_back($2); $$ = $1; }
+global: global decl ';' { $1->emplace_back($2); $$ = $1; }
       | global cls_decl ';' { $1->emplace_back($2); $$ = $1; }
       | global cls_defn ';' { $1->emplace_back($2); $$ = $1; }
       | MASTER scope {
@@ -244,7 +247,8 @@ global: global decl { $1->emplace_back($2); $$ = $1; }
 
 scope : SCOPE_BEGIN arr_stat SCOPE_END { $$ = new ast_scope($2); }
       | SCOPE_BEGIN SCOPE_END {
-            $$ = new ast_scope(new std::vector<ast_statement*>);
+            $$ = new ast_scope(
+              new std::vector<ast_statement*>);
         }
       ;
 
@@ -258,18 +262,18 @@ arr_stat: arr_stat stat { $1->emplace_back($2); $$ = $1; }
 stat: asgn ';' { $$ = $1; }
     | ACT_BREK ';' { $$ = new ast_action(ACT_BREAK); }
     | ACT_CONT ';' { $$ = new ast_action(ACT_CONTINUE); }
-    | ACT_RTRN expr ';' { $$ = new ast_return($2); }
-    | decl { $$ = $1; }
+    | ACT_RTRN asgn ';' { $$ = new ast_return($2); }
+    | decl ';' { $$ = $1; }
     | ctrl { $$ = $1; }
     | scope { $$ = $1; }
     ;
 
-decl: prm_decl ';' { $$ = $1; }
-    | prm_defn ';' { $$ = $1; }
-    | fct_decl ';' { $$ = $1; }
-    | fct_defn ';' { $$ = $1; }
-    | obj_decl ';' { $$ = $1; }
-    | obj_defn ';' { $$ = $1; }
+decl: prm_decl { $$ = new ast_scopedefn($1); }
+    | prm_defn { $$ = new ast_scopedefn($1); }
+    | fct_decl { $$ = new ast_scopedefn($1); }
+    | fct_defn { $$ = new ast_scopedefn($1); }
+    | obj_decl { $$ = new ast_scopedefn($1); }
+    | obj_defn { $$ = new ast_scopedefn($1); }
     ;
 
 asgn: expr { $$ = $1; }
@@ -289,7 +293,7 @@ fact: fact OPR2 unit { $$ = new ast_operator($1, $2, $3); }
     | unit { $$ = $1; }
     ;
 unit: '(' asgn ')' { $$ = $2; }
-    | OPRU expr ')' { 
+    | OPRU asgn ')' { 
         $$ = new ast_operator(
           new ast_constant((char*)"0"), $1, $2);
       }
@@ -299,14 +303,14 @@ unit: '(' asgn ')' { $$ = $2; }
     | SMT_NAME { $$ = new ast_symbolcall($1); }
     
     // function
-    | TYPEOF '(' expr ')' { $$ = new ast_vanillacall($3, VNL_TYPEOF); }
-    | PRINTF '(' expr ')' { $$ = new ast_vanillacall($3, VNL_PRINTF); }
+    | TYPEOF '(' asgn ')' { $$ = new ast_vanillacall($3, VNL_TYPEOF); }
+    | PRINTF '(' asgn ')' { $$ = new ast_vanillacall($3, VNL_PRINTF); }
     | SMT_NAME '('')' { 
         $$ = new ast_methodcall(
           new ast_symbolcall($1),
           new std::vector<ast_expression*>()); 
       }
-    | SMT_NAME '(' arr_argm expr ')' { 
+    | SMT_NAME '(' arr_argm asgn ')' { 
         $3->emplace_back($4);
         $$ = new ast_methodcall(
           new ast_symbolcall($1),
@@ -331,37 +335,37 @@ unit: '(' asgn ')' { $$ = $2; }
     */
 
     // array
-    | SMT_NAME '[' expr ']' { 
+    | SMT_NAME '[' asgn ']' { 
         $$ = new ast_indexing(
           new ast_symbolcall($1),
           $3);
       }
     ;
 
-arr_argm: arr_argm expr ',' { $1->emplace_back($2); $$ = $1; }
+arr_argm: arr_argm asgn ',' { $1->emplace_back($2); $$ = $1; }
         | /*epsilon*/ { $$ = new std::vector<ast_expression*>(); }
         ;
 
-ctrl: SEQ_IFIF '(' expr ')' 
+ctrl: SEQ_IFIF '(' asgn ')' 
         SCOPE_BEGIN arr_stat SCOPE_END {
           $$ = new ast_ifelse($3, 
             new ast_scope_control($6), 
             new ast_scope_control(
               new std::vector<ast_statement*>())); 
         }
-    | SEQ_IFIF '(' expr ')'
+    | SEQ_IFIF '(' asgn ')'
         SCOPE_BEGIN arr_stat SCOPE_END
         SEQ_ELSE SCOPE_BEGIN arr_stat SCOPE_END {
           $$ = new ast_ifelse($3, 
             new ast_scope_control($6), 
             new ast_scope_control($10));
         }
-    | SEQ_WHLE '(' expr ')'
+    | SEQ_WHLE '(' asgn ')'
         SCOPE_BEGIN arr_stat SCOPE_END {
           $$ = new ast_while($3, 
             new ast_scope_control($6));
         }
-    | SEQ_FOOR '(' stat ';' expr ';' stat ')' 
+    | SEQ_FOOR '(' stat ';' asgn ';' stat ')' 
         SCOPE_BEGIN arr_stat SCOPE_END {
           $$ = new ast_for($3, $5, $7, 
             new ast_scope_control($10));

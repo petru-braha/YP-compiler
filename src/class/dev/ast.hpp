@@ -13,19 +13,23 @@ constexpr char IDX_STAT_TYPE = 106;
 constexpr char FLD_STAT_TYPE = 107;
 constexpr char FLC_STAT_TYPE = 108;
 
-constexpr char TYC_STAT_TYPE = 109;
-constexpr char DEF_STAT_TYPE = 110;
-constexpr char DCL_STAT_TYPE = 111;
+constexpr char PMD_STAT_TYPE = 109;
+constexpr char FCD_STAT_TYPE = 110;
+constexpr char OBD_STAT_TYPE = 111;
 
-constexpr char ACT_STAT_TYPE = 112;
-constexpr char RET_STAT_TYPE = 113;
+constexpr char CLD_STAT_TYPE = 112;
+constexpr char SCD_STAT_TYPE = 113;
+constexpr char DCL_STAT_TYPE = 114;
 
-constexpr char SCP_STAT_TYPE = 114;
-constexpr char SCC_STAT_TYPE = 115;
+constexpr char ACT_STAT_TYPE = 115;
+constexpr char RET_STAT_TYPE = 116;
 
-constexpr char IFE_STAT_TYPE = 116;
-constexpr char WHL_STAT_TYPE = 117;
-constexpr char FOR_STAT_TYPE = 118;
+constexpr char SCP_STAT_TYPE = 117;
+constexpr char SCC_STAT_TYPE = 118;
+
+constexpr char IFE_STAT_TYPE = 119;
+constexpr char WHL_STAT_TYPE = 120;
+constexpr char FOR_STAT_TYPE = 121;
 
 class ast_expression;
 const char *get_buffer(ast_expression *const);

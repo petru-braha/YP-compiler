@@ -3,6 +3,7 @@
 
 #include <string>
 
+extern int yylex();
 void yywarning(const char *);
 void yyerror(const char *);
 

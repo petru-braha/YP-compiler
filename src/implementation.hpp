@@ -15,8 +15,11 @@
 #include "class/symbol_table.hpp"
 #include "class/type_table.hpp"
 
+// the place of all global variables
+extern FILE *yyin;
+extern char *yytext;
 extern int yylineno;
-extern size_t count_error;
+size_t count_error;
 std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
 
