@@ -41,8 +41,7 @@ public:
   virtual const std::string &get_data_type() const override;
   field_data *get_attriubte(const std::string &id) const;
 
-  typedef std::unordered_map<
-      std::string, field_data>::iterator it;
+  typedef map::iterator it;
   it begin();
   it end();
 };

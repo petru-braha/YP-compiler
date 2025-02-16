@@ -21,13 +21,13 @@ class class_data
   typedef std::unordered_multimap<
       std::string, field_data>
       map;
-  map *const content;
+  map *content;
 
 public:
   ~class_data();
+  class_data();
   class_data(map *const);
-
-  class_data &insert(const std::string &, const field_data &);
+  bool define(map *const);
 
   const size_t get_count(const char = SYMB_TYPE_INVALID) const;
 
@@ -39,10 +39,16 @@ public:
 
 class_data::~class_data()
 {
+  if (nullptr == content)
+    return;
+
   for (const auto &item_pair : *content)
     delete item_pair.second.data;
   delete content;
 }
+
+// declaration with no definition
+class_data::class_data() : content(nullptr) {}
 
 class_data::class_data(
     std::unordered_multimap<std::string, field_data> *const data)
@@ -50,6 +56,14 @@ class_data::class_data(
 {
   if (nullptr == data)
     yyerror("class_data() failed - received nullptr");
+}
+
+bool class_data::define(map *const data)
+{
+  if (content)
+    return false;
+  content = data;
+  return true;
 }
 
 std::pair<class_data::it, class_data::it> class_data::get_data(

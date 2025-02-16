@@ -20,6 +20,7 @@ extern FILE *yyin;
 extern char *yytext;
 extern int yylineno;
 size_t count_error;
+char yyaccess;
 std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
 

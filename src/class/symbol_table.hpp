@@ -17,7 +17,7 @@
  */
 class symbol_table
 {
-  std::string s_id;
+  const std::string s_id;
   std::unordered_map<std::string, symbol_data *> itm;
 
   static size_t available_id;

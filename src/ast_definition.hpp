@@ -109,14 +109,17 @@ class ast_functiondefn : public ast_definition
   char *const return_type;
   char *const id;
   std::vector<ast_definition *> *const parameters;
-  ast_statement *const execution;
+  std::vector<ast_statement *> *const execution;
 
 public:
   virtual ~ast_functiondefn() override;
   ast_functiondefn(
       char *const, char *const,
+      std::vector<ast_definition *> *const);
+  ast_functiondefn(
+      char *const, char *const,
       std::vector<ast_definition *> *const,
-      ast_statement *const);
+      std::vector<ast_statement *> *const);
 
   virtual void *evaluate() override;
 
@@ -130,13 +133,23 @@ ast_functiondefn::~ast_functiondefn()
   for (size_t i = 0; i < parameters->size(); i++)
     delete parameters->at(i);
   delete parameters;
-  delete execution;
+
+  if (execution)
+    delete execution;
+}
+
+ast_functiondefn::ast_functiondefn(
+    char *const type, char *const id,
+    std::vector<ast_definition *> *const arguments)
+    : return_type(type), id(id),
+      parameters(arguments), execution(nullptr)
+{
 }
 
 ast_functiondefn::ast_functiondefn(
     char *const type, char *const id,
     std::vector<ast_definition *> *const arguments,
-    ast_statement *const exe)
+    std::vector<ast_statement *> *const exe)
     : return_type(type), id(id),
       parameters(arguments), execution(exe)
 {
@@ -144,6 +157,7 @@ ast_functiondefn::ast_functiondefn(
 
 void *ast_functiondefn::evaluate()
 {
+  // todo add_body if already exists
   return nullptr;
 }
 
@@ -294,6 +308,7 @@ class ast_classdefn : public ast_statement
 
 public:
   virtual ~ast_classdefn() override;
+  ast_classdefn(char *const);
   ast_classdefn(
       char *const,
       std::vector<ast_definition *> *const);
@@ -309,6 +324,15 @@ ast_classdefn::~ast_classdefn()
   for (size_t i = 0; i < fields->size(); i++)
     delete fields->at(i);
   delete fields;
+}
+
+ast_classdefn::ast_classdefn(char *const id)
+    : id(id), fields(nullptr)
+{
+  if (nullptr == id)
+    yyerror("ast_classdefn() failed - received nullptr");
+  if (0 != LAST_SCOPE)
+    yyerror("ast_classdefn() failed - class declared in scope");
 }
 
 ast_classdefn::ast_classdefn(
@@ -330,9 +354,9 @@ void *ast_classdefn::evaluate()
     return nullptr;
   }
 
-  //todo evaluation
-  //todo access modifier
-  //todo function class declaration
+  // todo evaluation
+  // todo access modifier
+  // todo function class declaration
 
   typedef std::unordered_multimap<std::string, field_data> map;
   map *definition = new map();

@@ -8,6 +8,7 @@
 #include "dev/yyerror.hpp"
 
 class ast_statement;
+class ast_scope;
 
 /* the parser makes heap allocations,
  * that are reverted in deconstructor here
@@ -21,7 +22,7 @@ class function_data : public symbol_data
       map;
   map *parameters;
 
-  std::vector<ast_statement *> *const execution;
+  std::vector<ast_statement *> *execution;
 
   static std::string available_id;
   const std::string &default_id();
@@ -30,8 +31,11 @@ class function_data : public symbol_data
 public:
   virtual ~function_data() override;
   function_data(
+      const std::string &, map *const);
+  function_data(
       const std::string &, map *const,
       std::vector<ast_statement *> *const);
+  bool define(std::vector<ast_statement *> *const);
 
   void *call(const std::vector<mutable_data *> *const);
 
@@ -71,9 +75,21 @@ const std::string &function_data::default_id()
 }
 
 /*
- ! defined in node.hpp after ast_scope
+ ! defined in ast_call.hpp
  * function_data::~function_data();
  */
+
+// declaration with no definition
+function_data::function_data(
+    const std::string &return_type,
+    std::unordered_map<
+        std::string, mutable_data *> *const arguments)
+    : return_data_type(return_type),
+      parameters(arguments), execution(nullptr)
+{
+  if (nullptr == arguments)
+    yyerror("function_data() failed - received nullptr");
+}
 
 // todo check compatibility
 function_data::function_data(
@@ -86,6 +102,15 @@ function_data::function_data(
 {
   if (nullptr == arguments || nullptr == statements)
     yyerror("function_data() failed - received nullptr");
+}
+
+bool function_data::define(
+    std::vector<ast_statement *> *const statements)
+{
+  if (execution)
+    return false;
+  execution = statements;
+  return true;
 }
 
 /*

@@ -92,7 +92,7 @@
 %type<subdef> arr_fild
 %type<d_node> cls_fild
 
-%type<s_node> scope
+%type<subast> scope
 %type<subast> arr_stat
 %type<s_node> stat ctrl decl
 %type<e_node> expr term fact unit asgn
@@ -110,17 +110,17 @@ prm_decl: RSV_TYPE SMT_NAME {
             $$ = new ast_primitivedefn($1, $2);
           }
         ;
-prm_defn: RSV_TYPE SMT_NAME OPR3 expr {
+prm_defn: RSV_TYPE SMT_NAME OPR3 asgn {
             $$ = new ast_primitivedefn($1, $2, $4); }
-        | RSV_ARRY SMT_NAME OPR3 expr {
+        | RSV_ARRY SMT_NAME OPR3 asgn {
             $$ = new ast_primitivedefn($1, $2, $4); }
         ;
 
-/* 2f rules */
-fct_decl: RSV_TYPE SMT_NAME synopsis
-        | RSV_ARRY SMT_NAME synopsis
-        | SMT_NAME SMT_NAME synopsis
-        | DEF_ARRY SMT_NAME synopsis
+/* 8f rules */
+fct_decl: RSV_TYPE SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
+        | RSV_ARRY SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
+        | SMT_NAME SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
+        | DEF_ARRY SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
         ;
 fct_defn: RSV_TYPE SMT_NAME synopsis scope {
             $$ = new ast_functiondefn($1, $2, $3, $4);
@@ -151,28 +151,22 @@ parametr: prm_decl { $$ = $1; }
 obj_decl: SMT_NAME SMT_NAME { $$ = new ast_objectdefn($1, $2); }
         | DEF_ARRY SMT_NAME { $$ = new ast_objectdefn($1, $2); }
         ;
-obj_defn: SMT_NAME SMT_NAME OPR3 '{' arr_attr expr '}' {
+obj_defn: SMT_NAME SMT_NAME OPR3 '{' arr_attr asgn '}' {
             $5->emplace_back($6);
             $$ = new ast_objectdefn($1, $2, $5);
           }
-        | DEF_ARRY SMT_NAME OPR3 '{' arr_attr expr '}' {
+        | DEF_ARRY SMT_NAME OPR3 '{' arr_attr asgn '}' {
             $5->emplace_back($6);
             $$ = new ast_objectdefn($1, $2, $5);
           }
         ;
-arr_attr: arr_attr expr ',' { $1->emplace_back($2); $$ = $1; }
+arr_attr: arr_attr asgn ',' { $1->emplace_back($2); $$ = $1; }
         | /* epsilon */ { $$ = new std::vector<ast_expression*>(); }
         ;
 
-/* 1c rules */
-cls_decl: RSV_CLSS SMT_NAME ';'{
-            /*if(size_t(-1) != scope_search($2))
-              yyerror("identifier already defined");*/
-            free($2);
-          }
+/* 3c rules */
+cls_decl: RSV_CLSS SMT_NAME { $$ = new ast_classdefn($2); }
         ;
-
-/* 2c rules */
 cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN arr_fild SCOPE_END {
             $$ = new ast_classdefn($2, $4);
           }
@@ -181,24 +175,24 @@ cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN arr_fild SCOPE_END {
               new std::vector<ast_definition*>());
           }
         ;
-
 arr_fild: arr_fild cls_fild {
-            $1->emplace_back($2);
+            if($2 != nullptr)
+              $1->emplace_back($2);
             $$ = $1; 
           }
         | cls_fild {
             $$ = new std::vector<ast_definition*>();
-            $$->emplace_back($1);
+            if($1 != nullptr)
+              $$->emplace_back($1);
           }
         ;
-
 cls_fild: prm_decl { $$ = $1; }
         | prm_defn { $$ = $1; }
         | fct_defn { $$ = $1; }
         | obj_decl { $$ = $1; }
         | obj_defn { $$ = $1; }
-        | ACS_PRIV
-        | ACS_PUBL
+        | ACS_PRIV { $$ = nullptr; yyaccess = ACCS_MODF_PRIV; }
+        | ACS_PUBL { $$ = nullptr; yyaccess = ACCS_MODF_PUBL; }
         ;
 
 /*
@@ -241,15 +235,12 @@ global: global decl ';' { $1->emplace_back($2); $$ = $1; }
       | global cls_defn ';' { $1->emplace_back($2); $$ = $1; }
       | MASTER scope {
           $$ = new std::vector<ast_statement*>();
-          $$->emplace_back($2);
+          $$->emplace_back(new ast_scope($2));
         }
       ;
 
-scope : SCOPE_BEGIN arr_stat SCOPE_END { $$ = new ast_scope($2); }
-      | SCOPE_BEGIN SCOPE_END {
-            $$ = new ast_scope(
-              new std::vector<ast_statement*>);
-        }
+scope : SCOPE_BEGIN arr_stat SCOPE_END { $$ = $2; }
+      | SCOPE_BEGIN SCOPE_END { $$ = new std::vector<ast_statement*>(); }
       ;
 
 arr_stat: arr_stat stat { $1->emplace_back($2); $$ = $1; }
@@ -265,7 +256,7 @@ stat: asgn ';' { $$ = $1; }
     | ACT_RTRN asgn ';' { $$ = new ast_return($2); }
     | decl ';' { $$ = $1; }
     | ctrl { $$ = $1; }
-    | scope { $$ = $1; }
+    | scope { $$ = new ast_scope($1); }
     ;
 
 decl: prm_decl { $$ = new ast_scopedefn($1); }
@@ -305,7 +296,7 @@ unit: '(' asgn ')' { $$ = $2; }
     // function
     | TYPEOF '(' asgn ')' { $$ = new ast_vanillacall($3, VNL_TYPEOF); }
     | PRINTF '(' asgn ')' { $$ = new ast_vanillacall($3, VNL_PRINTF); }
-    | SMT_NAME '('')' { 
+    | SMT_NAME '('')' {
         $$ = new ast_methodcall(
           new ast_symbolcall($1),
           new std::vector<ast_expression*>()); 
@@ -318,21 +309,23 @@ unit: '(' asgn ')' { $$ = $2; }
       }
 
     // object
-    /*
     | SMT_NAME ACS_FILD SMT_NAME { 
         $$ = new ast_fielding(
           new ast_symbolcall($1),
-          $2);
+          $3);
       }
     | SMT_NAME ACS_FILD SMT_NAME '('')' { 
-        $$ = new ast_fieldcall($1, $2,
+        $$ = new ast_fieldcall(
+          new ast_symbolcall($1),
+          $3,
           new std::vector<ast_expression*>());
       }
     | SMT_NAME ACS_FILD SMT_NAME '(' arr_argm expr ')'{
         $5->emplace_back($6);
-        $$ = new ast_fieldcall($1, $3, $5);
+        $$ = new ast_fieldcall(
+          new ast_symbolcall($1), 
+          $3, $5);
       }
-    */
 
     // array
     | SMT_NAME '[' asgn ']' { 
@@ -346,29 +339,24 @@ arr_argm: arr_argm asgn ',' { $1->emplace_back($2); $$ = $1; }
         | /*epsilon*/ { $$ = new std::vector<ast_expression*>(); }
         ;
 
-ctrl: SEQ_IFIF '(' asgn ')' 
-        SCOPE_BEGIN arr_stat SCOPE_END {
+ctrl: SEQ_IFIF '(' asgn ')' scope {
           $$ = new ast_ifelse($3, 
-            new ast_scope_control($6), 
+            new ast_scope_control($5), 
             new ast_scope_control(
               new std::vector<ast_statement*>())); 
         }
-    | SEQ_IFIF '(' asgn ')'
-        SCOPE_BEGIN arr_stat SCOPE_END
-        SEQ_ELSE SCOPE_BEGIN arr_stat SCOPE_END {
+    | SEQ_IFIF '(' asgn ')' scope SEQ_ELSE scope {
           $$ = new ast_ifelse($3, 
-            new ast_scope_control($6), 
-            new ast_scope_control($10));
+            new ast_scope_control($5), 
+            new ast_scope_control($7));
         }
-    | SEQ_WHLE '(' asgn ')'
-        SCOPE_BEGIN arr_stat SCOPE_END {
+    | SEQ_WHLE '(' asgn ')' scope {
           $$ = new ast_while($3, 
-            new ast_scope_control($6));
+            new ast_scope_control($5));
         }
-    | SEQ_FOOR '(' stat ';' asgn ';' stat ')' 
-        SCOPE_BEGIN arr_stat SCOPE_END {
+    | SEQ_FOOR '(' stat ';' asgn ';' stat ')' scope {
           $$ = new ast_for($3, $5, $7, 
-            new ast_scope_control($10));
+            new ast_scope_control($9));
         }
     ;
 %%

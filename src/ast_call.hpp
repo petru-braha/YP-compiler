@@ -155,6 +155,10 @@ function_data::~function_data()
   for (auto &item_pair : *parameters)
     delete item_pair.second;
   delete parameters;
+
+  if (nullptr == execution)
+    return;
+
   for (auto &statement : *execution)
     delete statement;
   delete execution;

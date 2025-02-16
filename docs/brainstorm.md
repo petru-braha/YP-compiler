@@ -6,9 +6,10 @@
 
 ## General ideas
 
+- function_data and class_data can be firstly declared and later defined
 
-*!* compilation should never throw exceptions *!*
- *!* all data is encoded as string *!*
+- compilation should never throw exceptions
+- all data is encoded as string
  
 - note to self: doing left recursion is alright: the base case is firstly evaluated (similar to right recursion)
 
