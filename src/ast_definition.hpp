@@ -18,6 +18,12 @@
 #include "class/type_table.hpp"
 #include "ast_call.hpp"
 
+struct ast_defn
+{
+  const char *id;
+  symbol_data *data;
+};
+
 extern std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
 
@@ -32,6 +38,7 @@ class ast_primitivedefn : public ast_definition
   char *const data_type;
   char *const id;
   ast_expression *value;
+  ast_defn result;
 
 public:
   virtual ~ast_primitivedefn() override;
@@ -74,6 +81,12 @@ ast_primitivedefn::ast_primitivedefn(
 
 void *ast_primitivedefn::evaluate()
 {
+  if (false == is_primitive(data_type))
+  {
+    yyerror("ast_primitivedefn() failed - not primitive type");
+    return nullptr;
+  }
+
   if (is_type(id))
   {
     yyerror("ast_primitivedefn() failed - type treated as id");
@@ -87,7 +100,7 @@ void *ast_primitivedefn::evaluate()
   }
 
   const char *buffer = get_buffer(value);
-  if (is_compatible(data_type, buffer))
+  if (false == is_compatible(data_type, buffer))
   {
     yyerror("ast_primitivedefn() failed - type missmatch");
     return nullptr;
@@ -96,7 +109,9 @@ void *ast_primitivedefn::evaluate()
   primitive_data *data =
       new primitive_data(data_type, buffer);
   symbols[LAST_SCOPE].insert(id, data);
-  return data;
+
+  result = {id, data};
+  return &result;
 }
 
 const char ast_primitivedefn::get_stat_type() const
@@ -110,6 +125,7 @@ class ast_functiondefn : public ast_definition
   char *const id;
   std::vector<ast_definition *> *const parameters;
   std::vector<ast_statement *> *const execution;
+  ast_defn result;
 
 public:
   virtual ~ast_functiondefn() override;
@@ -144,6 +160,9 @@ ast_functiondefn::ast_functiondefn(
     : return_type(type), id(id),
       parameters(arguments), execution(nullptr)
 {
+  if (nullptr == type || nullptr == id ||
+      nullptr == arguments)
+      yyerror("")
 }
 
 ast_functiondefn::ast_functiondefn(

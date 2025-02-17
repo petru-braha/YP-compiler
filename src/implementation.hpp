@@ -21,8 +21,12 @@ extern char *yytext;
 extern int yylineno;
 size_t count_error;
 char yyaccess;
+
 std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
+
+extern int yylex();
+extern int yyparse();
 
 void yywarning(const char *message)
 {
@@ -219,6 +223,32 @@ void initialize_compiler()
           new std::unordered_map<
               std::string, mutable_data *>(),
           new std::vector<ast_statement *>()));
+}
+
+int main(int argc, char **argv)
+{
+  if (argc != 2)
+  {
+    yyerror("wrong number of arguments");
+    return EXIT_FAILURE;
+  }
+
+  FILE *ptr = fopen(argv[1], "r");
+  if (nullptr == ptr)
+  {
+    yyerror("invalid file");
+    return EXIT_FAILURE;
+  }
+
+  yyin = ptr;
+  initialize_compiler();
+  yyparse();
+
+  if (0 == count_error)
+    printf("the program was compiled correctly.\n");
+  else
+    printf("the program has %zu errors.\n", count_error);
+  return count_error;
 }
 
 #endif

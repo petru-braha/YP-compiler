@@ -19,7 +19,7 @@ constexpr char OBD_STAT_TYPE = 111;
 
 constexpr char CLD_STAT_TYPE = 112;
 constexpr char SCD_STAT_TYPE = 113;
-constexpr char DCL_STAT_TYPE = 114;
+constexpr char DCL_STAT_TYPE = 114; // ?
 
 constexpr char ACT_STAT_TYPE = 115;
 constexpr char RET_STAT_TYPE = 116;

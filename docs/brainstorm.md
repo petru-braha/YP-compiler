@@ -291,12 +291,11 @@ level 0:
 | ast_fielding | ast_expression | symbol_data* | ? |
 | ast_fieldcall | ast_expression | mutable_data* | ? |
 | | | |
-| ast_primitivedefn | ast_definition | std::pair<std::string, symbol_data*>* | user-defined class |
-| ast_functiondefn | ast_definition | std::pair<std::string, symbol_data*>* | user-defined class |
-| ast_objectdefn | ast_definition | std::pair<std::string, symbol_data*>* | user-defined class |
+| ast_primitivedefn | ast_definition | ast_defn* | - |
+| ast_functiondefn | ast_definition | ast_defn* | - |
+| ast_objectdefn | ast_definition | ast_defn* | - |
 | ast_classdefn | ast_statement | class_data* | used to define symbols in user-defined class |
 | ast_scopedefn | ast_statement | symbol_data* | used to define symbols in scopes |
-| ast_declaration | ast_statement | symbol_data* | any type of symbol |
 | | | |
 | ast_action | ast_statement | char | returns a single character |
 | ast_return | ast_statement | mutable_data* | - |

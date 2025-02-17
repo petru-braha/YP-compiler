@@ -5,34 +5,20 @@
  * run command example: ./YP exs/fail/declaration/class/field\ 0.txt
  
  * rules' summary
-  * declarations
-  ** primitive
-  ** function
-  ** object
-  ** class
-  * statements
-  ** expression
-  ** fct_call
-  ** control
-
- * order of function rules
-  ** yes parameters - no  array
-  ** yes parameters - yes array
-  ** no  parameters - no  array
-  ** no  parameters - yes array
+ ** control statements
+ ** arithmetic expressions
+ ** declarations
  */
 
 %{
   #include "src/implementation.hpp"
-
+  #include "src/ast_scope.hpp"
+  #include "src/ast_control.hpp"
+  #include "src/ast_action.hpp"
   #include "src/ast_expression.hpp"
   #include "src/ast_call.hpp"
   #include "src/ast_indexing.hpp"
-  
   #include "src/ast_definition.hpp"
-  #include "src/ast_action.hpp"
-  #include "src/ast_scope.hpp"
-  #include "src/ast_control.hpp"
 %}
 
 %left '&' '|'
@@ -99,102 +85,6 @@
 %type<subexp> arr_argm
 
 %%
-
-/*! declaration */
-
-/* 4v rules */
-prm_decl: RSV_TYPE SMT_NAME {
-            $$ = new ast_primitivedefn($1, $2);
-          }
-        | RSV_ARRY SMT_NAME {
-            $$ = new ast_primitivedefn($1, $2);
-          }
-        ;
-prm_defn: RSV_TYPE SMT_NAME OPR3 asgn {
-            $$ = new ast_primitivedefn($1, $2, $4); }
-        | RSV_ARRY SMT_NAME OPR3 asgn {
-            $$ = new ast_primitivedefn($1, $2, $4); }
-        ;
-
-/* 8f rules */
-fct_decl: RSV_TYPE SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
-        | RSV_ARRY SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
-        | SMT_NAME SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
-        | DEF_ARRY SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
-        ;
-fct_defn: RSV_TYPE SMT_NAME synopsis scope {
-            $$ = new ast_functiondefn($1, $2, $3, $4);
-          }
-        | RSV_ARRY SMT_NAME synopsis scope {
-            $$ = new ast_functiondefn($1, $2, $3, $4);
-          }
-        | SMT_NAME SMT_NAME synopsis scope {
-            $$ = new ast_functiondefn($1, $2, $3, $4);
-          }
-        | DEF_ARRY SMT_NAME synopsis scope {
-            $$ = new ast_functiondefn($1, $2, $3, $4);
-          }
-        ;
-synopsis: '(' arr_parm parametr ')' { $2->emplace_back($3); $$ = $2; }
-        | '(' ')' { $$ = new std::vector<ast_definition*>(); }
-        ;
-arr_parm: arr_parm parametr ',' { $1->emplace_back($2); $$ = $1; }
-        | /* epsilon */ { $$ = new std::vector<ast_definition*>(); }
-        ;
-parametr: prm_decl { $$ = $1; }
-        | prm_defn { $$ = $1; }
-        | obj_decl { $$ = $1; }
-        | obj_defn { $$ = $1; }
-        ;
-
-/* 4o rules */
-obj_decl: SMT_NAME SMT_NAME { $$ = new ast_objectdefn($1, $2); }
-        | DEF_ARRY SMT_NAME { $$ = new ast_objectdefn($1, $2); }
-        ;
-obj_defn: SMT_NAME SMT_NAME OPR3 '{' arr_attr asgn '}' {
-            $5->emplace_back($6);
-            $$ = new ast_objectdefn($1, $2, $5);
-          }
-        | DEF_ARRY SMT_NAME OPR3 '{' arr_attr asgn '}' {
-            $5->emplace_back($6);
-            $$ = new ast_objectdefn($1, $2, $5);
-          }
-        ;
-arr_attr: arr_attr asgn ',' { $1->emplace_back($2); $$ = $1; }
-        | /* epsilon */ { $$ = new std::vector<ast_expression*>(); }
-        ;
-
-/* 3c rules */
-cls_decl: RSV_CLSS SMT_NAME { $$ = new ast_classdefn($2); }
-        ;
-cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN arr_fild SCOPE_END {
-            $$ = new ast_classdefn($2, $4);
-          }
-        | RSV_CLSS SMT_NAME SCOPE_BEGIN SCOPE_END {
-            $$ = new ast_classdefn($2,
-              new std::vector<ast_definition*>());
-          }
-        ;
-arr_fild: arr_fild cls_fild {
-            if($2 != nullptr)
-              $1->emplace_back($2);
-            $$ = $1; 
-          }
-        | cls_fild {
-            $$ = new std::vector<ast_definition*>();
-            if($1 != nullptr)
-              $$->emplace_back($1);
-          }
-        ;
-cls_fild: prm_decl { $$ = $1; }
-        | prm_defn { $$ = $1; }
-        | fct_defn { $$ = $1; }
-        | obj_decl { $$ = $1; }
-        | obj_defn { $$ = $1; }
-        | ACS_PRIV { $$ = nullptr; yyaccess = ACCS_MODF_PRIV; }
-        | ACS_PUBL { $$ = nullptr; yyaccess = ACCS_MODF_PUBL; }
-        ;
-
 /*
 __    __
 | \  / |
@@ -204,12 +94,9 @@ __    __
 
 */
 
-/*! statements */
-
 entrance: global {
             // here, the source file is completetly read
             // $1->at(0) is the master function
-            initialize_compiler();
             for(size_t i = 1; i < $1->size(); i++)
               $1->at(i)->evaluate();
             $1->at(0)->evaluate();
@@ -217,18 +104,8 @@ entrance: global {
               delete $1->at(i);
             delete $1->at(0);
             delete $1;
-            
-            if(0 == count_error)
-              printf("the program was compiled correctly.\n");
-            else
-              printf("the program has %zu errors.\n", count_error);
           }
-        //| test
         ;
-
-/*test: SMT_NAME { printf("f"); }
-    | SMT_NAME OPR3 test { printf("t"); }
-    ;*/
 
 global: global decl ';' { $1->emplace_back($2); $$ = $1; }
       | global cls_decl ';' { $1->emplace_back($2); $$ = $1; }
@@ -250,21 +127,34 @@ arr_stat: arr_stat stat { $1->emplace_back($2); $$ = $1; }
           }
         ;
 
-stat: asgn ';' { $$ = $1; }
+stat: ctrl { $$ = $1; }
     | ACT_BREK ';' { $$ = new ast_action(ACT_BREAK); }
     | ACT_CONT ';' { $$ = new ast_action(ACT_CONTINUE); }
     | ACT_RTRN asgn ';' { $$ = new ast_return($2); }
     | decl ';' { $$ = $1; }
-    | ctrl { $$ = $1; }
+    | asgn ';' { $$ = $1; }
     | scope { $$ = new ast_scope($1); }
     ;
 
-decl: prm_decl { $$ = new ast_scopedefn($1); }
-    | prm_defn { $$ = new ast_scopedefn($1); }
-    | fct_decl { $$ = new ast_scopedefn($1); }
-    | fct_defn { $$ = new ast_scopedefn($1); }
-    | obj_decl { $$ = new ast_scopedefn($1); }
-    | obj_defn { $$ = new ast_scopedefn($1); }
+ctrl: SEQ_IFIF '(' asgn ')' scope {
+          $$ = new ast_ifelse($3, 
+            new ast_scope_control($5), 
+            new ast_scope_control(
+              new std::vector<ast_statement*>())); 
+        }
+    | SEQ_IFIF '(' asgn ')' scope SEQ_ELSE scope {
+          $$ = new ast_ifelse($3, 
+            new ast_scope_control($5), 
+            new ast_scope_control($7));
+        }
+    | SEQ_WHLE '(' asgn ')' scope {
+          $$ = new ast_while($3, 
+            new ast_scope_control($5));
+        }
+    | SEQ_FOOR '(' stat ';' asgn ';' stat ')' scope {
+          $$ = new ast_for($3, $5, $7, 
+            new ast_scope_control($9));
+        }
     ;
 
 asgn: expr { $$ = $1; }
@@ -273,7 +163,6 @@ asgn: expr { $$ = $1; }
         $$ = new ast_assign(id, $3);
       }
     ;
-
 expr: expr OPR0 term { $$ = new ast_operator($1, $2, $3); }
     | term { $$ = $1; }
     ;
@@ -339,46 +228,100 @@ arr_argm: arr_argm asgn ',' { $1->emplace_back($2); $$ = $1; }
         | /*epsilon*/ { $$ = new std::vector<ast_expression*>(); }
         ;
 
-ctrl: SEQ_IFIF '(' asgn ')' scope {
-          $$ = new ast_ifelse($3, 
-            new ast_scope_control($5), 
-            new ast_scope_control(
-              new std::vector<ast_statement*>())); 
-        }
-    | SEQ_IFIF '(' asgn ')' scope SEQ_ELSE scope {
-          $$ = new ast_ifelse($3, 
-            new ast_scope_control($5), 
-            new ast_scope_control($7));
-        }
-    | SEQ_WHLE '(' asgn ')' scope {
-          $$ = new ast_while($3, 
-            new ast_scope_control($5));
-        }
-    | SEQ_FOOR '(' stat ';' asgn ';' stat ')' scope {
-          $$ = new ast_for($3, $5, $7, 
-            new ast_scope_control($9));
-        }
+decl: prm_decl { $$ = new ast_scopedefn($1); }
+    | prm_defn { $$ = new ast_scopedefn($1); }
+    | fct_decl { $$ = new ast_scopedefn($1); }
+    | fct_defn { $$ = new ast_scopedefn($1); }
+    | obj_decl { $$ = new ast_scopedefn($1); }
+    | obj_defn { $$ = new ast_scopedefn($1); }
     ;
+
+prm_decl: RSV_TYPE SMT_NAME {
+            $$ = new ast_primitivedefn($1, $2);
+          }
+        | RSV_ARRY SMT_NAME {
+            $$ = new ast_primitivedefn($1, $2);
+          }
+        ;
+prm_defn: RSV_TYPE SMT_NAME OPR3 asgn {
+            $$ = new ast_primitivedefn($1, $2, $4); }
+        | RSV_ARRY SMT_NAME OPR3 asgn {
+            $$ = new ast_primitivedefn($1, $2, $4); }
+        ;
+
+fct_decl: RSV_TYPE SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
+        | RSV_ARRY SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
+        | SMT_NAME SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
+        | DEF_ARRY SMT_NAME synopsis { $$ = new ast_functiondefn($1, $2, $3); }
+        ;
+fct_defn: RSV_TYPE SMT_NAME synopsis scope {
+            $$ = new ast_functiondefn($1, $2, $3, $4);
+          }
+        | RSV_ARRY SMT_NAME synopsis scope {
+            $$ = new ast_functiondefn($1, $2, $3, $4);
+          }
+        | SMT_NAME SMT_NAME synopsis scope {
+            $$ = new ast_functiondefn($1, $2, $3, $4);
+          }
+        | DEF_ARRY SMT_NAME synopsis scope {
+            $$ = new ast_functiondefn($1, $2, $3, $4);
+          }
+        ;
+synopsis: '(' arr_parm parametr ')' { $2->emplace_back($3); $$ = $2; }
+        | '(' ')' { $$ = new std::vector<ast_definition*>(); }
+        ;
+arr_parm: arr_parm parametr ',' { $1->emplace_back($2); $$ = $1; }
+        | /* epsilon */ { $$ = new std::vector<ast_definition*>(); }
+        ;
+parametr: prm_decl { $$ = $1; }
+        | prm_defn { $$ = $1; }
+        | obj_decl { $$ = $1; }
+        | obj_defn { $$ = $1; }
+        ;
+
+obj_decl: SMT_NAME SMT_NAME { $$ = new ast_objectdefn($1, $2); }
+        | DEF_ARRY SMT_NAME { $$ = new ast_objectdefn($1, $2); }
+        ;
+obj_defn: SMT_NAME SMT_NAME OPR3 '{' arr_attr asgn '}' {
+            $5->emplace_back($6);
+            $$ = new ast_objectdefn($1, $2, $5);
+          }
+        | DEF_ARRY SMT_NAME OPR3 '{' arr_attr asgn '}' {
+            $5->emplace_back($6);
+            $$ = new ast_objectdefn($1, $2, $5);
+          }
+        ;
+arr_attr: arr_attr asgn ',' { $1->emplace_back($2); $$ = $1; }
+        | /* epsilon */ { $$ = new std::vector<ast_expression*>(); }
+        ;
+
+cls_decl: RSV_CLSS SMT_NAME { $$ = new ast_classdefn($2); }
+        ;
+cls_defn: RSV_CLSS SMT_NAME SCOPE_BEGIN arr_fild SCOPE_END {
+            $$ = new ast_classdefn($2, $4);
+          }
+        | RSV_CLSS SMT_NAME SCOPE_BEGIN SCOPE_END {
+            $$ = new ast_classdefn($2,
+              new std::vector<ast_definition*>());
+          }
+        ;
+arr_fild: arr_fild cls_fild {
+            if($2 != nullptr)
+              $1->emplace_back($2);
+            $$ = $1; 
+          }
+        | cls_fild {
+            $$ = new std::vector<ast_definition*>();
+            if($1 != nullptr)
+              $$->emplace_back($1);
+          }
+        ;
+cls_fild: prm_decl { $$ = $1; }
+        | prm_defn { $$ = $1; }
+        | fct_defn { $$ = $1; }
+        | obj_decl { $$ = $1; }
+        | obj_defn { $$ = $1; }
+        | ACS_PRIV { $$ = nullptr; yyaccess = ACCS_MODF_PRIV; }
+        | ACS_PUBL { $$ = nullptr; yyaccess = ACCS_MODF_PUBL; }
+        ;
 %%
-
-//------------------------------------------------
-
-int main(int argc, char** argv)
-{
-  if(argc != 2)
-  {
-    yyerror("wrong number of arguments");
-    return EXIT_FAILURE;
-  }
-
-  FILE* ptr = fopen(argv[1], "r");
-  if(nullptr == ptr)
-  {
-    yyerror("invalid file");
-    return EXIT_FAILURE;
-  }
-
-  yyin = ptr;
-  yyparse();
-  return EXIT_SUCCESS;
-}
