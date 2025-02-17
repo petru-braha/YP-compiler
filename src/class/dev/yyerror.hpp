@@ -15,7 +15,7 @@
  * exception: symbol table insertions won't provide error messages
  */
 
-void yyerror(const char *s);
+void yyerror(const char *);
 
 #define ERR_SCOPE_CLSDECL yyerror("classes can only be declared globally")
 

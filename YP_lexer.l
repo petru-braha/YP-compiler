@@ -38,9 +38,9 @@ comment #.*
 "master()" { return MASTER; }
 
 "class"    { return RSV_CLSS; }
-"private:" { return ACS_PRIV; }
-"public:"  { return ACS_PUBL; }
 "."|"->"   { return ACS_FILD; }
+"private:" { yylval.character = ACCS_PRIV; return ACS_MODF; }
+"public:"  { yylval.character = ACCS_PUBL; return ACS_MODF; }
 
 "+"|"-"|"&"|"|" { yylval.character = *yytext; return OPR0; }
 "⊕"|"XOR"      { yylval.character = XOR_CHR; return OPR0; }

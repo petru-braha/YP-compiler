@@ -5,12 +5,13 @@
  * nullptr => error occured
  * symbol_data memory removal is performed by tables
  * and not here
- * todo add to the specified scope
+ * // todo if array
  */
 
 #include <vector>
 #include "class/dev/ast.hpp"
 #include "class/dev/yyerror.hpp"
+#include "class/dev/function.hpp"
 #include "class/dev/symbol_data.hpp"
 
 #include "class/class_data.hpp"
@@ -18,14 +19,15 @@
 #include "class/type_table.hpp"
 #include "ast_call.hpp"
 
+extern char yyaccess;
+extern std::vector<symbol_table> symbols;
+#define LAST_SCOPE symbols.size() - 1
+
 struct ast_defn
 {
   const char *id;
   symbol_data *data;
 };
-
-extern std::vector<symbol_table> symbols;
-#define LAST_SCOPE symbols.size() - 1
 
 class ast_definition : public ast_statement
 {
@@ -154,6 +156,7 @@ ast_functiondefn::~ast_functiondefn()
     delete execution;
 }
 
+// function declaration
 ast_functiondefn::ast_functiondefn(
     char *const type, char *const id,
     std::vector<ast_definition *> *const arguments)
@@ -162,7 +165,7 @@ ast_functiondefn::ast_functiondefn(
 {
   if (nullptr == type || nullptr == id ||
       nullptr == arguments)
-      yyerror("")
+    yyerror("ast_functiondefn() failed - received nullptr");
 }
 
 ast_functiondefn::ast_functiondefn(
@@ -172,12 +175,67 @@ ast_functiondefn::ast_functiondefn(
     : return_type(type), id(id),
       parameters(arguments), execution(exe)
 {
+
+  if (nullptr == type || nullptr == id ||
+      nullptr == arguments || nullptr == execution)
+    yyerror("ast_functiondefn() failed - received nullptr");
 }
 
 void *ast_functiondefn::evaluate()
 {
-  // todo add_body if already exists
-  return nullptr;
+  if (false == is_type(return_type))
+  {
+    yyerror("ast_functiondefn() failed - undefined type");
+    return nullptr;
+  }
+
+  // if constructor: is_type(id) == true is allowed
+
+  symbol_data *previous_data = scope_search(id);
+  function_data *previous_f = (function_data *)previous_data;
+  if (previous_data &&
+      (previous_f->is_defined() ||
+       FNCT_SYMB_TYPE != previous_data->get_item_type()))
+  {
+    yyerror("ast_functiondefn() failed - already defined id");
+    return nullptr;
+  }
+
+  // add the body
+  if (previous_data)
+  {
+    previous_f->define(execution);
+    result = {id, previous_f};
+    return &result;
+  }
+
+  function_data::map *arguments =
+      new function_data::map();
+  for (size_t i = 0; i < parameters->size(); i++)
+  {
+    ast_defn *buffer =
+        (ast_defn *)parameters->at(i)->evaluate();
+    if (arguments->find(buffer->id) != arguments->end())
+    {
+      delete arguments;
+      yyerror("ast_functiondefn() failed - already defined id");
+      return nullptr;
+    }
+
+    std::pair<std::string, mutable_data *>
+        pair{buffer->id, (mutable_data *)buffer->data};
+    arguments->insert(pair);
+  }
+
+  // not previously declared
+  function_data *data = nullptr;
+  if (nullptr == execution)
+    data = new function_data(return_type, arguments);
+  else
+    data = new function_data(return_type, arguments, execution);
+
+  result = {id, data};
+  return &result;
 }
 
 const char ast_functiondefn::get_stat_type() const
@@ -190,6 +248,7 @@ class ast_objectdefn : public ast_definition
   char *const data_type;
   char *const id;
   std::vector<ast_expression *> *const arguments;
+  ast_defn result;
 
 public:
   virtual ~ast_objectdefn() override;
@@ -247,7 +306,13 @@ void *ast_objectdefn::evaluate()
     return nullptr;
   }
 
-  // id
+  if (false == model->is_defined())
+  {
+    yyerror("ast_objectdefn() failed - incomplete type");
+    return nullptr;
+  }
+
+  // identifier
   if (is_type(id))
   {
     yyerror("ast_objectdefn() failed - type treated as id");
@@ -260,14 +325,7 @@ void *ast_objectdefn::evaluate()
     return nullptr;
   }
 
-  // if previously defined in class
-  if (model->get_data(id).first != model->end())
-  {
-    yyerror("ast_objectdefn() - already defined id in class");
-    return nullptr;
-  }
-
-  object_data *o = nullptr;
+  object_data *data = nullptr;
   std::pair<class_data::it, class_data::it> constructors;
   constructors = model->get_data(data_type);
 
@@ -304,33 +362,84 @@ void *ast_objectdefn::evaluate()
       }
     }
 
-    o = (object_data *)f->call(&v);
+    data = (object_data *)f->call(&v);
   }
 
-  if (nullptr == o)
+  if (nullptr == data)
+  {
     yyerror("ast_objectdefn() - undefined appropriate constructor");
+    return nullptr;
+  }
 
-  return o;
+  result = {id, data};
+  return &result;
 }
 
-// todo change last method maybe?
-// todo if array
 const char ast_objectdefn::get_stat_type() const
 {
   return OBD_STAT_TYPE;
 }
 
+class ast_access : public ast_statement
+{
+  ast_definition *const def;
+  const char access;
+
+public:
+  virtual ~ast_access() override;
+  ast_access(ast_definition *const);
+  ast_access(const char, ast_definition *const);
+
+  virtual void *evaluate() override;
+
+  virtual const char get_stat_type() const override;
+  const char get_accs_type() const;
+};
+
+ast_access::~ast_access()
+{
+  delete def;
+}
+
+ast_access::ast_access(ast_definition *const d)
+    : def(d), access(ACCS_MODF_INVALID)
+{
+  if (nullptr == d)
+    yyerror("ast_access() failed - received nullptr");
+}
+
+ast_access::ast_access(const char a, ast_definition *const d)
+    : access(a), def(d)
+{
+  if (nullptr == d)
+    yyerror("ast_access() failed - received nullptr");
+}
+
+void *ast_access::evaluate()
+{
+  return def->evaluate();
+}
+
+const char ast_access::get_stat_type() const
+{
+  return ACD_STAT_TYPE;
+}
+
+const char ast_access::get_accs_type() const
+{
+  return access;
+}
+
 class ast_classdefn : public ast_statement
 {
   char *const id;
-  std::vector<ast_definition *> *const fields;
+  std::vector<ast_access *> *const fields;
 
 public:
   virtual ~ast_classdefn() override;
   ast_classdefn(char *const);
-  ast_classdefn(
-      char *const,
-      std::vector<ast_definition *> *const);
+  ast_classdefn(char *const,
+                std::vector<ast_access *> *const);
 
   virtual void *evaluate() override;
 
@@ -345,6 +454,7 @@ ast_classdefn::~ast_classdefn()
   delete fields;
 }
 
+// class declaration
 ast_classdefn::ast_classdefn(char *const id)
     : id(id), fields(nullptr)
 {
@@ -356,7 +466,7 @@ ast_classdefn::ast_classdefn(char *const id)
 
 ast_classdefn::ast_classdefn(
     char *const id,
-    std::vector<ast_definition *> *const data)
+    std::vector<ast_access *> *const data)
     : id(id), fields(data)
 {
   if (nullptr == id || nullptr == data)
@@ -367,21 +477,46 @@ ast_classdefn::ast_classdefn(
 
 void *ast_classdefn::evaluate()
 {
-  if (type_exists(id) || scope_search(id))
+  if (scope_search(id))
   {
     yyerror("ast_classdefn() failed - id already defined");
     return nullptr;
   }
 
-  // todo evaluation
-  // todo access modifier
-  // todo function class declaration
+  class_data *previous_data = type_exists(id);
+  if (previous_data && previous_data->is_defined())
+  {
+    yyerror("ast_classdefn() failed - type already defined");
+    return nullptr;
+  }
 
-  typedef std::unordered_multimap<std::string, field_data> map;
-  map *definition = new map();
-  class_data *data = new class_data(definition);
+  char modifier = ACCS_MODF_PRIV;
+  class_data::map *arguments = new class_data::map;
+  for (size_t i = 0; i < fields->size(); i++)
+  {
+    ast_defn *buffer = (ast_defn *)fields->at(i)->evaluate();
+    if (ACCS_MODF_INVALID != fields->at(i)->get_accs_type())
+      modifier = fields->at(i)->get_accs_type();
+
+    field_data data = {buffer->data, modifier};
+    std::pair<std::string, field_data> pair{buffer->id, data};
+    arguments->insert(pair);
+  }
+
+  // add the body
+  if (previous_data)
+  {
+    if (false == previous_data->define(arguments))
+      yywarning("ast_classdefn() - did not added body");
+    return previous_data;
+  }
+
+  // not previously declared
+  class_data *data = new class_data(arguments);
   if (false == type_insert(id, data))
   {
+    for (auto &field : *arguments)
+      delete field.second.data;
     delete data;
     return nullptr;
   }
@@ -412,18 +547,30 @@ ast_scopedefn::~ast_scopedefn()
   delete def;
 }
 
-ast_scopedefn::ast_scopedefn(ast_definition *const def)
-    : def(def)
+ast_scopedefn::ast_scopedefn(ast_definition *const d)
+    : def(d)
 {
-  if (nullptr == def)
+  if (nullptr == d)
     yyerror("ast_scopedefn() failed - received nullptr");
 }
 
 void *ast_scopedefn::evaluate()
 {
+  ast_defn *buffer = (ast_defn *)def->evaluate();
+  if (is_type(buffer->id))
+  {
+    yyerror("ast_scopedefn() failed - already defined id");
+    return nullptr;
+  }
 
-  // add to symbols
-  return nullptr;
+  if (scope_search(buffer->id))
+  {
+    yyerror("ast_scopedefn() failed - already defined id");
+    return nullptr;
+  }
+
+  symbols[LAST_SCOPE].insert(buffer->id, buffer->data);
+  return buffer->data;
 }
 
 const char ast_scopedefn::get_stat_type() const

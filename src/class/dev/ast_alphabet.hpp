@@ -1,6 +1,9 @@
 #ifndef __0ALPHA0__
 #define __0ALPHA0__
 
+constexpr char ACCS_PRIV = 0;
+constexpr char ACCS_PUBL = 1;
+
 constexpr char ASG_CHR = 'h';
 constexpr char XOR_CHR = 'g';
 

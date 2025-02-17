@@ -8,6 +8,7 @@
 
 constexpr char ACCS_MODF_PRIV = 0;
 constexpr char ACCS_MODF_PUBL = 1;
+constexpr char ACCS_MODF_INVALID = 2;
 
 struct field_data
 {
@@ -18,9 +19,12 @@ struct field_data
 // uses multimap -> multiple constructors
 class class_data
 {
+public:
   typedef std::unordered_multimap<
       std::string, field_data>
       map;
+
+private:
   map *content;
 
 public:
@@ -30,6 +34,7 @@ public:
   bool define(map *const);
 
   const size_t get_count(const char = SYMB_TYPE_INVALID) const;
+  const bool is_defined() const;
 
   typedef map::iterator it;
   std::pair<it, it> get_data(const std::string &id);
@@ -62,6 +67,8 @@ bool class_data::define(map *const data)
 {
   if (content)
     return false;
+  if (nullptr == data)
+    return false;
   content = data;
   return true;
 }
@@ -83,6 +90,11 @@ const size_t class_data::get_count(const char item_type) const
         instance.second.data->get_item_type())
       count++;
   return count;
+}
+
+const bool class_data::is_defined() const
+{
+  return nullptr == content;
 }
 
 class_data::it class_data::begin()

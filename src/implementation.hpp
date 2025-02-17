@@ -20,7 +20,6 @@ extern FILE *yyin;
 extern char *yytext;
 extern int yylineno;
 size_t count_error;
-char yyaccess;
 
 std::vector<symbol_table> symbols;
 #define LAST_SCOPE symbols.size() - 1
@@ -134,6 +133,7 @@ bool is_compatible(const char *type, const char *constant_value)
   return true;
 }
 
+// bool is_returning_defn(ast_statement *const node);
 bool is_returning_char(ast_expression *const node)
 {
   if (nullptr == node)

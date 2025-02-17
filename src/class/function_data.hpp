@@ -17,9 +17,12 @@ class function_data : public symbol_data
 {
   const std::string return_data_type;
 
+public:
   typedef std::unordered_map<
       std::string, mutable_data *>
       map;
+
+private:
   map *parameters;
 
   std::vector<ast_statement *> *execution;
@@ -42,6 +45,7 @@ public:
   virtual const char get_item_type() const override;
   virtual const std::string &get_data_type() const override;
   const size_t get_count() const;
+  const bool is_defined() const;
 
   typedef map::const_iterator it;
   it begin() const;
@@ -142,6 +146,11 @@ function_data::it function_data::begin() const
 function_data::it function_data::end() const
 {
   return parameters->end();
+}
+
+const bool function_data::is_defined() const
+{
+  return nullptr == execution;
 }
 
 #endif
