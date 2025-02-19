@@ -22,9 +22,6 @@ extern char *yytext;
 extern int yylineno;
 size_t count_error;
 
-extern int yylex();
-extern int yyparse();
-
 void yywarning(const char *message)
 {
   count_error++;
@@ -32,7 +29,7 @@ void yywarning(const char *message)
          __FILE__, yylineno, message);
 }
 
-// breaks
+// stops my compiler
 void yyerror(const char *message)
 {
   count_error++;
@@ -40,6 +37,51 @@ void yyerror(const char *message)
          __FILE__, yylineno, message);
   if (0 == strcmp(message, "syntax error"))
     printf("the program has %zu errors.\n", count_error);
+}
+
+bool is_primitive(const std::string &type)
+{
+  for (unsigned char i = 0; i < COUNT_RESERVED_TYPES; i++)
+    if (std::string(RESERVED_TYPES[i]) == type)
+      return true;
+  return false;
+}
+
+// should be used only for primitive types
+std::string default_value_of(const std::string &type)
+{
+  if (std::string(INTG_DATA_TYPE) == type)
+    return "0";
+  if (std::string(FLOT_DATA_TYPE) == type)
+    return "0.0";
+  if (std::string(CHAR_DATA_TYPE) == type)
+    return "\'0\'";
+  if (std::string(STRG_DATA_TYPE) == type)
+    return "\"\"";
+  if (std::string(BOOL_DATA_TYPE) == type)
+    return "false";
+
+  // not primitive
+  return "";
+}
+
+std::string type_of(const std::string &primitive_value)
+{
+  switch (primitive_value.at(0))
+  {
+  default:
+    if (primitive_value.find('.') == std::string::npos)
+      return INTG_DATA_TYPE;
+    return FLOT_DATA_TYPE;
+  case '\'':
+    return CHAR_DATA_TYPE;
+  case '\"':
+    return STRG_DATA_TYPE;
+  case 't':
+    return BOOL_DATA_TYPE;
+  case 'f':
+    return BOOL_DATA_TYPE;
+  }
 }
 
 bool make_copy(symbol_data *const left, const symbol_data *const rght)
@@ -224,29 +266,6 @@ void initialize_compiler()
           INTG_DATA_TYPE,
           new function_data::map(),
           new std::vector<ast_statement *>()));
-}
-
-int main(int argc, char **argv)
-{
-  if (argc != 2)
-  {
-    yyerror("wrong number of arguments");
-    return EXIT_FAILURE;
-  }
-
-  FILE *ptr = fopen(argv[1], "r");
-  if (nullptr == ptr)
-  {
-    yyerror("invalid file");
-    return EXIT_FAILURE;
-  }
-
-  yyin = ptr;
-  scope_insert();
-  initialize_compiler();
-  yyparse();
-  scope_remove();
-  return count_error;
 }
 
 #endif

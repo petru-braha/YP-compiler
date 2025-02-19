@@ -9,8 +9,6 @@ constexpr char OBJT_SYMB_TYPE = 2;
 constexpr char ARRY_SYMB_TYPE = 3;
 constexpr char SYMB_TYPE_INVALID = 4;
 
-class mutable_data;
-
 /* role: pointer cast of:
  * variable_data*
  * function_data*

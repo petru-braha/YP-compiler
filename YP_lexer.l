@@ -39,8 +39,8 @@ comment #.*
 
 "class"    { return RSV_CLSS; }
 "."|"->"   { return ACS_FILD; }
-"private:" { yylval.character = ACCS_PRIV; return ACS_MODF; }
-"public:"  { yylval.character = ACCS_PUBL; return ACS_MODF; }
+"private:" { yylval.character = 0; return ACS_MODF; }
+"public:"  { yylval.character = 1; return ACS_MODF; }
 
 "+"|"-"|"&"|"|" { yylval.character = *yytext; return OPR0; }
 "⊕"|"XOR"      { yylval.character = XOR_CHR; return OPR0; }

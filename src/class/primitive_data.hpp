@@ -4,6 +4,7 @@
 #include <string>
 #include <string.h>
 #include "dev/symbol_data.hpp"
+#include "dev/function.hpp"
 #include "dev/yyerror.hpp"
 
 const char INTG_DATA_TYPE[] = "int";
@@ -16,10 +17,6 @@ const char *RESERVED_TYPES[] =
      CHAR_DATA_TYPE, STRG_DATA_TYPE,
      BOOL_DATA_TYPE};
 constexpr char COUNT_RESERVED_TYPES = 5;
-
-bool is_primitive(const std::string &);
-std::string default_value_of(const std::string &);
-std::string type_of(const std::string &);
 
 class primitive_data : public mutable_data
 {
@@ -39,55 +36,6 @@ public:
   virtual const std::string &get_data_type() const override;
   const std::string &get_value() const;
 };
-
-//------------------------------------------------
-
-bool is_primitive(const std::string &type)
-{
-  for (unsigned char i = 0; i < COUNT_RESERVED_TYPES; i++)
-    if (std::string(RESERVED_TYPES[i]) == type)
-      return true;
-  return false;
-}
-
-// should be used only for primitive types
-std::string default_value_of(const std::string &type)
-{
-  if (std::string(INTG_DATA_TYPE) == type)
-    return "0";
-  if (std::string(FLOT_DATA_TYPE) == type)
-    return "0.0";
-  if (std::string(CHAR_DATA_TYPE) == type)
-    return "\'0\'";
-  if (std::string(STRG_DATA_TYPE) == type)
-    return "\"\"";
-  if (std::string(BOOL_DATA_TYPE) == type)
-    return "false";
-
-  // not primitive
-  return "";
-}
-
-std::string type_of(const std::string &primitive_value)
-{
-  switch (primitive_value.at(0))
-  {
-  default:
-    if (primitive_value.find('.') == std::string::npos)
-      return INTG_DATA_TYPE;
-    return FLOT_DATA_TYPE;
-  case '\'':
-    return CHAR_DATA_TYPE;
-  case '\"':
-    return STRG_DATA_TYPE;
-  case 't':
-    return BOOL_DATA_TYPE;
-  case 'f':
-    return BOOL_DATA_TYPE;
-  }
-}
-
-//------------------------------------------------
 
 primitive_data::primitive_data(const std::string &type)
     : data_type(type)

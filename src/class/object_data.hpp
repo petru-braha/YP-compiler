@@ -8,10 +8,6 @@
 #include "class_data.hpp"
 #include "type_table.hpp"
 
-bool is_primitive(const std::string &);
-std::string default_value_of(const std::string &);
-std::string type_of(const std::string &);
-
 /* the methods will be stored in the type table
  * every object_data instance will !!! NOT !!! first contain pointers to
     variable_data instances

@@ -21,6 +21,7 @@
 
 constexpr size_t BO_COUNT_DIGIT = 6;
 constexpr size_t LL_COUNT_DIGIT = 20;
+constexpr char DIGITS[] = "0123456789";
 
 char *negation(const char *const);
 char *chg_sign(const char *const);
@@ -36,11 +37,28 @@ char *pow_vals(const char *const, const char *const);
 char *asg_vals(char *, const char *const);
 char *cmp_vals(const char *const, const char *const);
 
+bool is_valid(const char *const v)
+{
+  if (v[0] == '-')
+    return true;
+  if (v[0] == '\'')
+    return true;
+  if (v[0] == '\"')
+    return true;
+  if (strchr(DIGITS, v[0]))
+    return true;
+  if (0 == strcmp(v, "false"))
+    return true;
+  if (0 == strcmp(v, "true"))
+    return true;
+  return false;
+}
+
 //------------------------------------------------
 
 char *negation(const char *const v0)
 {
-  if (nullptr == v0)
+  if (nullptr == v0 || false == is_valid(v0))
   {
     yyerror("negation() failed - received nullptr");
     return nullptr;
@@ -65,7 +83,7 @@ char *negation(const char *const v0)
 
 char *chg_sign(const char *const v0)
 {
-  if (nullptr == v0)
+  if (nullptr == v0 || false == is_valid(v0))
   {
     yyerror("chg_sign() failed - received nullptr");
     return nullptr;
@@ -81,11 +99,13 @@ char *chg_sign(const char *const v0)
 
   // success
   char *result = (char *)malloc(LL_COUNT_DIGIT);
+  //if(0 )
   if ('-' == v0[0])
     return strcpy(result, v0 + 1);
 
   result[0] = '-';
-  return strcpy(result + 1, v0);
+  result[1] = '\0';
+  return strcat(result, v0);
 }
 
 //------------------------------------------------

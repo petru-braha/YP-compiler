@@ -332,3 +332,26 @@ cls_fild: prm_decl { $$ = $1; }
         | obj_defn { $$ = $1; }
         ;
 %%
+
+int main(int argc, char **argv)
+{
+  if (argc != 2)
+  {
+    yyerror("wrong number of arguments");
+    return EXIT_FAILURE;
+  }
+
+  FILE *ptr = fopen(argv[1], "r");
+  if (nullptr == ptr)
+  {
+    yyerror("invalid file");
+    return EXIT_FAILURE;
+  }
+
+  yyin = ptr;
+  scope_insert();
+  initialize_compiler();
+  yyparse();
+  scope_remove();
+  return count_error;
+}
