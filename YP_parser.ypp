@@ -353,5 +353,6 @@ int main(int argc, char **argv)
   initialize_compiler();
   yyparse();
   scope_remove();
+  type_remove();
   return count_error;
 }

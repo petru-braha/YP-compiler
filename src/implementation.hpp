@@ -123,9 +123,13 @@ bool make_copy(symbol_data *const left, const symbol_data *const rght)
   return true;
 }
 
-bool is_type(const std::string &id)
+bool is_type(const std::string &data_type)
 {
-  return type_exists(id) || is_primitive(id);
+  size_t position = data_type.find('[');
+  if (std::string::npos != position)
+    return is_primitive(data_type) || type_exists(data_type);
+  std::string base = base_type(data_type);
+  return is_primitive(base) || type_exists(base);
 }
 
 /* a constant value can only be primitive */
