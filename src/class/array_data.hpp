@@ -50,9 +50,9 @@ public:
 std::string base_type(const std::string &array_type)
 {
   size_t index = array_type.find('[');
-  std::string result;
-  result.append(array_type.c_str(), index);
-  return result;
+  if (std::string::npos != index)
+    return array_type.substr(0, index);
+  return "";
 }
 
 void remove_level(std::string &data_type)
@@ -139,7 +139,7 @@ array_data::array_data(
 array_data &array_data::operator=(
     const array_data &data)
 {
-  //todo
+  // todo
   return *this;
 }
 

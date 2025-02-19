@@ -125,11 +125,10 @@ bool make_copy(symbol_data *const left, const symbol_data *const rght)
 
 bool is_type(const std::string &data_type)
 {
-  size_t position = data_type.find('[');
-  if (std::string::npos != position)
-    return is_primitive(data_type) || type_exists(data_type);
   std::string base = base_type(data_type);
-  return is_primitive(base) || type_exists(base);
+  if ("" != base)
+    return is_primitive(base) || type_exists(base);
+  return is_primitive(data_type) || type_exists(data_type);
 }
 
 /* a constant value can only be primitive */
@@ -229,18 +228,142 @@ void *type_of(const char *const buffer, const char)
   return data;
 }
 
+bool is_lawful(const char *const string_literal)
+{
+  if (nullptr == string_literal || '\"' != *string_literal)
+    return false;
+  if ('\0' == string_literal[1])
+    return false;
+
+  // if an escape sequence was previously detected
+  bool prev_escape = false;
+  constexpr char seq[] = "abfnrtv\\'\"0";
+
+  for (size_t i = 1;
+       '\"' != string_literal[i] ||
+       '\0' != string_literal[i + 1];
+       i++)
+  {
+    char c = string_literal[i];
+    if (prev_escape)
+    {
+      if (nullptr == strchr(seq, c))
+        return false;
+      prev_escape = false;
+      continue;
+    }
+
+    // false == prev_escape
+    if ('\'' == c || '\"' == c)
+      return false;
+    if ('\\' == c)
+      prev_escape = true;
+  }
+
+  if (prev_escape)
+    return false;
+  return true;
+}
+
+// it is assured by flex that the string is valid
+bool interpret(const char character)
+{
+  switch (character)
+  {
+  case 'a':
+    printf("\a");
+    break;
+  case 'b':
+    printf("\b");
+    break;
+  case 'f':
+    printf("\f");
+    break;
+  case 'n':
+    printf("\n");
+    break;
+  case 'r':
+    printf("\r");
+    break;
+  case 't':
+    printf("\t");
+    break;
+  case 'v':
+    printf("\v");
+    break;
+  case '\\':
+    printf("\\");
+    break;
+  case '\'':
+    printf("\'");
+    break;
+  case '\"':
+    printf("\"");
+    break;
+  case '0':
+    return true;
+  default:
+    printf("-stop-error");
+    return true;
+  }
+
+  return false;
+}
+
+// it is assured by flex that the string is valid
+size_t print_f_string(const char *literal)
+{
+  if (nullptr == literal || '\"' != *literal)
+    return -1;
+  if ('\0' == literal[1])
+    return -1;
+
+  // if an escape sequence was previously detected
+  bool prev_escape = false;
+  size_t bytes = 0;
+  constexpr char seq[] = "abfnrtv\\'\"0";
+
+  for (size_t i = 1;
+       '\"' != literal[i] ||
+       '\0' != literal[i + 1];
+       i++)
+  {
+    char c = literal[i];
+    if (prev_escape)
+    {
+      if (nullptr == strchr(seq, c))
+        return -1;
+      if (interpret(c))
+        return bytes;
+      bytes++;
+      prev_escape = false;
+      continue;
+    }
+
+    // false == prev_escape
+    if ('\'' == c || '\"' == c)
+      return -1;
+    if (literal[i] != '\\')
+      bytes += printf("%c", literal[i]);
+    else
+      prev_escape = true;
+  }
+
+  if (prev_escape)
+    return -1;
+  return bytes;
+}
+
 void *print_f(const char *const buffer, const char)
 {
   size_t n = 0;
   if (buffer[0] != '\"')
     n = printf("%s", buffer);
   else
-  {
-    n = strlen(buffer);
-    for (size_t i = 1; i + 1 < n; i++)
-      printf("%c", buffer[i]);
-  }
+    n = print_f_string(buffer);
 
+  if (-1 == n)
+    return nullptr;
   char *data = strdup(std::to_string(n).c_str());
   return data;
 }

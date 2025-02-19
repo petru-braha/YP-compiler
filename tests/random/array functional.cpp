@@ -43,9 +43,9 @@ public:
 std::string base_type(const std::string &array_type)
 {
   size_t index = array_type.find('[');
-  std::string result;
-  result.append(array_type.c_str(), index);
-  return result;
+  if (std::string::npos != index)
+    return array_type.substr(0, index);
+  return "";
 }
 
 void remove_level(std::string &data_type)
@@ -136,6 +136,8 @@ T &array_data<T>::get_value()
 
 int main()
 {
+  std::cout << base_type("int[2][3][4]");
+  /*
   std::string my_type = "int[2][3][4][5]";
   std::vector<size_t> level_data{2, 3, 4, 5};
 
@@ -152,6 +154,6 @@ int main()
   std::cout << arr.index << ' ' << arr.level << '\n';
 
   arr.get_value() = 1;
-
+*/
   return EXIT_SUCCESS;
 }

@@ -81,15 +81,15 @@ char *negation(const char *const v0)
   return result;
 }
 
-char *chg_sign(const char *const v0)
+char *chg_sign(const char *const v)
 {
-  if (nullptr == v0 || false == is_valid(v0))
+  if (nullptr == v || false == is_valid(v))
   {
     yyerror("chg_sign() failed - received nullptr");
     return nullptr;
   }
 
-  std::string type = type_of(v0);
+  std::string type = type_of(v);
   if (strcmp("int", type.c_str()) &&
       strcmp("float", type.c_str()))
   {
@@ -99,13 +99,26 @@ char *chg_sign(const char *const v0)
 
   // success
   char *result = (char *)malloc(LL_COUNT_DIGIT);
-  //if(0 )
-  if ('-' == v0[0])
-    return strcpy(result, v0 + 1);
+
+  // if v == 0
+  if ('0' == v[0] && '\0' == v[1])
+    return strcpy(result, v);
+  if ('0' == v[0] && '.' == v[1])
+  {
+    bool zero = true;
+    for (size_t i = 2; v[i] && zero; i++)
+      if ('0' != v[i])
+        zero = false;
+    if (zero)
+      return strcpy(result, v);
+  }
+
+  if ('-' == v[0])
+    return strcpy(result, v + 1);
 
   result[0] = '-';
   result[1] = '\0';
-  return strcat(result, v0);
+  return strcat(result, v);
 }
 
 //------------------------------------------------

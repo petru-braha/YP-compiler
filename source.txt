@@ -1,8 +1,7 @@
 master()
 {
-  for(int i = 0; i < 10; i = i + 1)
+  for(int i = 0; i < 2; i = i + 1)
   {
-    print_f(i);
-    print_f(" ");
+    print_f("tornada bruski\n\tcalamiate\n");
   }
 }

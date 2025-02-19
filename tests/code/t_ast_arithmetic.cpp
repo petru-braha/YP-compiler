@@ -26,7 +26,7 @@ void t_negation()
   process(negation(nullptr));
 }
 
-void t_chg_sgn()
+void t_chg_sign()
 {
   process(chg_sign("0"));
   process(chg_sign("-0"));
@@ -36,7 +36,7 @@ void t_chg_sgn()
   process(chg_sign("-0.0"));
   process(chg_sign("1.0"));
   process(chg_sign("-1.0"));
-  
+
   process(chg_sign("\'a\'"));
   process(chg_sign("\"a\""));
   process(chg_sign("true"));
@@ -45,8 +45,14 @@ void t_chg_sgn()
   process(chg_sign(nullptr));
 }
 
+void t_add_vals()
+{
+  process(add_vals("0", "0"));
+}
+
 int main()
 {
   // t_negation();
-  t_chg_sgn();
+  // t_chg_sign();
+  // t_add_vals();
 }

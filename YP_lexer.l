@@ -9,6 +9,7 @@
   #include "src/class/dev/ast_alphabet.hpp"
 
   void yyerror(const char * s);
+  bool is_lawful(const char *const string_literal);
 %}
 
 /* lexical description - regex */
@@ -56,6 +57,8 @@ comment #.*
 "!("|"-("       { yylval.character = *yytext; return OPRU; }
 
 {literal_intg}|{literal_flot}|{literal_char}|{literal_strg}|{literal_bool} {
+  if('\"' == yytext[0] && false == is_lawful(yytext))
+    yyerror("lexer failed - bad string literal");
   yylval.information = strdup(yytext);
   return LITERAL; }
 
