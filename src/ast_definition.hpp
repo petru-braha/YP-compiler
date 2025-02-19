@@ -5,6 +5,7 @@
  * nullptr => error occured
  * symbol_data memory removal is performed by tables
  * and not here
+ * insertion is performent by ast_scopedefn
  * // todo if array
  */
 
@@ -18,10 +19,6 @@
 #include "class/symbol_table.hpp"
 #include "class/type_table.hpp"
 #include "ast_call.hpp"
-
-extern char yyaccess;
-extern std::vector<symbol_table> symbols;
-#define LAST_SCOPE symbols.size() - 1
 
 struct ast_defn
 {
@@ -95,7 +92,7 @@ void *ast_primitivedefn::evaluate()
     return nullptr;
   }
 
-  if (scope_search(id))
+  if (symbol_exists(id))
   {
     yyerror("ast_primitivedefn() failed - already defined id");
     return nullptr;
@@ -110,8 +107,6 @@ void *ast_primitivedefn::evaluate()
 
   primitive_data *data =
       new primitive_data(data_type, buffer);
-  symbols[LAST_SCOPE].insert(id, data);
-
   result = {id, data};
   return &result;
 }
@@ -191,7 +186,7 @@ void *ast_functiondefn::evaluate()
 
   // if constructor: is_type(id) == true is allowed
 
-  symbol_data *previous_data = scope_search(id);
+  symbol_data *previous_data = symbol_exists(id);
   function_data *previous_f = (function_data *)previous_data;
   if (previous_data &&
       (previous_f->is_defined() ||
@@ -319,7 +314,7 @@ void *ast_objectdefn::evaluate()
     return nullptr;
   }
 
-  if (scope_search(id))
+  if (symbol_exists(id))
   {
     yyerror("ast_objectdefn() failed - already defined id");
     return nullptr;
@@ -449,6 +444,9 @@ public:
 ast_classdefn::~ast_classdefn()
 {
   free(id);
+  if (nullptr == fields)
+    return;
+
   for (size_t i = 0; i < fields->size(); i++)
     delete fields->at(i);
   delete fields;
@@ -460,7 +458,7 @@ ast_classdefn::ast_classdefn(char *const id)
 {
   if (nullptr == id)
     yyerror("ast_classdefn() failed - received nullptr");
-  if (0 != LAST_SCOPE)
+  if (1 != scope_stack::size())
     yyerror("ast_classdefn() failed - class declared in scope");
 }
 
@@ -471,13 +469,13 @@ ast_classdefn::ast_classdefn(
 {
   if (nullptr == id || nullptr == data)
     yyerror("ast_classdefn() failed - received nullptr");
-  if (0 != LAST_SCOPE)
+  if (1 != scope_stack::size())
     yyerror("ast_classdefn() failed - class declared in scope");
 }
 
 void *ast_classdefn::evaluate()
 {
-  if (scope_search(id))
+  if (symbol_exists(id))
   {
     yyerror("ast_classdefn() failed - id already defined");
     return nullptr;
@@ -488,6 +486,21 @@ void *ast_classdefn::evaluate()
   {
     yyerror("ast_classdefn() failed - type already defined");
     return nullptr;
+  }
+
+  if (nullptr == fields)
+  {
+    if (previous_data)
+      return previous_data;
+    class_data *data = new class_data();
+    if (false == type_insert(id, data))
+    {
+      delete data;
+      yyerror("ast_classdefn() failed - type_insert() failed");
+      return nullptr;
+    }
+    
+    return data;
   }
 
   char modifier = ACCS_MODF_PRIV;
@@ -563,13 +576,13 @@ void *ast_scopedefn::evaluate()
     return nullptr;
   }
 
-  if (scope_search(buffer->id))
+  if (symbol_exists(buffer->id))
   {
     yyerror("ast_scopedefn() failed - already defined id");
     return nullptr;
   }
 
-  symbols[LAST_SCOPE].insert(buffer->id, buffer->data);
+  symbol_insert(buffer->id, buffer->data);
   return buffer->data;
 }
 

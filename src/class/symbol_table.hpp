@@ -26,6 +26,7 @@ public:
   ~symbol_table();
   symbol_table();
   symbol_table(const std::string &);
+  symbol_table(const symbol_table &);
 
   symbol_table &insert(const std::string &,
                        symbol_data *const);
@@ -44,7 +45,7 @@ size_t symbol_table::available_id = 0;
 
 symbol_table::~symbol_table()
 {
-  for (const auto &item_pair : itm)
+  for (auto &item_pair : itm)
     delete item_pair.second;
 }
 
@@ -57,6 +58,20 @@ symbol_table::symbol_table()
 symbol_table::symbol_table(const std::string &s_id)
     : s_id(s_id)
 {
+}
+
+symbol_table::symbol_table(const symbol_table &s)
+    : s_id(std::to_string(available_id))
+{
+  available_id++;
+  for (auto &item_pair : s.itm)
+  {
+    symbol_data* data = nullptr;
+    make_copy(data, item_pair.second);
+    auto pair = item_pair;
+    pair.second = data;
+    this->itm.insert(pair);
+  }
 }
 
 /* makes a copy of the pointer */

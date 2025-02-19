@@ -13,6 +13,7 @@
 #include "class/class_data.hpp"
 
 #include "class/symbol_table.hpp"
+#include "class/scope_stack.hpp"
 #include "class/type_table.hpp"
 
 // the place of all global variables
@@ -20,9 +21,6 @@ extern FILE *yyin;
 extern char *yytext;
 extern int yylineno;
 size_t count_error;
-
-std::vector<symbol_table> symbols;
-#define LAST_SCOPE symbols.size() - 1
 
 extern int yylex();
 extern int yyparse();
@@ -44,50 +42,43 @@ void yyerror(const char *message)
     printf("the program has %zu errors.\n", count_error);
 }
 
-mutable_data *make_copy(const mutable_data *const data)
+bool make_copy(symbol_data *const left, const symbol_data *const rght)
 {
-  if (nullptr == data)
-    return nullptr;
+  if (nullptr == rght)
+    return false;
+  if (left && FNCT_SYMB_TYPE == left->get_item_type())
+    return false;
+  if (FNCT_SYMB_TYPE == rght->get_item_type())
+    return false;
 
-  if (PRMT_SYMB_TYPE == data->get_item_type())
+  if (PRMT_SYMB_TYPE == rght->get_item_type())
   {
-    primitive_data *p_data = (primitive_data *)data;
-    return new primitive_data(p_data->get_data_type(), *p_data);
+    primitive_data *p_data = (primitive_data *)rght;
+    primitive_data *p =
+        new primitive_data(p_data->get_data_type(), *p_data);
+    primitive_data *temp = (primitive_data *)left;
+    *temp = *p;
   }
 
-  if (OBJT_SYMB_TYPE == data->get_item_type())
+  if (OBJT_SYMB_TYPE == rght->get_item_type())
   {
-    object_data *o_data = (object_data *)data;
-    return new object_data(o_data->get_data_type(), *o_data);
+    object_data *o_data = (object_data *)rght;
+    object_data *o =
+        new object_data(o_data->get_data_type(), *o_data);
+    object_data *temp = (object_data *)left;
+    *temp = *o;
   }
 
-  if (ARRY_SYMB_TYPE == data->get_item_type())
+  if (ARRY_SYMB_TYPE == rght->get_item_type())
   {
-    array_data *a_data = (array_data *)data;
-    return new array_data(a_data->get_data_type(), *a_data);
+    array_data *a_data = (array_data *)rght;
+    array_data *a =
+        new array_data(a_data->get_data_type(), *a_data);
+    array_data *temp = (array_data *)left;
+    *temp = *a;
   }
 
-  return nullptr;
-}
-
-/* goes through every scope
- * could add extra time complexity
- */
-symbol_data *scope_search(const std::string &id)
-{
-  if (0 == symbols.size())
-    return nullptr;
-
-  for (size_t scope = LAST_SCOPE;; scope--)
-  {
-    symbol_data *data = symbols[scope].get_data(id);
-    if (data)
-      return data;
-    if (0 == scope)
-      break;
-  }
-
-  return nullptr;
+  return true;
 }
 
 bool is_type(const std::string &id)
@@ -102,12 +93,16 @@ bool is_compatible(const char *type, const char *constant_value)
   {
   default: // int
     if (nullptr == strchr(constant_value, '.'))
-      if (strcmp(type, INTG_DATA_TYPE))
+    {
+      if (0 != strcmp(type, INTG_DATA_TYPE))
         return false;
-
-    // float
-    if (strcmp(type, FLOT_DATA_TYPE))
-      return false;
+    }
+    else
+    {
+      // float
+      if (0 != strcmp(type, FLOT_DATA_TYPE))
+        return false;
+    }
     break;
 
   case '\'': // char
@@ -190,38 +185,44 @@ void *type_of(const char *const buffer, const char)
 
 void *print_f(const char *const buffer, const char)
 {
-  int number = printf("%s", buffer);
-  char *data = strdup(std::to_string(number).c_str());
+  size_t n = 0;
+  if (buffer[0] != '\"')
+    n = printf("%s", buffer);
+  else
+  {
+    n = strlen(buffer);
+    for (size_t i = 1; i + 1 < n; i++)
+      printf("%c", buffer[i]);
+  }
+
+  char *data = strdup(std::to_string(n).c_str());
   return data;
 }
 
 void initialize_compiler()
 {
-  symbols.emplace_back();
-  symbol_table &s = symbols[LAST_SCOPE];
+  if (scope_stack::size())
+    return;
 
-  s.insert(
+  symbol_insert(
       "type_of",
       new function_data(
           STRG_DATA_TYPE,
-          new std::unordered_map<
-              std::string, mutable_data *>(),
+          new function_data::map(),
           new std::vector<ast_statement *>()));
 
-  s.insert(
+  symbol_insert(
       "print_f",
       new function_data(
           INTG_DATA_TYPE,
-          new std::unordered_map<
-              std::string, mutable_data *>(),
+          new function_data::map(),
           new std::vector<ast_statement *>()));
 
-  s.insert(
+  symbol_insert(
       "master",
       new function_data(
           INTG_DATA_TYPE,
-          new std::unordered_map<
-              std::string, mutable_data *>(),
+          new function_data::map(),
           new std::vector<ast_statement *>()));
 }
 
@@ -241,13 +242,10 @@ int main(int argc, char **argv)
   }
 
   yyin = ptr;
+  scope_insert();
   initialize_compiler();
   yyparse();
-
-  if (0 == count_error)
-    printf("the program was compiled correctly.\n");
-  else
-    printf("the program has %zu errors.\n", count_error);
+  scope_remove();
   return count_error;
 }
 

@@ -91,26 +91,33 @@
 %type<d_node> cls_fild
 
 %%
-entrance: global {
-            // here, the source file is completetly read
-            // $1->at(0) is the master function
-            for(size_t i = 1; i < $1->size(); i++)
+entrance: global MASTER scope { // here, the source file is completetly read
+
+            if (0 == count_error)
+              printf("the program was compiled correctly.\n");
+            else
+              printf("the program has %zu errors.\n", count_error);
+            
+            for(size_t i = 0; i < $1->size(); i++)
               $1->at(i)->evaluate();
-            $1->at(0)->evaluate();
-            for(size_t i = 1; i < $1->size(); i++)
+            for(size_t i = 0; i < $3->size(); i++)
+              $3->at(i)->evaluate();
+            fflush(stdout);
+
+            for(size_t i = 0; i < $1->size(); i++)
               delete $1->at(i);
-            delete $1->at(0);
             delete $1;
+
+            for(size_t i = 0; i < $3->size(); i++)
+              delete $3->at(i);
+            delete $3;
           }
         ;
 
-global: global decl ';' { $1->emplace_back($2); $$ = $1; }
-      | global cls_decl ';' { $1->emplace_back($2); $$ = $1; }
-      | global cls_defn ';' { $1->emplace_back($2); $$ = $1; }
-      | MASTER scope {
-          $$ = new std::vector<ast_statement*>();
-          $$->emplace_back(new ast_scope($2));
-        }
+global: global decl ';' { $1->insert($1->begin(), $2); $$ = $1; }
+      | global cls_decl ';' { $1->insert($1->begin(), $2); $$ = $1; }
+      | global cls_defn ';' { $1->insert($1->begin(), $2); $$ = $1; }
+      | /* epsilon */ { $$ = new std::vector<ast_statement*>(); }
       ;
 
 scope : SCOPE_BEGIN arr_stat SCOPE_END { $$ = $2; }
@@ -134,7 +141,7 @@ stat: ctrl { $$ = $1; }
     ;
 
 ctrl: SEQ_IFIF '(' asgn ')' scope {
-          $$ = new ast_ifelse($3, 
+          $$ = new ast_ifelse($3,
             new ast_scope_control($5), 
             new ast_scope_control(
               new std::vector<ast_statement*>())); 
@@ -148,8 +155,12 @@ ctrl: SEQ_IFIF '(' asgn ')' scope {
           $$ = new ast_while($3, 
             new ast_scope_control($5));
         }
-    | SEQ_FOOR '(' stat ';' asgn ';' stat ')' scope {
-          $$ = new ast_for($3, $5, $7, 
+    | SEQ_FOOR '(' decl ';' asgn ';' asgn ')' scope {
+          $$ = new ast_for($3, $5, $7,
+            new ast_scope_control($9));
+        }
+    | SEQ_FOOR '(' asgn ';' asgn ';' asgn ')' scope {
+          $$ = new ast_for($3, $5, $7,
             new ast_scope_control($9));
         }
     ;

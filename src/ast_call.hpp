@@ -8,11 +8,9 @@
 
 #include "class/function_data.hpp"
 #include "class/symbol_table.hpp"
+#include "class/scope_stack.hpp"
 #include "class/type_table.hpp"
 #include "ast_action.hpp"
-
-extern std::vector<symbol_table> symbols;
-#define LAST_SCOPE symbols.size() - 1
 
 /* ANY data type
  * stored as leaf nodes
@@ -44,19 +42,15 @@ ast_symbolcall::ast_symbolcall(const char *const id)
 
 void *ast_symbolcall::evaluate()
 {
-  void *data = scope_search(id);
-  if (nullptr == data)
-  {
-    yyerror("ast_symbolcall() failed - undefined id");
-    return nullptr;
-  }
-
-  if (type_exists(id))
+  if (is_type(id))
   {
     yyerror("ast_symbolcall() failed - class id");
     return nullptr;
   }
 
+  symbol_data *data = symbol_exists(id);
+  if (nullptr == data)
+    yyerror("ast_symbolcall() failed - undefined id");
   return data;
 }
 
@@ -152,6 +146,7 @@ const char ast_methodcall::get_stat_type() const
 
 function_data::~function_data()
 {
+  printf("~function_data begin\n");
   for (auto &item_pair : *parameters)
     delete item_pair.second;
   delete parameters;
@@ -162,6 +157,8 @@ function_data::~function_data()
   for (auto &statement : *execution)
     delete statement;
   delete execution;
+
+  printf("~function_data end\n");
 }
 
 bool function_data::emplace(
@@ -201,9 +198,9 @@ void *function_data::call(
     return nullptr;
   }
 
-  symbols.emplace_back();
+  scope_insert();
   for (auto &item_pair : *parameters)
-    symbols[LAST_SCOPE].insert(item_pair.first, item_pair.second);
+    symbol_insert(item_pair.first, item_pair.second);
 
   void *buffer = nullptr;
   bool is_returned = false;
@@ -221,7 +218,7 @@ void *function_data::call(
 
   if (false == is_returned)
   {
-    symbols.pop_back();
+    scope_remove();
     yyerror("function_call() failed - no return statement");
     return nullptr;
   }
@@ -234,7 +231,7 @@ void *function_data::call(
     return nullptr;
   }
 
-  symbols.pop_back();
+  scope_remove();
   return data;
 }
 
@@ -246,7 +243,7 @@ constexpr char VNL_PRINTF = 1;
 
 class ast_vanillacall : public ast_expression
 {
-  ast_expression *expression;
+  ast_expression *const expression;
   const char data;
   void *result;
 

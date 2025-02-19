@@ -201,8 +201,8 @@ string name = Type(a);
 * type_exists($1)
 - is_type(id)
 * is_type(argument)
-- scope_search(id) || class_search(id) (not both)
-* scope_search(argument)
+- symbol_exists(id) || class_search(id) (not both)
+* symbol_exists(argument)
 * class_search(argument)
 
 ## Files
@@ -283,7 +283,7 @@ level 0:
 | ast_operator | ast_expression | char* | works only with primitive types |
 | ast_assign | ast_expression | symbol_data* | - |
 | | | |
-| ast_symbolcall | ast_expression | symbol_data* | used to scope_search() an id |
+| ast_symbolcall | ast_expression | symbol_data* | used to symbol_exists() an id |
 | ast_methodcall | ast_expression | mutable_data* | as ast_return::evaluate() |
 | ast_vanillacall | ast_expression | char* | methods already defined |
 | | | |
@@ -300,8 +300,8 @@ level 0:
 | ast_action | ast_statement | char | returns a single character |
 | ast_return | ast_statement | mutable_data* | - |
 | | | |
-| ast_scope | ast_statement | *** | list of statemets terminated by a ast_return |
-| ast_scope_control | ast_statement | *** | list of statemets terminated by a ast_return/ast_action |
+| ast_scope | ast_statement | char | list of statemets terminated by a ast_return |
+| ast_scope_control | ast_statement | char | list of statemets terminated by a ast_return/ast_action |
 | | | |
 | ast_ifelse | ast_statement | *** | - |
 | ast_while | ast_statement | *** | - |

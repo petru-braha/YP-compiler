@@ -26,10 +26,7 @@ bool type_insert(const std::string &id,
 {
   if (type_table::content.find(id) !=
       type_table::content.end())
-  {
-    yyerror("class already defined");
     return false;
-  }
 
   std::pair<std::string, class_data *>
       s_pair(id, s);

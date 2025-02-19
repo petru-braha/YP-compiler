@@ -14,9 +14,7 @@
 
 #include "class/symbol_table.hpp"
 
-extern std::vector<symbol_table> symbols;
-#define LAST_SCOPE symbols.size() - 1
-
+constexpr char ACT_NOTHING = 123;
 constexpr char ACT_BREAK = 124;
 constexpr char ACT_CONTINUE = 125;
 constexpr char ACT_RETURN = 126;

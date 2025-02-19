@@ -19,6 +19,7 @@
 class ast_scope : public ast_statement
 {
   std::vector<ast_statement *> *const statemets;
+  char result;
 
 public:
   virtual ~ast_scope() override;
@@ -55,8 +56,13 @@ void *ast_scope::evaluate()
 {
   if (nullptr == statemets)
     return nullptr;
+  if (0 == statemets->size())
+  {
+    result = ACT_NOTHING;
+    return &result;
+  }
 
-  symbols.emplace_back();
+  scope_insert();
 
   size_t n = statemets->size();
   void *buffer = nullptr;
@@ -67,7 +73,7 @@ void *ast_scope::evaluate()
       return buffer;
   }
 
-  symbols.pop_back();
+  scope_remove();
   return buffer;
 }
 
@@ -79,6 +85,7 @@ const char ast_scope::get_stat_type() const
 class ast_scope_control : public ast_statement
 {
   std::vector<ast_statement *> *const statemets;
+  char result;
 
 public:
   virtual ~ast_scope_control() override;
@@ -115,8 +122,13 @@ void *ast_scope_control::evaluate()
 {
   if (nullptr == statemets)
     return nullptr;
+  if (0 == statemets->size())
+  {
+    result = ACT_NOTHING;
+    return &result;
+  }
 
-  symbols.emplace_back();
+  scope_insert();
 
   size_t n = statemets->size();
   void *buffer = nullptr;
@@ -129,7 +141,7 @@ void *ast_scope_control::evaluate()
       return buffer;
   }
 
-  symbols.pop_back();
+  scope_remove();
   return buffer;
 }
 

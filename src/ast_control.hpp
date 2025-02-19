@@ -7,20 +7,22 @@
  * and not here
  */
 
- #include "class/dev/ast.hpp"
- #include "class/dev/yyerror.hpp"
+#include "class/dev/ast.hpp"
+#include "class/dev/yyerror.hpp"
+
+class ast_scope_control;
 
 class ast_ifelse : public ast_statement
 {
   ast_expression *const judge;
-  ast_statement *const sucss_case;
-  ast_statement *const failr_case;
+  ast_scope_control *const sucss_case;
+  ast_scope_control *const failr_case;
 
 public:
   virtual ~ast_ifelse() override;
   ast_ifelse(ast_expression *const,
-             ast_statement *const,
-             ast_statement *const);
+             ast_scope_control *const,
+             ast_scope_control *const);
 
   virtual void *evaluate() override;
 
@@ -35,8 +37,8 @@ ast_ifelse::~ast_ifelse()
 }
 
 ast_ifelse::ast_ifelse(ast_expression *const j,
-                       ast_statement *const s,
-                       ast_statement *const f)
+                       ast_scope_control *const s,
+                       ast_scope_control *const f)
     : judge(j), sucss_case(s), failr_case(f)
 {
   if (nullptr == judge ||
@@ -66,12 +68,12 @@ const char ast_ifelse::get_stat_type() const
 class ast_while : public ast_statement
 {
   ast_expression *const judge;
-  ast_statement *const sucss_case;
+  ast_scope_control *const sucss_case;
 
 public:
   virtual ~ast_while() override;
   ast_while(ast_expression *const,
-            ast_statement *const);
+            ast_scope_control *const);
 
   virtual void *evaluate() override;
 
@@ -85,7 +87,7 @@ ast_while::~ast_while()
 }
 
 ast_while::ast_while(ast_expression *const j,
-                     ast_statement *const s)
+                     ast_scope_control *const s)
     : judge(j), sucss_case(s)
 {
   if (nullptr == judge || nullptr == sucss_case)
@@ -99,10 +101,15 @@ void *ast_while::evaluate()
   while (0 == strcmp(buffer = get_buffer(judge), "true"))
   {
     data = sucss_case->evaluate();
-    if (ACT_BREAK == *(char *)data)
+    const char byte = *(char *)data;
+    if (ACT_BREAK == byte)
       break;
-    else if (ACT_CONTINUE == *(char *)data)
+    else if (ACT_CONTINUE == byte)
       continue;
+    else if (ACT_RETURN == byte)
+      return data;
+    else if (ACT_NOTHING == byte)
+      ;
   }
 
   return data;
@@ -117,15 +124,15 @@ class ast_for : public ast_statement
 {
   ast_statement *const initl;
   ast_expression *const judge;
-  ast_statement *const incrm;
-  ast_statement *const sucss_case;
+  ast_expression *const incrm;
+  ast_scope_control *const sucss_case;
 
 public:
   virtual ~ast_for() override;
   ast_for(ast_statement *const,
           ast_expression *const,
-          ast_statement *const,
-          ast_statement *const);
+          ast_expression *const,
+          ast_scope_control *const);
 
   virtual void *evaluate() override;
 
@@ -142,8 +149,8 @@ ast_for::~ast_for()
 
 ast_for::ast_for(ast_statement *const iti,
                  ast_expression *const jdj,
-                 ast_statement *const inc,
-                 ast_statement *const s)
+                 ast_expression *const inc,
+                 ast_scope_control *const s)
     : initl(iti), judge(jdj), incrm(inc), sucss_case(s)
 {
   if (nullptr == iti || nullptr == jdj ||
@@ -153,20 +160,28 @@ ast_for::ast_for(ast_statement *const iti,
 
 void *ast_for::evaluate()
 {
+  scope_insert();
   initl->evaluate();
-  const char *buffer = get_buffer(judge);
+
   void *data = nullptr;
-  while (0 == strcmp(buffer = get_buffer(judge), "true"))
+  const char *buffer = get_buffer(judge);
+  while (0 == strcmp(buffer, "true"))
   {
     data = sucss_case->evaluate();
-    if (ACT_BREAK == *(char *)data)
+    const char byte = *(char *)data;
+    if (ACT_BREAK == byte)
       break;
-    else if (ACT_CONTINUE == *(char *)data)
+    else if (ACT_CONTINUE == byte)
       continue;
-
+    else if (ACT_RETURN == byte)
+      return data;
+    else if (ACT_NOTHING == byte)
+      ;
     incrm->evaluate();
+    buffer = get_buffer(judge);
   }
 
+  scope_remove();
   return data;
 }
 

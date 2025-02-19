@@ -8,7 +8,6 @@
 #include "class_data.hpp"
 #include "type_table.hpp"
 
-mutable_data *make_copy(const mutable_data *const data);
 bool is_primitive(const std::string &);
 std::string default_value_of(const std::string &);
 std::string type_of(const std::string &);
@@ -74,9 +73,12 @@ object_data::object_data(const std::string &type)
 
     const char access =
         symbol.second.access_modifier;
-    mutable_data *data = (mutable_data *)symbol.second.data;
+
+    mutable_data *data = nullptr;
+    make_copy(data, symbol.second.data);
+
     std::pair<std::string, field_data> p(
-        symbol.first, {make_copy(data), access});
+        symbol.first, {data, access});
     attributes->insert(p);
   }
 }
@@ -104,6 +106,12 @@ object_data::object_data(
   }
 
   // todo copy each attribute in particular
+}
+
+object_data &object_data::operator=(const object_data &)
+{
+  //todo
+  return *this;
 }
 
 const char object_data::get_item_type() const

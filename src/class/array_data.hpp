@@ -110,9 +110,14 @@ array_data::array_data(
   m_array.reserve(std::accumulate(
       level_data.begin(), level_data.end(), 1,
       std::multiplies<size_t>()));
+
   m_array[0] = data;
   for (size_t i = 1; i < m_array.size(); i++)
-    m_array[i] = make_copy(data);
+  {
+    mutable_data *copy = nullptr;
+    make_copy(copy, data);
+    m_array[i] = copy;
+  }
 }
 
 array_data::array_data(
@@ -124,13 +129,17 @@ array_data::array_data(
       m_array(data.m_array.size())
 {
   for (size_t i = 0; i < data.m_array.size(); i++)
-    this->m_array[i] = make_copy(data.m_array[i]);
+  {
+    mutable_data *copy = nullptr;
+    make_copy(copy, data.m_array[i]);
+    m_array[i] = copy;
+  }
 }
 
 array_data &array_data::operator=(
     const array_data &data)
 {
-  
+  //todo
   return *this;
 }
 

@@ -24,7 +24,6 @@ constexpr size_t LL_COUNT_DIGIT = 20;
 
 char *negation(const char *const);
 char *chg_sign(const char *const);
-char *cmp_vals(const char *const, const char *const);
 char *add_vals(const char *const, const char *const);
 char *sub_vals(const char *const, const char *const);
 char *and_vals(const char *const, const char *const);
@@ -35,6 +34,7 @@ char *div_vals(const char *const, const char *const);
 char *mod_vals(const char *const, const char *const);
 char *pow_vals(const char *const, const char *const);
 char *asg_vals(char *, const char *const);
+char *cmp_vals(const char *const, const char *const);
 
 //------------------------------------------------
 
@@ -86,42 +86,6 @@ char *chg_sign(const char *const v0)
 
   result[0] = '-';
   return strcpy(result + 1, v0);
-}
-
-//------------------------------------------------
-
-char *cmp_vals(const char *const v0, const char op,
-               const char *const v1)
-{
-  if (nullptr == v0 || nullptr == v1)
-  {
-    yyerror("cmp_vals() failed - received nullptr");
-    return nullptr;
-  }
-
-  std::string frst_type = type_of(v0);
-  std::string scnd_type = type_of(v1);
-  if (frst_type != scnd_type)
-  {
-    yyerror("cmp_vals() failed - type missmatch");
-    return nullptr;
-  }
-
-  std::string value0(v0), value1(v1);
-  if (EE_CHR == op)
-    return value0 == value1 ? strdup("true") : strdup("false");
-  else if (NE_CHR == op)
-    return value0 != value1 ? strdup("true") : strdup("false");
-  else if (LE_CHR == op)
-    return value0 <= value1 ? strdup("true") : strdup("false");
-  else if (LS_CHR == op)
-    return value0 < value1 ? strdup("true") : strdup("false");
-  else if (GE_CHR == op)
-    return value0 >= value1 ? strdup("true") : strdup("false");
-  else if (GS_CHR == op)
-    return value0 > value1 ? strdup("true") : strdup("false");
-
-  return strdup("false");
 }
 
 //------------------------------------------------
@@ -472,6 +436,123 @@ char *asg_vals(char *v0, const char *const v1)
   free(v0);
   v0 = strdup(v1);
   return strdup(v1);
+}
+
+//------------------------------------------------
+
+char *cmp_intg(const long long v0, const char op,
+               const long long v1);
+char *cmp_flot(const double v0, const char op,
+               const double v1);
+char *cmp_char(const char v0, const char op,
+               const char v1);
+char *cmp_strg(const char *const v0, const char op,
+               const char *const v1);
+
+char *cmp_vals(const char *const v0, const char op,
+               const char *const v1)
+{
+  if (nullptr == v0 || nullptr == v1)
+  {
+    yyerror("cmp_vals() failed - received nullptr");
+    return nullptr;
+  }
+
+  std::string frst_type = type_of(v0);
+  std::string scnd_type = type_of(v1);
+  if (frst_type != scnd_type)
+  {
+    yyerror("cmp_vals() failed - type missmatch");
+    return nullptr;
+  }
+
+  // success
+  if (0 == strcmp(frst_type.c_str(), "int"))
+    return cmp_intg(atoll(v0), op, atoll(v1));
+  else if (0 == strcmp(frst_type.c_str(), "float"))
+    return cmp_flot(atof(v0), op, atof(v1));
+  else if (0 == strcmp(frst_type.c_str(), "char"))
+    return cmp_char(*v0, op, *v1);
+  else if (0 == strcmp(frst_type.c_str(), "string"))
+    return cmp_strg(v0, op, v1);
+  return strdup("false");
+}
+
+char *cmp_intg(const long long v0, const char op,
+               const long long v1)
+{
+  if (EE_CHR == op)
+    return v0 == v1 ? strdup("true") : strdup("false");
+  else if (NE_CHR == op)
+    return v0 != v1 ? strdup("true") : strdup("false");
+  else if (LE_CHR == op)
+    return v0 <= v1 ? strdup("true") : strdup("false");
+  else if (LS_CHR == op)
+    return v0 < v1 ? strdup("true") : strdup("false");
+  else if (GE_CHR == op)
+    return v0 >= v1 ? strdup("true") : strdup("false");
+  else if (GS_CHR == op)
+    return v0 > v1 ? strdup("true") : strdup("false");
+  else
+    return nullptr;
+}
+
+char *cmp_flot(const double v0, const char op,
+               const double v1)
+{
+  if (EE_CHR == op)
+    return v0 == v1 ? strdup("true") : strdup("false");
+  else if (NE_CHR == op)
+    return v0 != v1 ? strdup("true") : strdup("false");
+  else if (LE_CHR == op)
+    return v0 <= v1 ? strdup("true") : strdup("false");
+  else if (LS_CHR == op)
+    return v0 < v1 ? strdup("true") : strdup("false");
+  else if (GE_CHR == op)
+    return v0 >= v1 ? strdup("true") : strdup("false");
+  else if (GS_CHR == op)
+    return v0 > v1 ? strdup("true") : strdup("false");
+  else
+    return nullptr;
+}
+
+char *cmp_char(const char v0, const char op,
+               const char v1)
+{
+  if (EE_CHR == op)
+    return v0 == v1 ? strdup("true") : strdup("false");
+  else if (NE_CHR == op)
+    return v0 != v1 ? strdup("true") : strdup("false");
+  else if (LE_CHR == op)
+    return v0 <= v1 ? strdup("true") : strdup("false");
+  else if (LS_CHR == op)
+    return v0 < v1 ? strdup("true") : strdup("false");
+  else if (GE_CHR == op)
+    return v0 >= v1 ? strdup("true") : strdup("false");
+  else if (GS_CHR == op)
+    return v0 > v1 ? strdup("true") : strdup("false");
+  else
+    return nullptr;
+}
+
+char *cmp_strg(const char *const v0, const char op,
+               const char *const v1)
+{
+  const int result = strcmp(v0, v1);
+  if (EE_CHR == op)
+    return result == 0 ? strdup("true") : strdup("false");
+  else if (NE_CHR == op)
+    return result != 0 ? strdup("true") : strdup("false");
+  else if (LE_CHR == op)
+    return result <= 0 ? strdup("true") : strdup("false");
+  else if (LS_CHR == op)
+    return result < 0 ? strdup("true") : strdup("false");
+  else if (GE_CHR == op)
+    return result >= 0 ? strdup("true") : strdup("false");
+  else if (GS_CHR == op)
+    return result > 0 ? strdup("true") : strdup("false");
+  else
+    return nullptr;
 }
 
 #endif

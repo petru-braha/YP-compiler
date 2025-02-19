@@ -3,17 +3,14 @@
 
 #include <string>
 
+class symbol_data;
+class ast_expression;
+
 extern int yylex();
 void yywarning(const char *);
 void yyerror(const char *);
 
-class symbol_data;
-class mutable_data;
-
-symbol_data *scope_search(const std::string &);
-mutable_data *make_copy(const mutable_data *const);
-
-class ast_expression;
+bool make_copy(symbol_data *const, const symbol_data *const);
 
 bool is_type(const std::string &);
 bool is_compatible(const char *, const char *);

@@ -78,7 +78,8 @@ public:
 // recursive deconstructor
 ast_operator::~ast_operator()
 {
-  free(result);
+  if(result)
+    free(result);
   delete left_child;
   delete rght_child;
 }
@@ -97,6 +98,12 @@ ast_operator::ast_operator(
 
 void *ast_operator::evaluate()
 {
+  if (result)
+  {
+    free(result);
+    result = nullptr;
+  }
+
   const char *v0 = get_buffer(left_child);
   const char *v1 = get_buffer(rght_child);
 
@@ -177,44 +184,32 @@ void *ast_assign::evaluate()
     return nullptr;
   }
 
-  mutable_data *data = nullptr;
   void *rght = rght_child->evaluate();
-
   if (is_returning_char(rght_child))
   {
     char *value = (char *)rght;
-    data = new primitive_data(type_of(value), value);
+    primitive_data *p =
+        new primitive_data(type_of(value), value);
 
-    if (data->get_item_type() != left->get_item_type() ||
-        data->get_data_type() != left->get_data_type())
+    if (p->get_item_type() != left->get_item_type() ||
+        p->get_data_type() != left->get_data_type())
     {
       yyerror("ast_assign() failed - type missmatch");
       return nullptr;
     }
 
-    delete left;
-    left = data;
+    primitive_data *temp = (primitive_data *)left;
+    *temp = *p;
     return left;
   }
 
   // is_returning_char == false
-  symbol_data *temp = (symbol_data *)rght;
-  if (FNCT_SYMB_TYPE == temp->get_item_type())
+  if(false == make_copy(left, (symbol_data*)rght))
   {
-    yyerror("ast_assign() failed - received function symbol");
-    return nullptr;
-  }
-  data = (mutable_data *)temp;
-
-  if (data->get_item_type() != left->get_item_type() ||
-      data->get_data_type() != left->get_data_type())
-  {
-    yyerror("ast_assign() failed - type missmatch");
+    yyerror("ast_assign() failed - make_copy() failed");
     return nullptr;
   }
 
-  delete left;
-  left = make_copy(data);
   return left;
 }
 
