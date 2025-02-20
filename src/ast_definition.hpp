@@ -80,7 +80,9 @@ ast_primitivedefn::ast_primitivedefn(
 
 void *ast_primitivedefn::evaluate()
 {
-  if (false == is_primitive(data_type))
+  std::string base(base_type(data_type));
+  if (false == is_primitive(data_type) &&
+      false == is_primitive(base))
   {
     yyerror("ast_primitivedefn() failed - not primitive type");
     return nullptr;
@@ -105,8 +107,25 @@ void *ast_primitivedefn::evaluate()
     return nullptr;
   }
 
-  primitive_data *data =
-      new primitive_data(data_type, buffer);
+  // not array of primitives
+  mutable_data *data = new primitive_data(data_type, buffer);
+  if ("" == base)
+  {
+    result = {id, data};
+    return &result;
+  }
+
+  std::vector<size_t> level_data;
+  level_data.reserve(3 * base.size());
+  char *number = strtok(data_type, "[]");
+  number = strtok(NULL, "[]"); // skip the base type
+  while (number)
+  {
+    level_data.emplace_back(atoll(number));
+    number = strtok(NULL, "[]");
+  }
+
+  data = new array_data(level_data, data);
   result = {id, data};
   return &result;
 }
@@ -245,6 +264,8 @@ class ast_objectdefn : public ast_definition
   std::vector<ast_expression *> *const arguments;
   ast_defn result;
 
+  object_data *find_constructor(class_data *const);
+
 public:
   virtual ~ast_objectdefn() override;
   ast_objectdefn(char *const, char *const);
@@ -285,17 +306,65 @@ ast_objectdefn::ast_objectdefn(
     yyerror("ast_objectdefn() failed - received nullptr");
 }
 
+object_data *ast_objectdefn::find_constructor(
+    class_data *const model)
+{
+  std::pair<class_data::it, class_data::it> constructors;
+  constructors = model->get_data(data_type);
+
+  for (auto &it = constructors.first;
+       it != constructors.second; it++)
+  {
+    if (ACCS_MODF_PRIV == (*it).second.access_modifier)
+      continue;
+    function_data *f = (function_data *)(*it).second.data;
+    if (f->get_count() != arguments->size())
+      continue;
+
+    std::vector<mutable_data *> v(f->get_count());
+    function_data::it itr = f->begin();
+
+    for (size_t idx = 0; idx < v.size(); idx++, itr++)
+    {
+      void *buffer = arguments->at(idx)->evaluate();
+      if (is_returning_char(arguments->at(idx)))
+      {
+        char *value = (char *)buffer;
+        v[idx] = new primitive_data(type_of(value), value);
+      }
+      else
+        v[idx] = (mutable_data *)buffer;
+
+      if (v[idx]->get_item_type() != (*itr).second->get_item_type() ||
+          v[idx]->get_data_type() != (*itr).second->get_data_type())
+      {
+        for (size_t i = 0; i <= idx; i++)
+          delete v[idx];
+        break; // search for a new constructor
+      }
+    }
+
+    if (itr == f->end())
+      return (object_data *)f->call(&v);
+  }
+
+  return nullptr;
+}
+
 void *ast_objectdefn::evaluate()
 {
   // data type
-  class_data *model = type_exists(data_type);
+  std::string base(base_type(data_type));
+  class_data *model = type_exists(base);
+  if ("" == base)
+    model = type_exists(base);
   if (nullptr == model)
   {
     yyerror("ast_objectdefn() failed - undefined type");
     return nullptr;
   }
 
-  if (is_primitive(data_type))
+  if (is_primitive(base) || is_primitive(data_type))
   {
     yyerror("ast_objectdefn() failed - primitive treated as object");
     return nullptr;
@@ -320,52 +389,31 @@ void *ast_objectdefn::evaluate()
     return nullptr;
   }
 
-  object_data *data = nullptr;
-  std::pair<class_data::it, class_data::it> constructors;
-  constructors = model->get_data(data_type);
-
-  for (auto &it = constructors.first;
-       it != constructors.second; it++)
-  {
-    if (ACCS_MODF_PRIV == (*it).second.access_modifier)
-      continue;
-    function_data *f = (function_data *)(*it).second.data;
-    if (f->get_count() != arguments->size())
-      continue;
-
-    std::vector<mutable_data *> v(arguments->size());
-    function_data::it itr = f->begin();
-
-    for (size_t idx = 0; idx < v.size(); idx++, itr++)
-    {
-      void *buffer = arguments->at(idx)->evaluate();
-
-      if (is_returning_char(arguments->at(idx)))
-      {
-        char *value = (char *)buffer;
-        v[idx] = new primitive_data(type_of(value), value);
-      }
-      else
-        v[idx] = (mutable_data *)buffer;
-
-      if (v[idx]->get_item_type() != (*itr).second->get_item_type() ||
-          v[idx]->get_data_type() != (*itr).second->get_data_type())
-      {
-        for (size_t i = 0; i <= idx; i++)
-          delete v[idx];
-        break; // search for a new constructor
-      }
-    }
-
-    data = (object_data *)f->call(&v);
-  }
-
+  mutable_data *data = find_constructor(model);
   if (nullptr == data)
   {
     yyerror("ast_objectdefn() - undefined appropriate constructor");
     return nullptr;
   }
 
+  // not array of primitives
+  if ("" == base)
+  {
+    result = {id, data};
+    return &result;
+  }
+
+  std::vector<size_t> level_data;
+  level_data.reserve(3 * base.size());
+  char *number = strtok(data_type, "[]");
+  number = strtok(NULL, "[]"); // skip the base type
+  while (number)
+  {
+    level_data.emplace_back(atoll(number));
+    number = strtok(NULL, "[]");
+  }
+
+  data = new array_data(level_data, data);
   result = {id, data};
   return &result;
 }
@@ -499,7 +547,7 @@ void *ast_classdefn::evaluate()
       yyerror("ast_classdefn() failed - type_insert() failed");
       return nullptr;
     }
-    
+
     return data;
   }
 

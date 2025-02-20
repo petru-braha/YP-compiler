@@ -1,6 +1,7 @@
 #ifndef __0ASTASTINDEX0__
 #define __0ASTASTINDEX0__
 
+#include <vector>
 #include "class/dev/ast.hpp"
 
 #include "class/primitive_data.hpp"
@@ -10,12 +11,13 @@
 class ast_indexing : public ast_expression
 {
   ast_symbolcall *const id;
-  ast_expression *const index;
+  std::vector<ast_expression *> *const indexes;
 
 public:
   virtual ~ast_indexing() override;
   ast_indexing(
-      ast_symbolcall *const, ast_expression *const);
+      ast_symbolcall *const,
+      std::vector<ast_expression *> *const);
 
   virtual void *evaluate() override;
 
@@ -25,33 +27,23 @@ public:
 ast_indexing::~ast_indexing()
 {
   free(id);
-  delete index;
+  for (size_t i = 0; i < indexes->size(); i++)
+    delete indexes->at(i);
+  delete indexes;
 }
 
 ast_indexing::ast_indexing(
-    ast_symbolcall *const id, ast_expression *const e)
-    : id(id), index(e)
+    ast_symbolcall *const id,
+    std::vector<ast_expression *> *const i)
+    : id(id), indexes(i)
 {
-  if (nullptr == id || nullptr == e)
+  if (nullptr == id || nullptr == i)
     yyerror("ast_indexing() failed - received nullptr");
 }
 
 void *ast_indexing::evaluate()
 {
-  const char *buffer = get_buffer(index);
-  if (strcmp(INTG_DATA_TYPE, type_of(buffer).c_str()))
-  {
-    yyerror("ast_indexing() failed - bad index");
-    return nullptr;
-  }
-
-  if ('-' == buffer[0] || 0 == strcmp(buffer, "0"))
-  {
-    yyerror("ast_indexing() failed - bad index");
-    return nullptr;
-  }
-
-  mutable_data *data = (mutable_data *)id->evaluate();
+  symbol_data *data = (symbol_data *)id->evaluate();
   if (ARRY_SYMB_TYPE != data->get_item_type())
   {
     yyerror("ast_indexing() failed - not array type");
@@ -59,8 +51,25 @@ void *ast_indexing::evaluate()
   }
 
   array_data *a = (array_data *)data;
-  a->operator[](atoi(buffer));
-  return a;
+  for (size_t i = 0; i < indexes->size(); i++)
+  {
+    const char *buffer = get_buffer(indexes->at(i));
+    if (strcmp(INTG_DATA_TYPE, type_of(buffer).c_str()))
+    {
+      yyerror("ast_indexing() failed - bad index");
+      return nullptr;
+    }
+
+    if ('-' == *buffer)
+    {
+      yyerror("ast_indexing() failed - bad index");
+      return nullptr;
+    }
+
+    a->operator[](atoll(buffer));
+  }
+
+  return a->get_value();
 }
 
 const char ast_indexing::get_stat_type() const
@@ -111,6 +120,13 @@ void *ast_fielding::evaluate()
 
   object_data *o = (object_data *)data;
   field_data *f = o->get_attriubte(field_id);
+  if (nullptr == f)
+  {
+    yyerror("ast_fielding() failed - "
+            "invalid field id");
+    return nullptr;
+  }
+
   if (ACCS_MODF_PRIV == f->access_modifier)
   {
     yyerror("ast_fielding() failed - private field");
@@ -182,6 +198,13 @@ void *ast_fieldcall::evaluate()
 
   object_data *o = (object_data *)data;
   field_data *f = o->get_attriubte(field_id);
+  if (nullptr == f)
+  {
+    yyerror("ast_fielding() failed - "
+            "invalid field id");
+    return nullptr;
+  }
+
   if (ACCS_MODF_PRIV == f->access_modifier)
   {
     yyerror("ast_fieldcall() failed - private field");
@@ -194,9 +217,25 @@ void *ast_fieldcall::evaluate()
     return nullptr;
   }
 
-  // todo evaluate the parameters
-  // std::vector<0>
-  return f->data;
+  std::vector<mutable_data *> arguments(
+      parameters->size());
+  for (size_t i = 0; i < parameters->size(); i++)
+  {
+    if (false ==
+        is_returning_char(parameters->at(i)))
+      arguments[i] =
+          (mutable_data *)parameters->at(i)->evaluate();
+    else
+    {
+      const char *buffer = get_buffer(parameters->at(i));
+      data = new primitive_data(type_of(buffer), buffer);
+      arguments[i] = (mutable_data *)data;
+      continue;
+    }
+  }
+
+  function_data *ptr = (function_data *)f->data;
+  return ptr->call(&arguments);
 }
 
 const char ast_fieldcall::get_stat_type() const

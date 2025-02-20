@@ -74,7 +74,7 @@
 %type<subast> arr_stat
 %type<s_node> stat ctrl decl
 %type<e_node> expr term fact unit asgn
-%type<subexp> arr_argm
+%type<subexp> arr_argm arr_idex
 
 %type<d_node> prm_decl prm_defn
 %type<d_node> fct_decl fct_defn
@@ -198,7 +198,7 @@ unit: '(' asgn ')' { $$ = $2; }
           new ast_symbolcall($1),
           new std::vector<ast_expression*>()); 
       }
-    | SMT_NAME '(' arr_argm asgn ')' { 
+    | SMT_NAME '(' arr_argm asgn ')' {
         $3->emplace_back($4);
         $$ = new ast_methodcall(
           new ast_symbolcall($1),
@@ -206,12 +206,12 @@ unit: '(' asgn ')' { $$ = $2; }
       }
 
     // object
-    | SMT_NAME ACS_FILD SMT_NAME { 
+    | SMT_NAME ACS_FILD SMT_NAME {
         $$ = new ast_fielding(
           new ast_symbolcall($1),
           $3);
       }
-    | SMT_NAME ACS_FILD SMT_NAME '('')' { 
+    | SMT_NAME ACS_FILD SMT_NAME '('')' {
         $$ = new ast_fieldcall(
           new ast_symbolcall($1),
           $3,
@@ -225,7 +225,7 @@ unit: '(' asgn ')' { $$ = $2; }
       }
 
     // array
-    | SMT_NAME '[' asgn ']' { 
+    | SMT_NAME arr_idex {
         $$ = new ast_indexing(
           new ast_symbolcall($1),
           $3);
@@ -234,6 +234,15 @@ unit: '(' asgn ')' { $$ = $2; }
 
 arr_argm: arr_argm asgn ',' { $1->emplace_back($2); $$ = $1; }
         | /*epsilon*/ { $$ = new std::vector<ast_expression*>(); }
+        ;
+arr_idex: arr_idex '[' asgn ']' {
+            $1->emplace_back($3);
+            $3 = $1;
+          }
+        | '[' asgn ']' {
+            $$ = new std::vector<ast_expression*>();
+            $$.emplace_back($2);
+          }
         ;
 
 decl: prm_decl { $$ = new ast_scopedefn($1); }
