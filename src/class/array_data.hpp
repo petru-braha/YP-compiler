@@ -11,21 +11,18 @@
 #include "object_data.hpp"
 
 std::string base_type(const std::string &);
-void remove_level(std::string &);
+bool remove_level(std::string &);
 
 class array_data : public mutable_data
 {
+  std::string data_type;
+  size_t index, level;
+  std::vector<size_t> level_data;
+  std::vector<mutable_data *> m_array;
 
   void init_data_type();
 
 public:
-  std::string data_type;
-
-  size_t index, level;
-  std::vector<size_t> level_data;
-
-  std::vector<mutable_data *> m_array;
-
   virtual ~array_data() override;
   array_data(const array_data &) = delete;
   array_data(
@@ -45,6 +42,7 @@ public:
   // constant methods:
   virtual const char get_item_type() const override;
   virtual const std::string &get_data_type() const override;
+  size_t capacity() const;
   bool is_indexed() const;
 };
 
@@ -136,23 +134,43 @@ array_data::array_data(
 array_data &array_data::operator=(
     const array_data &data)
 {
-  // todo check for index of left
-  std::string type = data.data_type;
-  for (size_t i = 0; data.level; i++)
-    remove_level(type);
+  std::string type_left = data_type,
+              type_rght = data.data_type;
 
-  if (this->data_type != type)
+  for (size_t i = 0; i < this->level; i++)
+    remove_level(type_left);
+  for (size_t i = 0; i < data.level; i++)
+    remove_level(type_rght);
+
+  const char
+      refi_left = this->m_array[0]->get_item_type(),
+      refi_rght = data.m_array[0]->get_item_type();
+  const std::string
+      &refd_left = this->m_array[0]->get_data_type(),
+      &refd_rght = data.m_array[0]->get_data_type();
+
+  if (type_left != type_rght ||
+      refi_left != refi_rght ||
+      refd_left != refd_rght)
   {
     yyerror("array_data assignation failed - "
             "type missmatch");
     return *this;
   }
 
-  for (size_t i = 0; i < m_array.size(); i++)
+  size_t count = capacity();
+  for (size_t i = 0; i < count; i++)
   {
-    delete m_array[i];
-    make_copy(
-        m_array[i], data.m_array[data.index + i]);
+    size_t left = this->index + i,
+           rght = data.index + i;
+    delete m_array[left];
+    m_array[left] = nullptr;
+    if (false == make_copy(m_array[left], data.m_array[rght]))
+    {
+      yyerror("array_data assignation failed - "
+              "type missmatch");
+      return *this;
+    }
   }
 
   return *this;
@@ -207,6 +225,13 @@ const std::string &array_data::get_data_type() const
   return data_type;
 }
 
+size_t array_data::capacity() const
+{
+  return std::accumulate(
+      level_data.begin() + level, level_data.end(), 1,
+      std::multiplies<size_t>());
+}
+
 bool array_data::is_indexed() const
 {
   return level_data.size() == level;
@@ -222,23 +247,24 @@ std::string base_type(const std::string &array_type)
   return "";
 }
 
-void remove_level(std::string &data_type)
+bool remove_level(std::string &data_type)
 {
   size_t index0 = data_type.find('[');
   if (std::string::npos == index0)
-    return;
+    return false;
 
   size_t index1 = data_type.find(']', index0);
   if (std::string::npos == index1)
   {
     yyerror("remove_level() failed");
-    return;
+    return false;
   }
 
   std::string::const_iterator it0, it1;
   it0 = data_type.begin() + index0;
   it1 = it0 + (index1 - index0 + 1);
   data_type.erase(it0, it1);
+  return true;
 }
 
 #endif
