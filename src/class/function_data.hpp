@@ -15,24 +15,15 @@ class ast_scope;
  */
 class function_data : public symbol_data
 {
-  const std::string return_data_type;
-
 public:
   typedef std::unordered_map<
       std::string, mutable_data *>
       map;
+  typedef map::value_type pair;
+  typedef map::const_iterator it;
 
-private:
-  map *parameters;
-
-  std::vector<ast_statement *> *execution;
-
-  static std::string available_id;
-  const std::string &default_id();
-  bool emplace(const std::vector<mutable_data *> *const);
-
-public:
   virtual ~function_data() override;
+  function_data(const function_data &) = delete;
   function_data(
       const std::string &, map *const);
   function_data(
@@ -41,42 +32,23 @@ public:
   bool define(std::vector<ast_statement *> *const);
 
   void *call(const std::vector<mutable_data *> *const);
+  static std::string default_id(map *const);
 
   virtual const char get_item_type() const override;
   virtual const std::string &get_data_type() const override;
   const size_t get_count() const;
   const bool is_defined() const;
 
-  typedef map::const_iterator it;
   it begin() const;
   it end() const;
+
+private:
+  const std::string return_data_type;
+  map *parameters;
+  std::vector<ast_statement *> *execution;
+
+  bool emplace(const std::vector<mutable_data *> *const);
 };
-
-std::string function_data::available_id = "";
-
-const std::string &function_data::default_id()
-{
-  char character = 0;
-  if ("" == available_id)
-  {
-    if (parameters->find(available_id) ==
-        parameters->end())
-      return available_id;
-    available_id += character;
-  }
-
-  while (parameters->find(available_id) !=
-         parameters->end())
-  {
-    character++;
-    if (0 == character)
-      available_id += character;
-    size_t index_last = available_id.size() - 1;
-    available_id[index_last] = character;
-  }
-
-  return available_id;
-}
 
 /*
  ! defined in ast_call.hpp
@@ -86,8 +58,7 @@ const std::string &function_data::default_id()
 // declaration with no definition
 function_data::function_data(
     const std::string &return_type,
-    std::unordered_map<
-        std::string, mutable_data *> *const arguments)
+    function_data::map *const arguments)
     : return_data_type(return_type),
       parameters(arguments), execution(nullptr)
 {
@@ -95,11 +66,9 @@ function_data::function_data(
     yyerror("function_data() failed - received nullptr");
 }
 
-// todo check compatibility
 function_data::function_data(
     const std::string &return_type,
-    std::unordered_map<
-        std::string, mutable_data *> *const arguments,
+    function_data::map *const arguments,
     std::vector<ast_statement *> *const statements)
     : return_data_type(return_type),
       parameters(arguments), execution(statements)
@@ -122,6 +91,14 @@ bool function_data::define(
  * mutable_data *function_data::call(
     const std::vector<mutable_data *> &arguments);
  */
+
+std::string function_data::default_id(
+    function_data::map *const arguments)
+{
+  if (nullptr == arguments)
+    return nullptr;
+  return std::to_string(arguments->size());
+}
 
 const char function_data::get_item_type() const
 {

@@ -146,7 +146,6 @@ const char ast_methodcall::get_stat_type() const
 
 function_data::~function_data()
 {
-  printf("~function_data begin\n");
   for (auto &item_pair : *parameters)
     delete item_pair.second;
   delete parameters;
@@ -157,8 +156,6 @@ function_data::~function_data()
   for (auto &statement : *execution)
     delete statement;
   delete execution;
-
-  printf("~function_data end\n");
 }
 
 bool function_data::emplace(
@@ -182,7 +179,12 @@ bool function_data::emplace(
   for (auto &item_pair : *parameters)
   {
     delete item_pair.second;
-    item_pair.second = arguments->at(index);
+    item_pair.second = nullptr;
+    if (false ==
+        make_copy(
+            item_pair.second,
+            arguments->at(index)))
+      return false;
     index++;
   }
 

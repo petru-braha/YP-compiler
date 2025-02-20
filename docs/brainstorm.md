@@ -1,8 +1,7 @@
-## To do
+## To do when paid
 
 0. char - operations? '\n'
 0. complete the syntax documentation from the guidelines
-0. better names: abbreviation capslock?
 
 ## General ideas
 

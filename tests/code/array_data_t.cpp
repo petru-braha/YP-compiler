@@ -6,10 +6,10 @@ FILE *yyin;
 char *yytext;
 int yylineno;
 
-/* test the following operators:
- * arr = arr
- * arr = subarr
- * subarr = arr
+/* tested the following operators:
+ * arr = arr x
+ * arr = subarr x
+ * subarr = arr x
  * subarr = subarr x
  * elem = arr x
  * elem = subarr x
@@ -173,6 +173,7 @@ void subarr_subarr(array_data &arr, array_data &subarr)
   printf("subarr_subarr end\n\n");
 }
 
+// works as expected
 int main()
 {
   // construct
