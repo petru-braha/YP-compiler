@@ -4,19 +4,9 @@
 #include <string>
 #include <string.h>
 #include "dev/symbol_data.hpp"
+#include "dev/constexpr.hpp"
 #include "dev/function.hpp"
 #include "dev/yyerror.hpp"
-
-const char INTG_DATA_TYPE[] = "int";
-const char FLOT_DATA_TYPE[] = "float";
-const char CHAR_DATA_TYPE[] = "char";
-const char STRG_DATA_TYPE[] = "string";
-const char BOOL_DATA_TYPE[] = "bool";
-const char *RESERVED_TYPES[] =
-    {INTG_DATA_TYPE, FLOT_DATA_TYPE,
-     CHAR_DATA_TYPE, STRG_DATA_TYPE,
-     BOOL_DATA_TYPE};
-constexpr char COUNT_RESERVED_TYPES = 5;
 
 class primitive_data : public mutable_data
 {

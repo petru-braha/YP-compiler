@@ -12,7 +12,7 @@ extern int yyparse();
 void yywarning(const char *);
 void yyerror(const char *);
 
-// data
+// data type
 bool is_primitive(const std::string &);
 std::string default_value_of(const std::string &);
 std::string type_of(const std::string &);

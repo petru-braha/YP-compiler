@@ -15,12 +15,15 @@
 #include <limits.h>
 #include <cmath>
 #include <string>
-#include "yyerror.hpp"
+#include "constexpr.hpp"
 #include "function.hpp"
+#include "yyerror.hpp"
 #include "ast_alphabet.hpp"
 
 constexpr size_t BO_COUNT_DIGIT = 6;
 constexpr size_t LL_COUNT_DIGIT = 20;
+constexpr char BOOL_LITERAL_0[] = "false";
+constexpr char BOOL_LITERAL_1[] = "true";
 constexpr char DIGITS[] = "0123456789";
 
 char *negation(const char *const);
@@ -34,8 +37,8 @@ char *mul_vals(const char *const, const char *const);
 char *div_vals(const char *const, const char *const);
 char *mod_vals(const char *const, const char *const);
 char *pow_vals(const char *const, const char *const);
-char *asg_vals(char *, const char *const);
-char *cmp_vals(const char *const, const char *const);
+char *cmp_vals(const char *const, const char,
+               const char *const);
 
 bool is_valid(const char *const v)
 {
@@ -47,9 +50,9 @@ bool is_valid(const char *const v)
     return true;
   if (strchr(DIGITS, v[0]))
     return true;
-  if (0 == strcmp(v, "false"))
+  if (0 == strcmp(v, BOOL_LITERAL_0))
     return true;
-  if (0 == strcmp(v, "true"))
+  if (0 == strcmp(v, BOOL_LITERAL_1))
     return true;
   return false;
 }
@@ -65,7 +68,7 @@ char *negation(const char *const v0)
   }
 
   std::string type = type_of(v0);
-  if (strcmp(type.c_str(), "bool"))
+  if (strcmp(type.c_str(), BOOL_DATA_TYPE))
   {
     yyerror("negation() failed - wrong type");
     return nullptr;
@@ -74,11 +77,8 @@ char *negation(const char *const v0)
   // success
   char *result = (char *)malloc(BO_COUNT_DIGIT);
   if ('t' == v0[0])
-    strcpy(result, "false");
-  else
-    strcpy(result, "true");
-
-  return result;
+    return strcpy(result, BOOL_LITERAL_0);
+  return strcpy(result, BOOL_LITERAL_1);
 }
 
 char *chg_sign(const char *const v)
@@ -90,8 +90,8 @@ char *chg_sign(const char *const v)
   }
 
   std::string type = type_of(v);
-  if (strcmp("int", type.c_str()) &&
-      strcmp("float", type.c_str()))
+  if (strcmp(INTG_DATA_TYPE, type.c_str()) &&
+      strcmp(FLOT_DATA_TYPE, type.c_str()))
   {
     yyerror("chg_sign() failed - wrong type");
     return nullptr;
@@ -125,7 +125,8 @@ char *chg_sign(const char *const v)
 
 char *add_vals(const char *const v0, const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("add_vals() failed - received nullptr");
     return nullptr;
@@ -139,7 +140,7 @@ char *add_vals(const char *const v0, const char *const v1)
     return nullptr;
   }
 
-  if (0 == strcmp("bool", frst_type.c_str()))
+  if (0 == strcmp(BOOL_DATA_TYPE, frst_type.c_str()))
   {
     yyerror("add_vals() failed - wrong type");
     return nullptr;
@@ -147,15 +148,15 @@ char *add_vals(const char *const v0, const char *const v1)
 
   // success
   std::string result;
-  if (0 == strcmp(frst_type.c_str(), "int"))
+  if (0 == strcmp(frst_type.c_str(), INTG_DATA_TYPE))
     result = std::to_string(atoll(v0) + atoll(v1));
-  else if (0 == strcmp(frst_type.c_str(), "float"))
+  else if (0 == strcmp(frst_type.c_str(), FLOT_DATA_TYPE))
     result = std::to_string(atof(v0) + atof(v1));
-  else if (0 == strcmp(frst_type.c_str(), "char"))
+  else if (0 == strcmp(frst_type.c_str(), CHAR_DATA_TYPE))
     result = std::to_string(
         (atoll(v0) % UCHAR_MAX + atoll(v1) % UCHAR_MAX) %
         UCHAR_MAX);
-  else if (0 == strcmp(frst_type.c_str(), "string"))
+  else if (0 == strcmp(frst_type.c_str(), STRG_DATA_TYPE))
   {
     result = v0;
     result.pop_back();
@@ -167,7 +168,8 @@ char *add_vals(const char *const v0, const char *const v1)
 
 char *sub_vals(const char *const v0, const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("sub_vals() failed - received nullptr");
     return nullptr;
@@ -181,7 +183,7 @@ char *sub_vals(const char *const v0, const char *const v1)
     return nullptr;
   }
 
-  if (0 == strcmp("bool", frst_type.c_str()))
+  if (0 == strcmp(BOOL_DATA_TYPE, frst_type.c_str()))
   {
     yyerror("sub_vals() failed - wrong type");
     return nullptr;
@@ -189,22 +191,23 @@ char *sub_vals(const char *const v0, const char *const v1)
 
   // success
   std::string result;
-  if (0 == strcmp(frst_type.c_str(), "int"))
+  if (0 == strcmp(frst_type.c_str(), INTG_DATA_TYPE))
     result = std::to_string(atoll(v0) - atoll(v1));
-  else if (0 == strcmp(frst_type.c_str(), "float"))
+  else if (0 == strcmp(frst_type.c_str(), FLOT_DATA_TYPE))
     result = std::to_string(atof(v0) - atof(v1));
-  else if (0 == strcmp(frst_type.c_str(), "char"))
+  else if (0 == strcmp(frst_type.c_str(), CHAR_DATA_TYPE))
     result = std::to_string(atoll(v0) % UCHAR_MAX -
                             atoll(v1) % UCHAR_MAX);
-  else if (0 == strcmp(frst_type.c_str(), "string"))
+  else if (0 == strcmp(frst_type.c_str(), STRG_DATA_TYPE))
   {
     size_t position = 0;
     std::string text(v0 + 1), token(v1 + 1);
     text.pop_back();
     token.pop_back();
-    while (std::string::npos !=
-           (position = text.find(token, position)))
-      text.erase(position, token.length());
+    if (text.size() && token.size()) // patch
+      while (std::string::npos !=
+             (position = text.find(token, position)))
+        text.erase(position, token.length());
     ((result += "\"") += text) += "\"";
   }
 
@@ -215,7 +218,8 @@ char *sub_vals(const char *const v0, const char *const v1)
 
 char *and_vals(const char *const v0, const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("and_vals() failed - received nullptr");
     return nullptr;
@@ -229,22 +233,23 @@ char *and_vals(const char *const v0, const char *const v1)
     return nullptr;
   }
 
-  if (strcmp("bool", frst_type.c_str()))
+  if (strcmp(BOOL_DATA_TYPE, frst_type.c_str()))
   {
     yyerror("and_vals() failed - wrong type");
     return nullptr;
   }
 
   // success
-  if (0 == strcmp(v0, "false") ||
-      0 == strcmp(v1, "false"))
-    return strdup("false");
-  return strdup("true");
+  if (0 == strcmp(v0, BOOL_LITERAL_0) ||
+      0 == strcmp(v1, BOOL_LITERAL_0))
+    return strdup(BOOL_LITERAL_0);
+  return strdup(BOOL_LITERAL_1);
 }
 
 char *or__vals(const char *const v0, const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("or_vals() failed - received nullptr");
     return nullptr;
@@ -258,22 +263,23 @@ char *or__vals(const char *const v0, const char *const v1)
     return nullptr;
   }
 
-  if (strcmp("bool", frst_type.c_str()))
+  if (strcmp(BOOL_DATA_TYPE, frst_type.c_str()))
   {
     yyerror("or_vals() failed - wrong type");
     return nullptr;
   }
 
   // success
-  if (0 == strcmp(v0, "true") ||
-      0 == strcmp(v1, "true"))
-    return strdup("true");
-  return strdup("false");
+  if (0 == strcmp(v0, BOOL_LITERAL_1) ||
+      0 == strcmp(v1, BOOL_LITERAL_1))
+    return strdup(BOOL_LITERAL_1);
+  return strdup(BOOL_LITERAL_0);
 }
 
 char *xor_vals(const char *const v0, const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("xor_vals() failed - received nullptr");
     return nullptr;
@@ -287,7 +293,7 @@ char *xor_vals(const char *const v0, const char *const v1)
     return nullptr;
   }
 
-  if (strcmp("bool", frst_type.c_str()))
+  if (strcmp(BOOL_DATA_TYPE, frst_type.c_str()))
   {
     yyerror("xor_vals() failed - wrong type");
     return nullptr;
@@ -295,15 +301,16 @@ char *xor_vals(const char *const v0, const char *const v1)
 
   // success
   if (strcmp(v0, v1))
-    return strdup("true");
-  return strdup("false");
+    return strdup(BOOL_LITERAL_1);
+  return strdup(BOOL_LITERAL_0);
 }
 
 //------------------------------------------------
 
 char *mul_vals(const char *const v0, const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("mul_vals() failed - received nullptr");
     return nullptr;
@@ -317,8 +324,8 @@ char *mul_vals(const char *const v0, const char *const v1)
     return nullptr;
   }
 
-  if (0 == strcmp("bool", frst_type.c_str()) ||
-      0 == strcmp("string", frst_type.c_str()))
+  if (0 == strcmp(BOOL_DATA_TYPE, frst_type.c_str()) ||
+      0 == strcmp(STRG_DATA_TYPE, frst_type.c_str()))
   {
     yyerror("mul_vals() failed - wrong type");
     return nullptr;
@@ -326,11 +333,11 @@ char *mul_vals(const char *const v0, const char *const v1)
 
   // success
   std::string result;
-  if (0 == strcmp(frst_type.c_str(), "int"))
+  if (0 == strcmp(frst_type.c_str(), INTG_DATA_TYPE))
     result = std::to_string(atoll(v0) * atoll(v1));
-  else if (0 == strcmp(frst_type.c_str(), "float"))
+  else if (0 == strcmp(frst_type.c_str(), FLOT_DATA_TYPE))
     result = std::to_string(atof(v0) * atof(v1));
-  else if (0 == strcmp(frst_type.c_str(), "char"))
+  else if (0 == strcmp(frst_type.c_str(), CHAR_DATA_TYPE))
     result = std::to_string(
         (atoll(v0) % UCHAR_MAX * atoll(v1) % UCHAR_MAX) %
         UCHAR_MAX);
@@ -339,7 +346,8 @@ char *mul_vals(const char *const v0, const char *const v1)
 
 char *div_vals(const char *const v0, const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("div_vals() failed - received nullptr");
     return nullptr;
@@ -353,8 +361,8 @@ char *div_vals(const char *const v0, const char *const v1)
     return nullptr;
   }
 
-  if (0 == strcmp("bool", frst_type.c_str()) ||
-      0 == strcmp("string", frst_type.c_str()))
+  if (0 == strcmp(BOOL_DATA_TYPE, frst_type.c_str()) ||
+      0 == strcmp(STRG_DATA_TYPE, frst_type.c_str()))
   {
     yyerror("div_vals() failed - wrong type");
     return nullptr;
@@ -362,11 +370,11 @@ char *div_vals(const char *const v0, const char *const v1)
 
   // success
   std::string result;
-  if (0 == strcmp(frst_type.c_str(), "int"))
+  if (0 == strcmp(frst_type.c_str(), INTG_DATA_TYPE))
     result = std::to_string(atoll(v0) / atoll(v1));
-  else if (0 == strcmp(frst_type.c_str(), "float"))
+  else if (0 == strcmp(frst_type.c_str(), FLOT_DATA_TYPE))
     result = std::to_string(atof(v0) / atof(v1));
-  else if (0 == strcmp(frst_type.c_str(), "char"))
+  else if (0 == strcmp(frst_type.c_str(), CHAR_DATA_TYPE))
     result = std::to_string(
         (atoll(v0) % UCHAR_MAX / atoll(v1) % UCHAR_MAX) %
         UCHAR_MAX);
@@ -377,7 +385,8 @@ char *div_vals(const char *const v0, const char *const v1)
 
 char *mod_vals(const char *const v0, const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("mod_vals() failed - received nullptr");
     return nullptr;
@@ -392,8 +401,8 @@ char *mod_vals(const char *const v0, const char *const v1)
   }
 
   // no float
-  if (strcmp("int", frst_type.c_str()) &&
-      strcmp("char", frst_type.c_str()))
+  if (strcmp(INTG_DATA_TYPE, frst_type.c_str()) &&
+      strcmp(CHAR_DATA_TYPE, frst_type.c_str()))
   {
     yyerror("mod_vals() failed - wrong type");
     return nullptr;
@@ -401,11 +410,9 @@ char *mod_vals(const char *const v0, const char *const v1)
 
   // success
   std::string result;
-  if (0 == strcmp(frst_type.c_str(), "int"))
+  if (0 == strcmp(frst_type.c_str(), INTG_DATA_TYPE))
     result = std::to_string(atoll(v0) / atoll(v1));
-  else if (0 == strcmp(frst_type.c_str(), "float"))
-    result = std::to_string(atof(v0) / atof(v1));
-  else if (0 == strcmp(frst_type.c_str(), "char"))
+  else if (0 == strcmp(frst_type.c_str(), CHAR_DATA_TYPE))
     result = std::to_string(
         (atoll(v0) % UCHAR_MAX / atoll(v1) % UCHAR_MAX) %
         UCHAR_MAX);
@@ -414,7 +421,8 @@ char *mod_vals(const char *const v0, const char *const v1)
 
 char *pow_vals(const char *const v0, const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("pow_vals() failed - received nullptr");
     return nullptr;
@@ -428,8 +436,8 @@ char *pow_vals(const char *const v0, const char *const v1)
     return nullptr;
   }
 
-  if (0 == strcmp("bool", frst_type.c_str()) ||
-      0 == strcmp("string", frst_type.c_str()))
+  if (0 == strcmp(BOOL_DATA_TYPE, frst_type.c_str()) ||
+      0 == strcmp(STRG_DATA_TYPE, frst_type.c_str()))
   {
     yyerror("pow_vals() failed - wrong type");
     return nullptr;
@@ -437,55 +445,37 @@ char *pow_vals(const char *const v0, const char *const v1)
 
   // success
   std::string result;
-  if (0 == strcmp(frst_type.c_str(), "int"))
+  if (0 == strcmp(frst_type.c_str(), INTG_DATA_TYPE))
     result = std::to_string(
         (long long)std::pow(atoll(v0), atoll(v1)));
-  else if (0 == strcmp(frst_type.c_str(), "float"))
+  else if (0 == strcmp(frst_type.c_str(), FLOT_DATA_TYPE))
     result = std::to_string(
         std::pow(atof(v0), atof(v1)));
-  /*else if (0 == strcmp(frst_type.c_str(), "char"))
+  /*else if (0 == strcmp(frst_type.c_str(), CHAR_DATA_TYPE))
     result = std::to_string(
         std::pow(atoll(v0) % UCHAR_MAX, atoll(v1) % UCHAR_MAX));
   */
   return strdup(result.c_str());
 }
 
-char *asg_vals(char *v0, const char *const v1)
-{
-  if (nullptr == v0 || nullptr == v1)
-  {
-    yyerror("asg_vals() failed - received nullptr");
-    return nullptr;
-  }
-
-  std::string frst_type = type_of(v0);
-  std::string scnd_type = type_of(v1);
-  if (frst_type != scnd_type)
-  {
-    yyerror("asg_vals() failed - type missmatch");
-    return nullptr;
-  }
-
-  free(v0);
-  v0 = strdup(v1);
-  return strdup(v1);
-}
-
 //------------------------------------------------
 
-char *cmp_intg(const long long v0, const char op,
-               const long long v1);
-char *cmp_flot(const double v0, const char op,
-               const double v1);
-char *cmp_char(const char v0, const char op,
-               const char v1);
-char *cmp_strg(const char *const v0, const char op,
-               const char *const v1);
+const char *cmp_intg(const long long, const char,
+                     const long long);
+const char *cmp_flot(const double, const char,
+                     const double);
+const char *cmp_char(const char, const char,
+                     const char);
+const char *cmp_strg(const char *const, const char,
+                     const char *const);
+const char *cmp_bool(const char *const, const char,
+                     const char *const);
 
 char *cmp_vals(const char *const v0, const char op,
                const char *const v1)
 {
-  if (nullptr == v0 || nullptr == v1)
+  if (nullptr == v0 || nullptr == v1 ||
+      false == is_valid(v0) || false == is_valid(v1))
   {
     yyerror("cmp_vals() failed - received nullptr");
     return nullptr;
@@ -500,92 +490,109 @@ char *cmp_vals(const char *const v0, const char op,
   }
 
   // success
-  if (0 == strcmp(frst_type.c_str(), "int"))
-    return cmp_intg(atoll(v0), op, atoll(v1));
-  else if (0 == strcmp(frst_type.c_str(), "float"))
-    return cmp_flot(atof(v0), op, atof(v1));
-  else if (0 == strcmp(frst_type.c_str(), "char"))
-    return cmp_char(*v0, op, *v1);
-  else if (0 == strcmp(frst_type.c_str(), "string"))
-    return cmp_strg(v0, op, v1);
-  return strdup("false");
+  if (0 == strcmp(frst_type.c_str(), INTG_DATA_TYPE))
+    return strdup(cmp_intg(atoll(v0), op, atoll(v1)));
+  else if (0 == strcmp(frst_type.c_str(), FLOT_DATA_TYPE))
+    return strdup(cmp_flot(atof(v0), op, atof(v1)));
+  else if (0 == strcmp(frst_type.c_str(), CHAR_DATA_TYPE))
+    return strdup(cmp_char(*v0, op, *v1));
+  else if (0 == strcmp(frst_type.c_str(), STRG_DATA_TYPE))
+    return strdup(cmp_strg(v0, op, v1));
+
+  const char *ptr = cmp_bool(v0, op, v1);
+  if (ptr)
+    return strdup(ptr);
+  yyerror("cmp_vals() failed - "
+          "bool can not be compared like that");
+  return nullptr;
 }
 
-char *cmp_intg(const long long v0, const char op,
-               const long long v1)
+const char *cmp_intg(const long long v0, const char op,
+                     const long long v1)
 {
   if (EE_CHR == op)
-    return v0 == v1 ? strdup("true") : strdup("false");
+    return v0 == v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (NE_CHR == op)
-    return v0 != v1 ? strdup("true") : strdup("false");
+    return v0 != v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (LE_CHR == op)
-    return v0 <= v1 ? strdup("true") : strdup("false");
+    return v0 <= v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (LS_CHR == op)
-    return v0 < v1 ? strdup("true") : strdup("false");
+    return v0 < v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (GE_CHR == op)
-    return v0 >= v1 ? strdup("true") : strdup("false");
+    return v0 >= v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (GS_CHR == op)
-    return v0 > v1 ? strdup("true") : strdup("false");
+    return v0 > v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else
     return nullptr;
 }
 
-char *cmp_flot(const double v0, const char op,
-               const double v1)
+const char *cmp_flot(const double v0, const char op,
+                     const double v1)
 {
   if (EE_CHR == op)
-    return v0 == v1 ? strdup("true") : strdup("false");
+    return v0 == v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (NE_CHR == op)
-    return v0 != v1 ? strdup("true") : strdup("false");
+    return v0 != v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (LE_CHR == op)
-    return v0 <= v1 ? strdup("true") : strdup("false");
+    return v0 <= v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (LS_CHR == op)
-    return v0 < v1 ? strdup("true") : strdup("false");
+    return v0 < v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (GE_CHR == op)
-    return v0 >= v1 ? strdup("true") : strdup("false");
+    return v0 >= v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (GS_CHR == op)
-    return v0 > v1 ? strdup("true") : strdup("false");
+    return v0 > v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else
     return nullptr;
 }
 
-char *cmp_char(const char v0, const char op,
-               const char v1)
+const char *cmp_char(const char v0, const char op,
+                     const char v1)
 {
   if (EE_CHR == op)
-    return v0 == v1 ? strdup("true") : strdup("false");
+    return v0 == v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (NE_CHR == op)
-    return v0 != v1 ? strdup("true") : strdup("false");
+    return v0 != v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (LE_CHR == op)
-    return v0 <= v1 ? strdup("true") : strdup("false");
+    return v0 <= v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (LS_CHR == op)
-    return v0 < v1 ? strdup("true") : strdup("false");
+    return v0 < v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (GE_CHR == op)
-    return v0 >= v1 ? strdup("true") : strdup("false");
+    return v0 >= v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (GS_CHR == op)
-    return v0 > v1 ? strdup("true") : strdup("false");
+    return v0 > v1 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else
     return nullptr;
 }
 
-char *cmp_strg(const char *const v0, const char op,
-               const char *const v1)
+const char *cmp_strg(const char *const v0, const char op,
+                     const char *const v1)
 {
   const int result = strcmp(v0, v1);
   if (EE_CHR == op)
-    return result == 0 ? strdup("true") : strdup("false");
+    return result == 0 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (NE_CHR == op)
-    return result != 0 ? strdup("true") : strdup("false");
+    return result != 0 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (LE_CHR == op)
-    return result <= 0 ? strdup("true") : strdup("false");
+    return result <= 0 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (LS_CHR == op)
-    return result < 0 ? strdup("true") : strdup("false");
+    return result < 0 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (GE_CHR == op)
-    return result >= 0 ? strdup("true") : strdup("false");
+    return result >= 0 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else if (GS_CHR == op)
-    return result > 0 ? strdup("true") : strdup("false");
+    return result > 0 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
   else
     return nullptr;
+}
+
+const char *cmp_bool(const char *const v0, const char op,
+                     const char *const v1)
+{
+  const int result = strcmp(v0, v1);
+  if (EE_CHR == op)
+    return result == 0 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
+  else if (NE_CHR == op)
+    return result != 0 ? BOOL_LITERAL_1 : BOOL_LITERAL_0;
+  return nullptr;
 }
 
 #endif
