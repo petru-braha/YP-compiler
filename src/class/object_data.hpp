@@ -71,7 +71,8 @@ object_data::object_data(const std::string &type)
         symbol.second.access_modifier;
 
     mutable_data *data = nullptr;
-    make_copy(data, symbol.second.data);
+    if (false == make_copy(data, symbol.second.data))
+      yyerror("object_data() failed - make_copy() failed");
 
     std::pair<std::string, field_data> p(
         symbol.first, {data, access});
@@ -106,7 +107,7 @@ object_data::object_data(
 
 object_data &object_data::operator=(const object_data &)
 {
-  //todo
+  // todo
   return *this;
 }
 

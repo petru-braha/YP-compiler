@@ -66,8 +66,10 @@ symbol_table::symbol_table(const symbol_table &s)
   available_id++;
   for (auto &item_pair : s.itm)
   {
-    symbol_data* data = nullptr;
-    make_copy(data, item_pair.second);
+    mutable_data *data = nullptr;
+    if (false == make_copy(data, item_pair.second))
+      yyerror("symbol_table failed() - "
+              "make_copy() failed");
     auto pair = item_pair;
     pair.second = data;
     this->itm.insert(pair);

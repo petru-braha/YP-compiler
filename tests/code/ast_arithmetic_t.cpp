@@ -106,6 +106,7 @@ void t_cmp_vals()
   process(cmp_vals("false", LS_CHR, "true"));
 }
 
+// works as expected
 int main()
 {
   // t_negation();

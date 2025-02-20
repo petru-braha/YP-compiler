@@ -4,6 +4,7 @@
 #include <string>
 
 class symbol_data;
+class mutable_data;
 class ast_expression;
 
 // bison
@@ -18,7 +19,7 @@ std::string default_value_of(const std::string &);
 std::string type_of(const std::string &);
 
 // utility
-bool make_copy(symbol_data *const, const symbol_data *const);
+bool make_copy(mutable_data *&, const symbol_data *const);
 bool is_type(const std::string &);
 bool is_compatible(const char *, const char *);
 bool is_returning_char(ast_expression *const);

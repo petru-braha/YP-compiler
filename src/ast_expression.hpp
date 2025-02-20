@@ -13,6 +13,7 @@
 #include "class/dev/ast_alphabet.hpp"
 #include "class/dev/ast_arithmetic.hpp"
 
+#include "class/primitive_data.hpp"
 #include "ast_call.hpp"
 
 /* primitive data type
@@ -204,7 +205,8 @@ void *ast_assign::evaluate()
   }
 
   // is_returning_char == false
-  if(false == make_copy(left, (symbol_data*)rght))
+  mutable_data* ptr = nullptr;
+  if(false == make_copy(ptr, (symbol_data*)rght))
   {
     yyerror("ast_assign() failed - make_copy() failed");
     return nullptr;

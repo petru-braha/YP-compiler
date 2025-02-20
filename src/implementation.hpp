@@ -84,7 +84,7 @@ std::string type_of(const std::string &primitive_value)
   }
 }
 
-bool make_copy(symbol_data *const left, const symbol_data *const rght)
+bool make_copy(mutable_data *&left, const symbol_data *const rght)
 {
   if (nullptr == rght)
     return false;
@@ -96,28 +96,19 @@ bool make_copy(symbol_data *const left, const symbol_data *const rght)
   if (PRMT_SYMB_TYPE == rght->get_item_type())
   {
     primitive_data *p_data = (primitive_data *)rght;
-    primitive_data *p =
-        new primitive_data(p_data->get_data_type(), *p_data);
-    primitive_data *temp = (primitive_data *)left;
-    *temp = *p;
+    left = new primitive_data(p_data->get_data_type(), *p_data);
   }
 
   if (OBJT_SYMB_TYPE == rght->get_item_type())
   {
     object_data *o_data = (object_data *)rght;
-    object_data *o =
-        new object_data(o_data->get_data_type(), *o_data);
-    object_data *temp = (object_data *)left;
-    *temp = *o;
+    left = new object_data(o_data->get_data_type(), *o_data);
   }
 
   if (ARRY_SYMB_TYPE == rght->get_item_type())
   {
     array_data *a_data = (array_data *)rght;
-    array_data *a =
-        new array_data(a_data->get_data_type(), *a_data);
-    array_data *temp = (array_data *)left;
-    *temp = *a;
+    left = new array_data(a_data->get_data_type(), *a_data);
   }
 
   return true;
