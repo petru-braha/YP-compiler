@@ -6,7 +6,6 @@
  * symbol_data memory removal is performed by tables
  * and not here
  * insertion is performent by ast_scopedefn
- * // todo if array
  */
 
 #include <vector>
@@ -14,6 +13,10 @@
 #include "class/dev/yyerror.hpp"
 #include "class/dev/function.hpp"
 #include "class/dev/symbol_data.hpp"
+
+#include "class/primitive_data.hpp"
+#include "class/function_data.hpp"
+#include "class/object_data.hpp"
 
 #include "class/class_data.hpp"
 #include "class/symbol_table.hpp"
@@ -54,12 +57,13 @@ ast_primitivedefn::~ast_primitivedefn()
 {
   free(data_type);
   free(id);
-  delete value;
+  if (value)
+    delete value;
 }
 
 ast_primitivedefn::ast_primitivedefn(
     char *const type, char *const id)
-    : data_type(type), id(id)
+    : data_type(type), id(id), value(nullptr)
 {
   if (nullptr == type || nullptr == id)
     yyerror("ast_primitivedefn() failed - received nullptr");
@@ -100,15 +104,22 @@ void *ast_primitivedefn::evaluate()
     return nullptr;
   }
 
-  const char *buffer = get_buffer(value);
-  if (false == is_compatible(data_type, buffer))
+  const char *buffer = nullptr;
+  if (value)
+    buffer = get_buffer(value);
+  if (buffer && false == is_compatible(data_type, buffer))
   {
     yyerror("ast_primitivedefn() failed - type missmatch");
     return nullptr;
   }
 
   // not array of primitives
-  mutable_data *data = new primitive_data(data_type, buffer);
+  mutable_data *data = nullptr;
+  if (buffer)
+    data = new primitive_data(data_type, buffer);
+  else
+    data = new primitive_data(data_type);
+
   if ("" == base)
   {
     result = {id, data};
@@ -166,8 +177,11 @@ ast_functiondefn::~ast_functiondefn()
     delete parameters->at(i);
   delete parameters;
 
-  if (execution)
-    delete execution;
+  if (nullptr == execution)
+    return;
+  for (size_t i = 0; i < execution->size(); i++)
+    delete execution->at(i);
+  delete execution;
 }
 
 // function declaration
@@ -215,24 +229,39 @@ void *ast_functiondefn::evaluate()
     return nullptr;
   }
 
+  // another declaration
+  if (previous_data && nullptr == execution)
+    return previous_data;
+
   // add the body
   if (previous_data)
   {
-    previous_f->define(execution);
+    if (false == previous_f->define(execution))
+    {
+      yyerror("ast_functiondefn() failed - "
+              "can't define function");
+      return nullptr;
+    }
+
     result = {id, previous_f};
     return &result;
   }
 
+  // first declaration/definition
   function_data::map *arguments =
       new function_data::map();
+  ast_defn *buffer = nullptr;
   for (size_t i = 0; i < parameters->size(); i++)
   {
-    ast_defn *buffer =
-        (ast_defn *)parameters->at(i)->evaluate();
+    buffer = (ast_defn *)parameters->at(i)->evaluate();
+
     if (arguments->find(buffer->id) != arguments->end())
     {
+      for (auto &element : *arguments)
+        delete element.second;
       delete arguments;
-      yyerror("ast_functiondefn() failed - already defined id");
+      yyerror("ast_functiondefn() failed - "
+              "already defined parameter");
       return nullptr;
     }
 
@@ -281,6 +310,9 @@ ast_objectdefn::~ast_objectdefn()
 {
   free(data_type);
   free(id);
+
+  if (nullptr == arguments)
+    return;
   for (size_t i = 0; i < arguments->size(); i++)
     delete arguments->at(i);
   delete arguments;
@@ -289,8 +321,7 @@ ast_objectdefn::~ast_objectdefn()
 // when the class has a default constructor
 ast_objectdefn::ast_objectdefn(
     char *const type, char *const id)
-    : data_type(type), id(id),
-      arguments(new std::vector<ast_expression *>())
+    : data_type(type), id(id), arguments(nullptr)
 {
   if (nullptr == type || nullptr == id)
     yyerror("ast_objectdefn() failed - received nullptr");
@@ -311,6 +342,7 @@ object_data *ast_objectdefn::find_constructor(
 {
   std::pair<class_data::it, class_data::it> constructors;
   constructors = model->get_data(data_type);
+  size_t argc = arguments ? arguments->size() : 0;
 
   for (auto &it = constructors.first;
        it != constructors.second; it++)
@@ -318,13 +350,13 @@ object_data *ast_objectdefn::find_constructor(
     if (ACCS_MODF_PRIV == (*it).second.access_modifier)
       continue;
     function_data *f = (function_data *)(*it).second.data;
-    if (f->get_count() != arguments->size())
+    if (f->get_count() != argc)
       continue;
 
-    std::vector<mutable_data *> v(f->get_count());
+    std::vector<mutable_data *> v(argc);
     function_data::it itr = f->begin();
 
-    for (size_t idx = 0; idx < v.size(); idx++, itr++)
+    for (size_t idx = 0; idx < argc; idx++, itr++)
     {
       void *buffer = arguments->at(idx)->evaluate();
       if (is_returning_char(arguments->at(idx)))

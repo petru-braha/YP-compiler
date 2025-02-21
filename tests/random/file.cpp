@@ -41,14 +41,9 @@ int main()
 
   delete function;
 
-  // end program:
-  // there is no need of clearing manually data in parser
-  // it will be done automatically
-  // symbols.erase(symbols.begin(), symbols.end());
+  // there is no need of manually clearing the data at the end of the process
+  // it is automatically performed by symbol_table::~symbol_table();
 }
-
-//todo make compiler not crash
-//todo check if get_buffer is applied correctly
 
 /* example
 in the function body we define

@@ -17,14 +17,13 @@
  */
 class object_data : public mutable_data
 {
-  const std::string data_type;
-
+public:
   typedef std::unordered_map<
       std::string, field_data>
       map;
-  map *attributes;
+  typedef map::value_type pair;
+  typedef map::iterator it;
 
-public:
   virtual ~object_data() override;
   object_data(const std::string &);
   object_data(const std::string &, map *const);
@@ -36,9 +35,12 @@ public:
   virtual const std::string &get_data_type() const override;
   field_data *get_attriubte(const std::string &id) const;
 
-  typedef map::iterator it;
   it begin();
   it end();
+
+private:
+  const std::string data_type;
+  map *attributes;
 };
 
 object_data::~object_data()
@@ -90,24 +92,61 @@ object_data::object_data(
     yyerror("object_data() failed - received nullptr");
 }
 
-// todo check compatibility
 object_data::object_data(
     const std::string &type, const object_data &o)
-    : data_type(type),
-      attributes(new map(*o.attributes))
+    : data_type(type), attributes(nullptr)
 {
   if (type != o.data_type)
   {
     yyerror("object_data() failed - incompatible types");
-    this->~object_data();
+    return;
   }
 
-  // todo copy each attribute in particular
+  for (auto &item_pair : *o.attributes)
+  {
+    object_data::pair pair = item_pair;
+    mutable_data *ptr = nullptr;
+    if (false == make_copy(ptr, item_pair.second.data))
+    {
+      yyerror("object_data() failed - "
+              "make_copy() failed");
+      for (auto &element : *attributes)
+        delete element.second.data;
+      delete attributes;
+      return;
+    }
+
+    pair.second.data = ptr;
+    attributes->insert(pair);
+  }
 }
 
-object_data &object_data::operator=(const object_data &)
+object_data &object_data::operator=(const object_data &o)
 {
-  // todo
+  if (this->data_type != o.data_type ||
+      this->attributes->size() != o.attributes->size())
+  {
+    yyerror("object_data assignation failed"
+            "type missmatch between objects");
+    return *this;
+  }
+
+  for (auto &item_pair : *attributes)
+  {
+    mutable_data *left = nullptr;
+    symbol_data *rght = nullptr;
+    rght = o.attributes->at(item_pair.first).data;
+    if (false == make_copy(left, rght))
+    {
+      yyerror("object_data assignation failed"
+              "make_copy() failed");
+      return *this;
+    }
+
+    delete item_pair.second.data;
+    item_pair.second.data = left;
+  }
+
   return *this;
 }
 

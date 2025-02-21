@@ -1,6 +1,11 @@
 #ifndef __0ASTASTINDEX0__
 #define __0ASTASTINDEX0__
 
+/* comments:
+ * nullptr => error occured
+ * todo array_data reset
+ */
+
 #include <vector>
 #include "class/dev/ast.hpp"
 
