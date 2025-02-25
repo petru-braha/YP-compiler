@@ -34,8 +34,8 @@ bool type_remove()
 bool type_insert(const std::string &id,
                  class_data *const s)
 {
-  if (type_table::content.find(id) !=
-      type_table::content.end())
+  // already exists
+  if (is_type(id))
     return false;
 
   std::pair<std::string, class_data *>

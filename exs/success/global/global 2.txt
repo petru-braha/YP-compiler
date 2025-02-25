@@ -1,0 +1,23 @@
+class geography
+{
+public:
+  int first;
+private:
+  int second;
+public:
+  int third;
+
+  geography geography(){};
+
+private:
+  int forth;
+};
+
+geography alpha;
+
+# works as expected
+master()
+{
+  print_f(alpha->first);
+  print_f("\n");
+}

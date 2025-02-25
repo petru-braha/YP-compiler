@@ -33,8 +33,7 @@ void yywarning(const char *message)
 void yyerror(const char *message)
 {
   count_error++;
-  printf("%s error - line %d: %s.\n",
-         __FILE__, yylineno, message);
+  printf("error: %s.\n", message);
   if (0 == strcmp(message, "syntax error"))
     printf("the program has %zu errors.\n", count_error);
 }

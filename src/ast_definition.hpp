@@ -163,6 +163,10 @@ public:
       char *const, char *const,
       std::vector<ast_definition *> *const,
       std::vector<ast_statement *> *const);
+  ast_functiondefn(
+      std::vector<ast_statement *> *const,
+      std::vector<ast_definition *> *const,
+      char *const);
 
   virtual void *evaluate() override;
 
@@ -177,14 +181,10 @@ ast_functiondefn::~ast_functiondefn()
     delete parameters->at(i);
   delete parameters;
 
-  if (nullptr == execution)
-    return;
-  for (size_t i = 0; i < execution->size(); i++)
-    delete execution->at(i);
-  delete execution;
+  // execution is removed by the function_data class
 }
 
-// function declaration
+// ast function declaration
 ast_functiondefn::ast_functiondefn(
     char *const type, char *const id,
     std::vector<ast_definition *> *const arguments)
@@ -196,6 +196,7 @@ ast_functiondefn::ast_functiondefn(
     yyerror("ast_functiondefn() failed - received nullptr");
 }
 
+// ast function definition
 ast_functiondefn::ast_functiondefn(
     char *const type, char *const id,
     std::vector<ast_definition *> *const arguments,
@@ -209,15 +210,32 @@ ast_functiondefn::ast_functiondefn(
     yyerror("ast_functiondefn() failed - received nullptr");
 }
 
+// ast constructor
+ast_functiondefn::ast_functiondefn(
+    std::vector<ast_statement *> *const exe,
+    std::vector<ast_definition *> *const arguments,
+    char *const id)
+    : return_type(id), id(id),
+      parameters(arguments), execution(exe)
+{
+  if (nullptr == exe || nullptr == arguments ||
+      nullptr == id)
+    yyerror("ast_functiondefn() failed - received nullptr");
+}
+
+/* if constructor:
+ * false == is_type(return_type)
+ * return_type == id
+ * is_type(id) == true is allowed 
+ */
 void *ast_functiondefn::evaluate()
 {
-  if (false == is_type(return_type))
+  if (false == is_type(return_type) &&
+      return_type != id)
   {
     yyerror("ast_functiondefn() failed - undefined type");
     return nullptr;
   }
-
-  // if constructor: is_type(id) == true is allowed
 
   symbol_data *previous_data = symbol_exists(id);
   function_data *previous_f = (function_data *)previous_data;
@@ -247,7 +265,7 @@ void *ast_functiondefn::evaluate()
     return &result;
   }
 
-  // first declaration/definition
+  // not previously declared
   function_data::map *arguments =
       new function_data::map();
   ast_defn *buffer = nullptr;
@@ -270,7 +288,6 @@ void *ast_functiondefn::evaluate()
     arguments->insert(pair);
   }
 
-  // not previously declared
   function_data *data = nullptr;
   if (nullptr == execution)
     data = new function_data(return_type, arguments);
@@ -293,7 +310,8 @@ class ast_objectdefn : public ast_definition
   std::vector<ast_expression *> *const arguments;
   ast_defn result;
 
-  object_data *find_constructor(class_data *const);
+  object_data *find_constructor(
+      class_data *const, const std::string &);
 
 public:
   virtual ~ast_objectdefn() override;
@@ -338,10 +356,10 @@ ast_objectdefn::ast_objectdefn(
 }
 
 object_data *ast_objectdefn::find_constructor(
-    class_data *const model)
+    class_data *const model, const std::string &type)
 {
   std::pair<class_data::it, class_data::it> constructors;
-  constructors = model->get_data(data_type);
+  constructors = model->get_data(type);
   size_t argc = arguments ? arguments->size() : 0;
 
   for (auto &it = constructors.first;
@@ -385,11 +403,13 @@ object_data *ast_objectdefn::find_constructor(
 
 void *ast_objectdefn::evaluate()
 {
+  printf("yes obj dont forget to change find_constructor\n");
+
   // data type
   std::string base(base_type(data_type));
   class_data *model = type_exists(base);
   if ("" == base)
-    model = type_exists(base);
+    model = type_exists(data_type);
   if (nullptr == model)
   {
     yyerror("ast_objectdefn() failed - undefined type");
@@ -421,10 +441,12 @@ void *ast_objectdefn::evaluate()
     return nullptr;
   }
 
-  mutable_data *data = find_constructor(model);
+  mutable_data *data = find_constructor(
+      model, "" == base ? data_type : base);
   if (nullptr == data)
   {
-    yyerror("ast_objectdefn() - undefined appropriate constructor");
+    yyerror("ast_objectdefn() - "
+            "undefined appropriate constructor");
     return nullptr;
   }
 
@@ -611,6 +633,8 @@ void *ast_classdefn::evaluate()
     for (auto &field : *arguments)
       delete field.second.data;
     delete data;
+    yyerror("ast_classdefn() - "
+            "type_insert() failed");
     return nullptr;
   }
 

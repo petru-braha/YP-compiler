@@ -1,0 +1,8 @@
+int alpha;
+
+# works as expected
+master()
+{
+  print_f(alpha);
+  print_f("\n");
+}

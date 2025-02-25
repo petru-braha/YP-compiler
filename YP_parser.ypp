@@ -92,17 +92,14 @@
 
 %%
 entrance: global MASTER scope { // here, the source file is completetly read
-
-            if (0 == count_error)
-              printf("the program was compiled correctly.\n");
-            else
-              printf("the program has %zu errors.\n", count_error);
-            
             for(size_t i = 0; i < $1->size(); i++)
               $1->at(i)->evaluate();
+            
+            scope_insert();
             for(size_t i = 0; i < $3->size(); i++)
               $3->at(i)->evaluate();
             fflush(stdout);
+            scope_remove();
 
             for(size_t i = 0; i < $1->size(); i++)
               delete $1->at(i);
@@ -114,9 +111,9 @@ entrance: global MASTER scope { // here, the source file is completetly read
           }
         ;
 
-global: global decl ';' { $1->insert($1->begin(), $2); $$ = $1; }
-      | global cls_decl ';' { $1->insert($1->begin(), $2); $$ = $1; }
-      | global cls_defn ';' { $1->insert($1->begin(), $2); $$ = $1; }
+global: global decl ';' { $1->emplace_back($2); $$ = $1; }
+      | global cls_decl ';' { $1->emplace_back($2); $$ = $1; }
+      | global cls_defn ';' { $1->emplace_back($2); $$ = $1; }
       | /* epsilon */ { $$ = new std::vector<ast_statement*>(); }
       ;
 
@@ -228,7 +225,7 @@ unit: '(' asgn ')' { $$ = $2; }
     | SMT_NAME arr_idex {
         $$ = new ast_indexing(
           new ast_symbolcall($1),
-          $3);
+          $2);
       }
     ;
 
@@ -237,11 +234,11 @@ arr_argm: arr_argm asgn ',' { $1->emplace_back($2); $$ = $1; }
         ;
 arr_idex: arr_idex '[' asgn ']' {
             $1->emplace_back($3);
-            $3 = $1;
+            $$ = $1;
           }
         | '[' asgn ']' {
             $$ = new std::vector<ast_expression*>();
-            $$.emplace_back($2);
+            $$->emplace_back($2);
           }
         ;
 
@@ -331,14 +328,17 @@ arr_fild: arr_fild cls_accs {
             $$->emplace_back($1);
           }
         ;
-cls_accs: ACS_MODF cls_fild { $$ = new ast_access($1, $2); }
-        | cls_fild { $$ = new ast_access($1); }
+cls_accs: ACS_MODF cls_fild ';' { $$ = new ast_access($1, $2); }
+        | cls_fild ';' { $$ = new ast_access($1); }
         ;
 cls_fild: prm_decl { $$ = $1; }
         | prm_defn { $$ = $1; }
         | fct_defn { $$ = $1; }
         | obj_decl { $$ = $1; }
         | obj_defn { $$ = $1; }
+        | SMT_NAME synopsis scope {
+            $$ = new ast_functiondefn($3, $2, $1);
+          }
         ;
 %%
 
@@ -363,5 +363,8 @@ int main(int argc, char **argv)
   yyparse();
   scope_remove();
   type_remove();
+
+  if (0 == count_error)
+    printf("the program ran with no errors.\n");
   return count_error;
 }

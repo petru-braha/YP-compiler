@@ -202,7 +202,17 @@ void *function_data::call(
 
   scope_insert();
   for (auto &item_pair : *parameters)
-    symbol_insert(item_pair.first, item_pair.second);
+  {
+    mutable_data *data = nullptr;
+    if (false == make_copy(data, item_pair.second))
+    {
+      yyerror("function_call() failed - "
+              "make_copy() failed");
+      return nullptr;
+    }
+
+    symbol_insert(item_pair.first, data);
+  }
 
   void *buffer = nullptr;
   bool is_returned = false;

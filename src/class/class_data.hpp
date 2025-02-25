@@ -94,7 +94,7 @@ const size_t class_data::get_count(const char item_type) const
 
 const bool class_data::is_defined() const
 {
-  return nullptr == content;
+  return nullptr != content;
 }
 
 class_data::it class_data::begin()
