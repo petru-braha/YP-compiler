@@ -1,9 +1,14 @@
 ## To do when paid
 
-0. char - operations? '\n'
+0. char
 0. complete the syntax documentation from the guidelines
+0. constructors
 
 ## General ideas
+
+- object constructors
+    - default: where each field is initialised with their default value
+    - specific: where the developer has to specify assignation-arithmetic expressions for each field, in the order they have been declared
 
 - function_data and class_data can be firstly declared and later defined
 

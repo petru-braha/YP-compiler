@@ -300,6 +300,7 @@ obj_defn: SMT_NAME SMT_NAME OPR3 '{' arr_attr asgn '}' {
             $5->emplace_back($6);
             $$ = new ast_objectdefn($1, $2, $5);
           }
+        // todo add with no attribute definition
         | DEF_ARRY SMT_NAME OPR3 '{' arr_attr asgn '}' {
             $5->emplace_back($6);
             $$ = new ast_objectdefn($1, $2, $5);
@@ -336,9 +337,6 @@ cls_fild: prm_decl { $$ = $1; }
         | fct_defn { $$ = $1; }
         | obj_decl { $$ = $1; }
         | obj_defn { $$ = $1; }
-        | SMT_NAME synopsis scope {
-            $$ = new ast_functiondefn($3, $2, $1);
-          }
         ;
 %%
 

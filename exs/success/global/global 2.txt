@@ -6,9 +6,6 @@ private:
   int second;
 public:
   int third;
-
-  geography geography(){};
-
 private:
   int forth;
 };

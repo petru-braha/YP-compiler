@@ -163,10 +163,10 @@ public:
       char *const, char *const,
       std::vector<ast_definition *> *const,
       std::vector<ast_statement *> *const);
-  ast_functiondefn(
+  /*ast_functiondefn(
       std::vector<ast_statement *> *const,
       std::vector<ast_definition *> *const,
-      char *const);
+      char *const);*/
 
   virtual void *evaluate() override;
 
@@ -211,6 +211,7 @@ ast_functiondefn::ast_functiondefn(
 }
 
 // ast constructor
+/*
 ast_functiondefn::ast_functiondefn(
     std::vector<ast_statement *> *const exe,
     std::vector<ast_definition *> *const arguments,
@@ -222,18 +223,25 @@ ast_functiondefn::ast_functiondefn(
       nullptr == id)
     yyerror("ast_functiondefn() failed - received nullptr");
 }
+*/
 
-/* if constructor:
+/* no constructors allowed:
  * false == is_type(return_type)
  * return_type == id
- * is_type(id) == true is allowed 
+ * is_type(id) == true is allowed
  */
 void *ast_functiondefn::evaluate()
 {
-  if (false == is_type(return_type) &&
-      return_type != id)
+  if (false == is_type(return_type))
   {
     yyerror("ast_functiondefn() failed - undefined type");
+    return nullptr;
+  }
+
+  if (is_type(id))
+  {
+    yyerror("ast_functiondefn() failed - "
+            "type treated as identifier");
     return nullptr;
   }
 
