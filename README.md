@@ -24,7 +24,6 @@
       <img src="https://img.shields.io/github/issues/petru-braha/YP-compiler" alt="open issues" />
     </a>
     <a href="https://github.com/petru-braha/YP-compiler/blob/master/LICENSE">
-      <img src="https://img.shields.io/github/license/petru-braha/YP-compiler.svg" alt="license" />
     </a>
   </p>
    
